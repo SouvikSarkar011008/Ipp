@@ -465,8 +465,22 @@ class Interpreter:
         else:
             full_path = module_path
         
+        full_path = os.path.abspath(full_path)
+        
         if not os.path.exists(full_path):
             raise RuntimeError(f"Module not found: {module_path}")
+        
+        loading = getattr(self, '_loading_modules', set())
+        if full_path in loading:
+            raise RuntimeError(f"Cyclic import detected: {module_path}")
+        
+        if not hasattr(self, '_loaded_modules'):
+            self._loaded_modules = {}
+        
+        if full_path in self._loaded_modules:
+            return
+        
+        self._loading_modules = loading | {full_path}
         
         with open(full_path, 'r', encoding='utf-8') as f:
             source = f.read()
@@ -475,7 +489,10 @@ class Interpreter:
         from ipp.parser.parser import parse
         
         saved_file = getattr(self, 'current_file', None)
+        saved_env = self.global_env
+        
         self.current_file = full_path
+        self.global_env = Environment(self.global_env)
         
         tokens = tokenize(source)
         ast = parse(tokens)
@@ -483,7 +500,11 @@ class Interpreter:
         for stmt in ast.statements:
             stmt.accept(self)
         
+        self._loaded_modules[full_path] = self.global_env
+        
+        self.global_env = saved_env
         self.current_file = saved_file
+        self._loading_modules = loading
         
         return None
 

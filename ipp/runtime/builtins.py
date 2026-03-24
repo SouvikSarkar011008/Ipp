@@ -19,6 +19,10 @@ def ipp_print(*args):
             output.append(f"vec2({arg.x}, {arg.y})")
         elif isinstance(arg, Vector3):
             output.append(f"vec3({arg.x}, {arg.y}, {arg.z})")
+        elif isinstance(arg, Color):
+            output.append(f"color({arg.r}, {arg.g}, {arg.b}, {arg.a})")
+        elif isinstance(arg, Rect):
+            output.append(f"rect({arg.x}, {arg.y}, {arg.width}, {arg.height})")
         elif hasattr(arg, 'elements'):
             output.append(str(arg.elements))
         elif hasattr(arg, 'data'):
@@ -68,6 +72,10 @@ def ipp_type(obj):
         return "vec2"
     if isinstance(obj, Vector3):
         return "vec3"
+    if isinstance(obj, Color):
+        return "color"
+    if isinstance(obj, Rect):
+        return "rect"
     if callable(obj):
         return "function"
     return "unknown"
@@ -601,6 +609,112 @@ def ipp_vec3(x=0, y=0, z=0):
     return Vector3(x, y, z)
 
 
+def ipp_color(r=0, g=0, b=0, a=255):
+    return Color(r, g, b, a)
+
+
+def ipp_rect(x=0, y=0, width=0, height=0):
+    return Rect(x, y, width, height)
+
+
+class Color:
+    def __init__(self, r=0, g=0, b=0, a=255):
+        self.r = max(0, min(255, int(r)))
+        self.g = max(0, min(255, int(g)))
+        self.b = max(0, min(255, int(b)))
+        self.a = max(0, min(255, int(a)))
+    
+    def __add__(self, other):
+        return Color(self.r + other.r, self.g + other.g, self.b + other.b, self.a + other.a)
+    
+    def __sub__(self, other):
+        return Color(self.r - other.r, self.g - other.g, self.b - other.b, self.a - other.a)
+    
+    def __mul__(self, scalar):
+        return Color(self.r * scalar, self.g * scalar, self.b * scalar, self.a * scalar)
+    
+    def __rmul__(self, scalar):
+        return Color(self.r * scalar, self.g * scalar, self.b * scalar, self.a * scalar)
+    
+    def lerp(self, other, t):
+        return Color(
+            self.r + (other.r - self.r) * t,
+            self.g + (other.g - self.g) * t,
+            self.b + (other.b - self.b) * t,
+            self.a + (other.a - self.a) * t
+        )
+    
+    def to_hex(self):
+        return f"#{self.r:02x}{self.g:02x}{self.b:02x}{self.a:02x}"
+    
+    def to_rgb(self):
+        return (self.r, self.g, self.b)
+    
+    def to_rgba(self):
+        return (self.r, self.g, self.b, self.a)
+    
+    def __repr__(self):
+        return f"Color({self.r}, {self.g}, {self.b}, {self.a})"
+    
+    def __str__(self):
+        return f"Color({self.r}, {self.g}, {self.b}, {self.a})"
+
+
+class Rect:
+    def __init__(self, x=0, y=0, width=0, height=0):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    
+    @property
+    def left(self):
+        return self.x
+    
+    @property
+    def right(self):
+        return self.x + self.width
+    
+    @property
+    def top(self):
+        return self.y
+    
+    @property
+    def bottom(self):
+        return self.y + self.height
+    
+    @property
+    def position(self):
+        return Vector2(self.x, self.y)
+    
+    @property
+    def size(self):
+        return Vector2(self.width, self.height)
+    
+    @property
+    def center(self):
+        return Vector2(self.x + self.width / 2, self.y + self.height / 2)
+    
+    def contains(self, point):
+        return (self.x <= point.x < self.x + self.width and 
+                self.y <= point.y < self.y + self.height)
+    
+    def intersects(self, other):
+        return not (self.right < other.left or 
+                    self.left > other.right or 
+                    self.bottom < other.top or 
+                    self.top > other.bottom)
+    
+    def inflate(self, dx, dy):
+        return Rect(self.x - dx, self.y - dy, self.width + 2*dx, self.height + 2*dy)
+    
+    def __repr__(self):
+        return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
+    
+    def __str__(self):
+        return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
+
+
 def ipp_read_file(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -758,4 +872,6 @@ BUILTINS = {
     "regex_replace": ipp_regex_replace,
     "vec2": ipp_vec2,
     "vec3": ipp_vec3,
+    "color": ipp_color,
+    "rect": ipp_rect,
 }

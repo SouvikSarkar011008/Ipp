@@ -458,7 +458,9 @@ class Parser:
 
     def error(self, message):
         token = self.peek()
-        raise RuntimeError(f"Parse error at line {token.line}: {message}")
+        line = token.line if hasattr(token, 'line') else 1
+        column = token.column if hasattr(token, 'column') else 1
+        raise RuntimeError(f"Parse error at line {line}, column {column}: {message}")
 
 
 def parse(tokens: List[Token]) -> Program:

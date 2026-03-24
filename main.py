@@ -39,9 +39,31 @@ def run_file(filepath):
     return 0
 
 
+def check_file(filepath):
+    """Syntax check an Ipp source file without running"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            source = f.read()
+    except FileNotFoundError:
+        print(f"Error: File not found: {filepath}")
+        return 1
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return 1
+    
+    try:
+        tokens = tokenize(source)
+        ast = parse(tokens)
+        print(f"Syntax OK: {filepath}")
+        return 0
+    except Exception as e:
+        print(f"Syntax Error: {e}")
+        return 1
+
+
 def run_repl():
     """Run the Ipp REPL"""
-    print("Ipp v1.0.0 - Type 'help()' for info, 'exit()' to quit")
+    print("Ipp v0.4.0 - Type 'help()' for info, 'exit()' to quit")
     print()
     
     buffer = []
@@ -59,7 +81,7 @@ def run_repl():
                 break
             
             if line.strip() == "help()":
-                print("Ipp v1.0.0")
+                print("Ipp v0.4.0")
                 print("Commands: exit(), help(), clear()")
                 print("Features: strings, lists, dicts, json, regex, files, math, random, vectors")
                 continue
@@ -103,18 +125,65 @@ def run_repl():
             print(f"Error: {e}")
 
 
+def print_help():
+    """Print help message"""
+    print("""Ipp - A simple scripting language for game development
+
+Usage: ipp [command] [options]
+
+Commands:
+  run <file>      Run an Ipp script file
+  check <file>   Check syntax without running
+  repl           Start the interactive REPL
+
+Options:
+  -h, --help     Show this help message
+  -v, --version  Show version information
+
+Examples:
+  ipp hello.ipp          Run a script
+  ipp run game.ipp      Run a game script
+  ipp check script.ipp  Check syntax
+  ipp                    Start REPL""")
+
+
+def print_version():
+    """Print version information"""
+    print("Ipp v0.4.0")
+    print("A beginner-friendly scripting language for game development")
+
+
 def main():
     if len(sys.argv) == 1:
         run_repl()
-    elif len(sys.argv) == 2:
-        filepath = sys.argv[1]
-        if filepath == "--help" or filepath == "-h":
-            print("Usage: ipp [file]")
-            print("  Run an Ipp script file, or start REPL if no file provided")
+        return 0
+    
+    cmd = sys.argv[1] if len(sys.argv) > 1 else None
+    
+    if cmd in ("--help", "-h"):
+        print_help()
+        return 0
+    elif cmd in ("--version", "-v"):
+        print_version()
+        return 0
+    elif cmd in ("run", "repl", "check"):
+        if len(sys.argv) < 3 and cmd != "repl":
+            print(f"Error: '{cmd}' requires a file argument")
+            print(f"Usage: ipp {cmd} <file>")
+            return 1
+        
+        if cmd == "run":
+            return run_file(sys.argv[2])
+        elif cmd == "check":
+            return check_file(sys.argv[2])
+        elif cmd == "repl":
+            run_repl()
             return 0
-        return run_file(filepath)
+    elif cmd and not cmd.startswith("-"):
+        # Treat as file to run
+        return run_file(cmd)
     else:
-        print("Usage: ipp [file]")
+        print_help()
         return 1
 
 
