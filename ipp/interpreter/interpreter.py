@@ -255,14 +255,26 @@ class Interpreter:
                 return left + right
             if isinstance(left, IppList) and isinstance(right, IppList):
                 return IppList(left.elements + right.elements)
+            if hasattr(left, '__add__'):
+                return left + right
             return str(left) + str(right)
         elif node.operator == "-":
+            if hasattr(left, '__sub__'):
+                return left - right
             return left - right
         elif node.operator == "*":
+            if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                return left * right
+            if hasattr(left, '__mul__'):
+                return left * right
+            if hasattr(right, '__rmul__'):
+                return right * left
             return left * right
         elif node.operator == "/":
             if right == 0:
                 raise RuntimeError("Division by zero")
+            if hasattr(left, '__truediv__'):
+                return left / right
             return left / right
         elif node.operator == "%":
             return left % right
@@ -377,6 +389,8 @@ class Interpreter:
         if isinstance(obj, IppList):
             return getattr(obj, node.name)
         if isinstance(obj, IppDict):
+            return getattr(obj, node.name)
+        if hasattr(obj, node.name):
             return getattr(obj, node.name)
         raise RuntimeError(f"Only instances have properties, got {type(obj)}")
 

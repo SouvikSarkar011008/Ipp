@@ -15,6 +15,10 @@ def ipp_print(*args):
                 output.append(str(int(arg)))
             else:
                 output.append(str(arg))
+        elif isinstance(arg, Vector2):
+            output.append(f"vec2({arg.x}, {arg.y})")
+        elif isinstance(arg, Vector3):
+            output.append(f"vec3({arg.x}, {arg.y}, {arg.z})")
         elif hasattr(arg, 'elements'):
             output.append(str(arg.elements))
         elif hasattr(arg, 'data'):
@@ -60,6 +64,10 @@ def ipp_type(obj):
         return "dict"
     if hasattr(obj, 'data'):
         return "dict"
+    if isinstance(obj, Vector2):
+        return "vec2"
+    if isinstance(obj, Vector3):
+        return "vec3"
     if callable(obj):
         return "function"
     return "unknown"
@@ -481,6 +489,118 @@ def ipp_regex_replace(pattern, text, replacement):
     return re.sub(pattern, replacement, text)
 
 
+class Vector2:
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other):
+        return Vector2(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other):
+        return Vector2(self.x - other.x, self.y - other.y)
+    
+    def __mul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+    
+    def __rmul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+    
+    def __truediv__(self, scalar):
+        return Vector2(self.x / scalar, self.y / scalar)
+    
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
+    
+    def length(self):
+        return math.sqrt(self.x * self.x + self.y * self.y)
+    
+    def length_squared(self):
+        return self.x * self.x + self.y * self.y
+    
+    def normalize(self):
+        l = self.length()
+        if l == 0:
+            return Vector2(0, 0)
+        return Vector2(self.x / l, self.y / l)
+    
+    def distance(self, other):
+        return (self - other).length()
+    
+    def distance_squared(self, other):
+        return (self - other).length_squared()
+    
+    def __repr__(self):
+        return f"Vector2({self.x}, {self.y})"
+    
+    def __str__(self):
+        return f"Vector2({self.x}, {self.y})"
+
+
+class Vector3:
+    def __init__(self, x=0, y=0, z=0):
+        self.x = x
+        self.y = y
+        self.z = z
+    
+    def __add__(self, other):
+        return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
+    
+    def __sub__(self, other):
+        return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
+    
+    def __mul__(self, scalar):
+        return Vector3(self.x * scalar, self.y * scalar, self.z * scalar)
+    
+    def __rmul__(self, scalar):
+        return Vector3(self.x * scalar, self.y * scalar, self.z * scalar)
+    
+    def __truediv__(self, scalar):
+        return Vector3(self.x / scalar, self.y / scalar, self.z / scalar)
+    
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y + self.z * other.z
+    
+    def cross(self, other):
+        return Vector3(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x
+        )
+    
+    def length(self):
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+    
+    def length_squared(self):
+        return self.x * self.x + self.y * self.y + self.z * self.z
+    
+    def normalize(self):
+        l = self.length()
+        if l == 0:
+            return Vector3(0, 0, 0)
+        return Vector3(self.x / l, self.y / l, self.z / l)
+    
+    def distance(self, other):
+        return (self - other).length()
+    
+    def distance_squared(self, other):
+        return (self - other).length_squared()
+    
+    def __repr__(self):
+        return f"Vector3({self.x}, {self.y}, {self.z})"
+    
+    def __str__(self):
+        return f"Vector3({self.x}, {self.y}, {self.z})"
+
+
+def ipp_vec2(x=0, y=0):
+    return Vector2(x, y)
+
+
+def ipp_vec3(x=0, y=0, z=0):
+    return Vector3(x, y, z)
+
+
 def ipp_read_file(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -636,4 +756,6 @@ BUILTINS = {
     "regex_match": ipp_regex_match,
     "regex_search": ipp_regex_search,
     "regex_replace": ipp_regex_replace,
+    "vec2": ipp_vec2,
+    "vec3": ipp_vec3,
 }
