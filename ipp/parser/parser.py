@@ -87,11 +87,23 @@ class Parser:
         module_path = module_path_token.literal
         
         alias = None
-        if self.match(TokenType.AS):
-            alias_token = self.consume(TokenType.IDENTIFIER, "Expect alias name")
-            alias = alias_token.lexeme
+        imports = None
         
-        return ImportDecl(module_path, alias)
+        if self.match(TokenType.AS):
+            if self.check(TokenType.LEFT_BRACE):
+                self.advance()
+                imports = []
+                while not self.check(TokenType.RIGHT_BRACE):
+                    name_token = self.consume(TokenType.IDENTIFIER, "Expect import name")
+                    imports.append(name_token.lexeme)
+                    if not self.check(TokenType.RIGHT_BRACE):
+                        self.consume(TokenType.COMMA, "Expect ',' or '}'")
+                self.consume(TokenType.RIGHT_BRACE, "Expect '}'")
+            else:
+                alias_token = self.consume(TokenType.IDENTIFIER, "Expect alias name")
+                alias = alias_token.lexeme
+        
+        return ImportDecl(module_path, alias, imports)
 
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect variable name")

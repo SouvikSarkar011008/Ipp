@@ -22,7 +22,7 @@
 | **v0.11.0** | ✅ DONE | Standard Library Expansion |
 | **v0.11.1** | ✅ DONE | Auto-print REPL, minor fixes |
 | **v0.11.2** | ✅ DONE | Additional Libraries (xml, yaml, toml, uuid, url, http, compress, log, collections, argparse, thread) |
-| **v0.12.0** | **PENDING** | Module System + Package Manager |
+| **v0.12.0** | ✅ DONE | Module System (import, alias, selective), REPL (history, completion, lint) |
 | **v0.13.0** | **PENDING** | Tooling + REPL Improvements |
 | **v1.0.0** | **PENDING** | Performance (Bytecode VM) |
 
@@ -268,7 +268,7 @@ var result = c * c
 
 ---
 
-## v0.12.0 - Module System + Package Manager (PENDING)
+## v0.12.0 - Module System + Tooling ✅ DONE
 
 **Goal**: Package ecosystem like pip/npm
 

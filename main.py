@@ -14,7 +14,7 @@ from ipp.lexer.lexer import tokenize
 from ipp.parser.parser import parse
 from ipp.interpreter.interpreter import Interpreter
 
-REPL_VERSION = "0.11.2"
+REPL_VERSION = "0.12.0"
 
 try:
     from termcolor import colored
@@ -23,6 +23,22 @@ except ImportError:
     HAS_COLOR = False
     def colored(text, color=None, attrs=None):
         return text
+
+try:
+    import readline
+    HAS_READLINE = True
+except ImportError:
+    HAS_READLINE = False
+
+BUILTIN_COMPLETIONS = [
+    "print", "len", "type", "range", "random", "abs", "min", "max", "sum",
+    "sin", "cos", "tan", "sqrt", "pow", "log", "floor", "ceil", "round",
+    "str", "int", "float", "bool", "list", "dict", "input", "exit",
+    "json_parse", "json_stringify", "datetime", "path", "md5", "sha256",
+    "base64_encode", "base64_decode", "csv_parse", "os_platform", "complex",
+    "vec2", "vec3", "color", "rect", "import", "func", "class", "var", "let",
+    "if", "else", "elif", "for", "while", "match", "try", "catch", "throw"
+]
 
 
 def c(text, color=None, attrs=None):
@@ -92,6 +108,46 @@ def check_file(filepath):
     except Exception as e:
         print(f"Syntax Error: {e}")
         return 1
+
+
+def lint_file(filepath):
+    """Lint an Ipp source file"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            source = f.read()
+    except FileNotFoundError:
+        print(f"Error: File not found: {filepath}")
+        return 1
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return 1
+    
+    issues = []
+    
+    lines = source.split('\n')
+    for i, line in enumerate(lines, 1):
+        if len(line.rstrip()) > 120:
+            issues.append(f"{filepath}:{i}: Line too long ({len(line.rstrip())} > 120)")
+        
+        if line.rstrip() != line.rstrip().replace('\t', '    '):
+            issues.append(f"{filepath}:{i}: Use spaces instead of tabs")
+        
+        if '  ' in line and line.lstrip().startswith(('#', '//')):
+            issues.append(f"{filepath}:{i}: Multiple spaces after comment")
+    
+    try:
+        tokens = tokenize(source)
+        ast = parse(tokens)
+    except Exception as e:
+        issues.append(f"{filepath}:0: Parse error: {e}")
+    
+    if issues:
+        for issue in issues:
+            print(issue)
+        return 1
+    else:
+        print(f"No issues found: {filepath}")
+        return 0
 
 
 def check_brace_balance(source):
@@ -170,8 +226,38 @@ def show_help():
         print()
 
 
+def setup_readline():
+    """Setup readline for history and completion"""
+    if not HAS_READLINE:
+        return
+    
+    try:
+        histfile = os.path.join(os.path.expanduser("~"), ".ipp_history")
+        try:
+            readline.read_history_file(histfile)
+        except FileNotFoundError:
+            pass
+        
+        readline.set_history_length(100)
+        
+        def completer(text, state):
+            options = [cmd for cmd in BUILTIN_COMPLETIONS if cmd.startswith(text)]
+            if state < len(options):
+                return options[state]
+            return None
+        
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer(completer)
+        
+        import atexit
+        atexit.register(readline.write_history_file, histfile)
+    except Exception:
+        pass
+
+
 def run_repl():
     """Run the Ipp REPL"""
+    setup_readline()
     width = get_terminal_width()
     
     print(c(IPP_LOGO, "cyan"))
@@ -312,7 +398,7 @@ def main():
     elif cmd in ("--version", "-v"):
         print_version()
         return 0
-    elif cmd in ("run", "repl", "check"):
+    elif cmd in ("run", "repl", "check", "lint"):
         if len(sys.argv) < 3 and cmd != "repl":
             print(f"Error: '{cmd}' requires a file argument")
             print(f"Usage: ipp {cmd} <file>")
@@ -322,6 +408,8 @@ def main():
             return run_file(sys.argv[2])
         elif cmd == "check":
             return check_file(sys.argv[2])
+        elif cmd == "lint":
+            return lint_file(sys.argv[2])
         elif cmd == "repl":
             run_repl()
             return 0

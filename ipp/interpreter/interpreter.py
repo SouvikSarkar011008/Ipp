@@ -49,6 +49,28 @@ class IppInstance:
         self.fields[name] = value
 
 
+class IppModule:
+    def __init__(self, env: 'Environment', name: str = "module"):
+        self._env = env
+        self._name = name
+    
+    def __repr__(self):
+        return f"<module '{self._name}'>"
+    
+    def __str__(self):
+        return f"<module '{self._name}'>"
+    
+    def get(self, name: str):
+        if self._env.has(name):
+            return self._env.get(name)
+        raise RuntimeError(f"Module '{self._name}' has no attribute '{name}'")
+    
+    def __getattr__(self, name: str):
+        if name.startswith('_'):
+            raise AttributeError(f"Module '{self._name}' has no attribute '{name}'")
+        return self.get(name)
+
+
 class IppEnum:
     def __init__(self, name: str, values: List[str]):
         self.name = name
@@ -639,7 +661,7 @@ class Interpreter:
         full_path = os.path.abspath(full_path)
         
         if not os.path.exists(full_path):
-            raise RuntimeError(f"Module not found: {module_path}")
+            raise RuntimeError(f"Module not found: {full_path}")
         
         loading = getattr(self, '_loading_modules', set())
         if full_path in loading:
@@ -649,6 +671,8 @@ class Interpreter:
             self._loaded_modules = {}
         
         if full_path in self._loaded_modules:
+            module_env = self._loaded_modules[full_path]
+            self._import_to_environment(module_env, node)
             return
         
         self._loading_modules = loading | {full_path}
@@ -671,11 +695,30 @@ class Interpreter:
         for stmt in ast.statements:
             stmt.accept(self)
         
-        self._loaded_modules[full_path] = self.global_env
+        module_env = self.global_env
+        self._loaded_modules[full_path] = module_env
         
         self.global_env = saved_env
         self.current_file = saved_file
         self._loading_modules = loading
+        
+        self._import_to_environment(module_env, node)
+    
+    def _import_to_environment(self, module_env, node):
+        module_name = node.module_path.replace('.ipp', '')
+        if node.imports:
+            for name in node.imports:
+                if module_env.has(name):
+                    value = module_env.get(name)
+                    self.global_env.define(name, value, constant=False)
+                else:
+                    raise RuntimeError(f"Module '{node.module_path}' does not export '{name}'")
+        elif node.alias:
+            module = IppModule(module_env, module_name)
+            self.global_env.define(node.alias, module, constant=False)
+        else:
+            for name, value in module_env.values.items():
+                self.global_env.define(name, value, constant=False)
         
         return None
 

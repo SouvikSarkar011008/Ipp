@@ -254,7 +254,8 @@ class FunctionDecl(ASTNode):
 @dataclass
 class ImportDecl(ASTNode):
     module_path: str
-    alias: Optional[str]
+    alias: Optional[str] = None
+    imports: Optional[List[str]] = None
     
     def accept(self, visitor):
         return visitor.visit_import_decl(self)
