@@ -14,7 +14,7 @@ from ipp.lexer.lexer import tokenize
 from ipp.parser.parser import parse
 from ipp.interpreter.interpreter import Interpreter
 
-REPL_VERSION = "0.5.2"
+REPL_VERSION = "0.5.3"
 
 try:
     from termcolor import colored
@@ -110,6 +110,14 @@ def check_brace_balance(source):
     return len(stack) == 0
 
 
+def is_statement_complete(source):
+    """Check if statement is complete"""
+    source = source.strip()
+    if not source:
+        return False
+    return check_brace_balance(source)
+
+
 def get_interpreter_globals(interpreter):
     """Get all defined variables and functions from interpreter"""
     if hasattr(interpreter, 'environment') and interpreter.environment:
@@ -124,7 +132,7 @@ def get_interpreter_globals(interpreter):
 
 
 def show_help():
-    """Show help message in box format"""
+    """Show help message"""
     width = get_terminal_width()
     print(c("=" * width, "cyan"))
     print(c("              Ipp REPL  --  Commands", "white", ["bold"]))
@@ -145,14 +153,12 @@ def show_help():
             "Operators               +, -, *, /, //, %, ^, &, |, ^, <<, >>",
             "Ternary                 condition ? true : false",
             "Error Handling          try/catch/finally",
-            "Modules                 import",
             "Lists/Dicts             [...], {...}",
             "Vectors                 Vector2, Vector3"
         ]),
         ("Tips", [
-            "Multi-line: Open a { and press Enter",
-            "Up/Down: Navigate history",
-            "Tab: Auto-complete"
+            "Multi-line: Open a { or ( and press Enter",
+            "Up/Down: Navigate history"
         ])
     ]
     
@@ -190,31 +196,34 @@ def run_repl():
             
             line_input = input(prompt)
             
-            if not buffer and line_input.strip() in ("exit()", "exit", "quit", ".exit", ".quit"):
-                print(c("Goodbye!", "green"))
-                break
-            
-            if not buffer and line_input.strip() == ".help":
-                show_help()
-                continue
-            
-            if not buffer and line_input.strip() == ".vars":
-                width = get_terminal_width()
-                vars = get_interpreter_globals(interpreter)
-                print(c("=" * width, "cyan"))
-                print(c(f"  Variables ({len(vars)} defined)", "white", ["bold"]))
-                print(c("=" * width, "cyan"))
-                for name, val in sorted(vars.items()):
-                    val_type = type(val).__name__
-                    print(c(f"  {name}".ljust(20), "green") + c(f":{val_type}", "cyan"))
-                print(c("=" * width, "cyan"))
-                continue
-            
-            if not buffer and line_input.strip() == ".clear":
-                buffer = []
-                interpreter = Interpreter()
-                print(c("Session cleared.", "yellow"))
-                continue
+            # Check commands
+            is_cmd = line_input.strip() in ("exit()", "exit", "quit", ".exit", ".quit", ".help", ".vars", ".clear", "clear()")
+            if is_cmd and not buffer:
+                if line_input.strip() in ("exit()", "exit", "quit", ".exit", ".quit"):
+                    print(c("Goodbye!", "green"))
+                    break
+                
+                if line_input.strip() == ".help":
+                    show_help()
+                    continue
+                
+                if line_input.strip() == ".vars":
+                    width = get_terminal_width()
+                    vars = get_interpreter_globals(interpreter)
+                    print(c("=" * width, "cyan"))
+                    print(c(f"  Variables ({len(vars)} defined)", "white", ["bold"]))
+                    print(c("=" * width, "cyan"))
+                    for name, val in sorted(vars.items()):
+                        val_type = type(val).__name__
+                        print(c(f"  {name}".ljust(20), "green") + c(f":{val_type}", "cyan"))
+                    print(c("=" * width, "cyan"))
+                    continue
+                
+                if line_input.strip() == ".clear":
+                    buffer = []
+                    interpreter = Interpreter()
+                    print(c("Session cleared.", "yellow"))
+                    continue
             
             if line_input.strip() == "clear()":
                 buffer = []
@@ -227,7 +236,8 @@ def run_repl():
             buffer.append(line_input)
             source = "\n".join(buffer)
             
-            if not check_brace_balance(source):
+            # Check if statement is complete (balanced braces)
+            if not is_statement_complete(source):
                 continue
             
             try:
@@ -235,9 +245,12 @@ def run_repl():
                 ast = parse(tokens)
                 interpreter.run(ast)
                 buffer = []
+                
+                # Auto-print return values
                 if interpreter.return_value is not None:
                     print(c(f"  -> {interpreter.return_value}", "white"))
                 interpreter.return_value = None
+                
             except Exception as e:
                 error_msg = str(e)
                 if "Expect" in error_msg or "Parse error" in error_msg:
