@@ -1,7 +1,7 @@
 # Ipp Language
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.10.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.12.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
  </p>
@@ -49,7 +49,7 @@ python main.py
 ```
 
 Or download as ZIP:
-1. Go to https://github.com/anomalyco/Ipp
+1. Go to (https://github.com/authorss81/Ipp)
 2. Click the green "Code" button
 3. Click "Download ZIP"
 4. Extract and run `python main.py`
