@@ -6,6 +6,7 @@ Ipp - A simple, beginner-friendly scripting language for game development
 import sys
 import os
 import shutil
+import builtins
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,7 +14,7 @@ from ipp.lexer.lexer import tokenize
 from ipp.parser.parser import parse
 from ipp.interpreter.interpreter import Interpreter
 
-REPL_VERSION = "0.5.1"
+REPL_VERSION = "0.5.2"
 
 try:
     from termcolor import colored
@@ -33,15 +34,15 @@ def c(text, color=None, attrs=None):
 
 def get_terminal_width():
     """Get terminal width"""
-    return min(shutil.get_terminal_size().columns or 60, 60)
+    return min(shutil.get_terminal_size().columns or 60, 66)
 
 
 IPP_LOGO = """
-   ___ ___ _  _ ___ ___ ___ 
-  / __|_ _| \\| |   \\| __|
- | (_ || || .` | |) | _| 
-  \\___|___|_|\\_|___/|_|   
-"""
+IIIIII  ppppp   ppppp
+  I     p    p  p    p
+  I     ppppp   ppppp
+  I     p       p
+IIIIII  p       p"""
 
 
 def run_file(filepath):
@@ -109,15 +110,72 @@ def check_brace_balance(source):
     return len(stack) == 0
 
 
+def get_interpreter_globals(interpreter):
+    """Get all defined variables and functions from interpreter"""
+    if hasattr(interpreter, 'environment') and interpreter.environment:
+        env = interpreter.environment
+        result = {}
+        while env:
+            if hasattr(env, 'values'):
+                result.update(env.values)
+            env = env.parent
+        return result
+    return {}
+
+
+def show_help():
+    """Show help message in box format"""
+    width = get_terminal_width()
+    print(c("=" * width, "cyan"))
+    print(c("              Ipp REPL  --  Commands", "white", ["bold"]))
+    print(c("=" * width, "cyan"))
+    
+    sections = [
+        ("Session", [
+            ".help                   Show this help",
+            ".vars                   List all defined variables", 
+            ".clear                  Reset session variables",
+            "exit  quit              Leave the REPL"
+        ]),
+        ("Features", [
+            "Variables               var, let",
+            "Control Flow            if/elif/else, for, while, match",
+            "Functions               func, closures",
+            "Classes                 class, init, inheritance",
+            "Operators               +, -, *, /, //, %, ^, &, |, ^, <<, >>",
+            "Ternary                 condition ? true : false",
+            "Error Handling          try/catch/finally",
+            "Modules                 import",
+            "Lists/Dicts             [...], {...}",
+            "Vectors                 Vector2, Vector3"
+        ]),
+        ("Tips", [
+            "Multi-line: Open a { and press Enter",
+            "Up/Down: Navigate history",
+            "Tab: Auto-complete"
+        ])
+    ]
+    
+    for title, items in sections:
+        print(c(f"  -- {title} " + "-" * (width - 12 - len(title)), "cyan"))
+        for item in items:
+            print(c(f"  {item}", "white"))
+        print()
+
+
 def run_repl():
     """Run the Ipp REPL"""
     width = get_terminal_width()
     
     print(c(IPP_LOGO, "cyan"))
-    print(c(f"  Ipp {REPL_VERSION}", "cyan", ["bold"]) + c(" - game scripting language", "white"))
-    print(c("=" * width, "cyan"))
     print()
-    print(c("  Type ", "white") + c("help()", "yellow") + c(" for commands, ", "white") + c("exit()", "red") + c(" to quit", "white"))
+    print(c("+" + "=" * (width - 2) + "+", "cyan"))
+    print(c(f"|  >>  A scripting language for game development  v{REPL_VERSION}".ljust(width - 1) + "|", "white", ["bold"]))
+    print(c("+" + "=" * (width - 2) + "+", "cyan"))
+    print(c("|  Python 3.8+                                     ".ljust(width - 1) + "|", "white"))
+    print(c("+" + "=" * (width - 2) + "+", "cyan"))
+    print()
+    print(c("  .help  commands  ·  exit  quit", "white"))
     print()
     
     buffer = []
@@ -130,44 +188,43 @@ def run_repl():
             else:
                 prompt = c(">>>", "green", ["bold"]) + " "
             
-            line = input(prompt)
+            line_input = input(prompt)
             
-            if not buffer and line.strip() in ("exit()", "exit", "quit"):
+            if not buffer and line_input.strip() in ("exit()", "exit", "quit", ".exit", ".quit"):
                 print(c("Goodbye!", "green"))
                 break
             
-            if not buffer and line.strip() == "help()":
-                width = get_terminal_width()
-                print(c("-" * width, "cyan"))
-                print(c("  Commands:", "white", ["bold"]))
-                print(c("    exit()          ", "yellow") + c("- Exit the REPL", "white"))
-                print(c("    clear()         ", "yellow") + c("- Clear buffer", "white"))
-                print(c("    help()          ", "yellow") + c("- Show this help", "white"))
-                print()
-                print(c("  Features:", "white", ["bold"]))
-                print(c("    Variables       ", "green") + c("- var, let", "white"))
-                print(c("    Control Flow    ", "green") + c("- if/elif/else, for, while, match", "white"))
-                print(c("    Functions       ", "green") + c("- func, closures", "white"))
-                print(c("    Classes         ", "green") + c("- class, init, inheritance", "white"))
-                print(c("    Operators       ", "green") + c("- +, -, *, /, //, %, ^, &, |, ^, <<, >>", "white"))
-                print(c("    Ternary         ", "green") + c("- condition ? true : false", "white"))
-                print(c("    Error Handling  ", "green") + c("- try/catch/finally", "white"))
-                print(c("    Modules         ", "green") + c("- import", "white"))
-                print(c("    Lists/Dicts     ", "green") + c("- [...], {...}", "white"))
-                print(c("    Vectors         ", "green") + c("- Vector2, Vector3", "white"))
-                print(c("    REPL            ", "green") + c("- Multiline support", "white"))
-                print(c("-" * width, "cyan"))
+            if not buffer and line_input.strip() == ".help":
+                show_help()
                 continue
             
-            if line.strip() == "clear()":
+            if not buffer and line_input.strip() == ".vars":
+                width = get_terminal_width()
+                vars = get_interpreter_globals(interpreter)
+                print(c("=" * width, "cyan"))
+                print(c(f"  Variables ({len(vars)} defined)", "white", ["bold"]))
+                print(c("=" * width, "cyan"))
+                for name, val in sorted(vars.items()):
+                    val_type = type(val).__name__
+                    print(c(f"  {name}".ljust(20), "green") + c(f":{val_type}", "cyan"))
+                print(c("=" * width, "cyan"))
+                continue
+            
+            if not buffer and line_input.strip() == ".clear":
+                buffer = []
+                interpreter = Interpreter()
+                print(c("Session cleared.", "yellow"))
+                continue
+            
+            if line_input.strip() == "clear()":
                 buffer = []
                 print(c("Buffer cleared.", "yellow"))
                 continue
             
-            if not line.strip() and not buffer:
+            if not line_input.strip() and not buffer:
                 continue
             
-            buffer.append(line)
+            buffer.append(line_input)
             source = "\n".join(buffer)
             
             if not check_brace_balance(source):
@@ -179,7 +236,7 @@ def run_repl():
                 interpreter.run(ast)
                 buffer = []
                 if interpreter.return_value is not None:
-                    print(c(interpreter.return_value, "white"))
+                    print(c(f"  -> {interpreter.return_value}", "white"))
                 interpreter.return_value = None
             except Exception as e:
                 error_msg = str(e)
