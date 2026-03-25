@@ -918,6 +918,361 @@ def ipp_floor_div(a, b):
     return int(a) // int(b)
 
 
+# v0.11.0 Standard Library Features
+
+import datetime
+import os
+import base64 as b64
+import hashlib
+import csv
+import io
+
+
+class DateTime:
+    """DateTime class for date/time operations"""
+    def __init__(self, year, month, day, hour=0, minute=0, second=0, microsecond=0):
+        self._dt = datetime.datetime(year, month, day, hour, minute, second, microsecond)
+    
+    def now():
+        """Create DateTime with current time"""
+        now = datetime.datetime.now()
+        return DateTime(now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
+    
+    def year(self):
+        return self._dt.year
+    
+    def month(self):
+        return self._dt.month
+    
+    def day(self):
+        return self._dt.day
+    
+    def hour(self):
+        return self._dt.hour
+    
+    def minute(self):
+        return self._dt.minute
+    
+    def second(self):
+        return self._dt.second
+    
+    def weekday(self):
+        return self._dt.weekday()
+    
+    def format(self, fmt):
+        """Format datetime using strftime format"""
+        return self._dt.strftime(fmt)
+    
+    def timestamp(self):
+        """Return Unix timestamp"""
+        return self._dt.timestamp()
+    
+    def add_days(self, days):
+        """Add days to datetime"""
+        new_dt = self._dt + datetime.timedelta(days=days)
+        return DateTime(new_dt.year, new_dt.month, new_dt.day, new_dt.hour, new_dt.minute, new_dt.second, new_dt.microsecond)
+    
+    def add_hours(self, hours):
+        """Add hours to datetime"""
+        new_dt = self._dt + datetime.timedelta(hours=hours)
+        return DateTime(new_dt.year, new_dt.month, new_dt.day, new_dt.hour, new_dt.minute, new_dt.second, new_dt.microsecond)
+    
+    def __str__(self):
+        return self._dt.isoformat()
+    
+    def __repr__(self):
+        return f"DateTime({self._dt.year}, {self._dt.month}, {self._dt.day}, {self._dt.hour}, {self._dt.minute}, {self._dt.second})"
+
+
+def ipp_datetime_now():
+    """Create DateTime with current time"""
+    return DateTime.now()
+
+
+def ipp_datetime_create(year, month, day, hour=0, minute=0, second=0):
+    """Create DateTime from components"""
+    return DateTime(year, month, day, hour, minute, second)
+
+
+# Path utilities
+class Path:
+    """Path class for path manipulation"""
+    def __init__(self, path):
+        self._path = path
+    
+    def dirname(self):
+        """Return directory name"""
+        import os
+        return os.path.dirname(self._path)
+    
+    def basename(self):
+        """Return base name (filename)"""
+        import os
+        return os.path.basename(self._path)
+    
+    def join(self, *parts):
+        """Join path parts"""
+        import os
+        return os.path.join(self._path, *parts)
+    
+    def exists(self):
+        """Check if path exists"""
+        import os
+        return os.path.exists(self._path)
+    
+    def is_file(self):
+        """Check if path is a file"""
+        import os
+        return os.path.isfile(self._path)
+    
+    def is_dir(self):
+        """Check if path is a directory"""
+        import os
+        return os.path.isdir(self._path)
+    
+    def ext(self):
+        """Return file extension"""
+        import os
+        return os.path.splitext(self._path)[1]
+    
+    def stem(self):
+        """Return filename without extension"""
+        import os
+        return os.path.splitext(os.path.basename(self._path))[0]
+    
+    def absolute(self):
+        """Return absolute path"""
+        import os
+        return os.path.abspath(self._path)
+    
+    def __str__(self):
+        return self._path
+
+
+def ipp_path(path):
+    """Create Path object"""
+    return Path(path)
+
+
+def ipp_path_dirname(path):
+    """Get directory name of path"""
+    import os
+    return os.path.dirname(path)
+
+
+def ipp_path_basename(path):
+    """Get base name of path"""
+    import os
+    return os.path.basename(path)
+
+
+def ipp_path_join(*parts):
+    """Join path parts"""
+    import os
+    return os.path.join(*parts)
+
+
+def ipp_path_exists(path):
+    """Check if path exists"""
+    import os
+    return os.path.exists(path)
+
+
+# Hash functions
+def ipp_md5(data):
+    """Compute MD5 hash"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return hashlib.md5(data).hexdigest()
+
+
+def ipp_sha256(data):
+    """Compute SHA256 hash"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return hashlib.sha256(data).hexdigest()
+
+
+def ipp_sha1(data):
+    """Compute SHA1 hash"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return hashlib.sha1(data).hexdigest()
+
+
+def ipp_sha512(data):
+    """Compute SHA512 hash"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return hashlib.sha512(data).hexdigest()
+
+
+def ipp_hash(data):
+    """Compute generic hash"""
+    if isinstance(data, str):
+        return hash(data)
+    if isinstance(data, (int, float)):
+        return hash(data)
+    return hash(str(data))
+
+
+# Base64 encoding/decoding
+def ipp_base64_encode(data):
+    """Encode string to Base64"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return b64.b64encode(data).decode('utf-8')
+
+
+def ipp_base64_decode(data):
+    """Decode Base64 string"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return b64.b64decode(data).decode('utf-8')
+
+
+def ipp_base64_encode_bytes(data):
+    """Encode bytes to Base64"""
+    return b64.b64encode(data).decode('utf-8')
+
+
+def ipp_base64_decode_bytes(data):
+    """Decode Base64 to bytes"""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return b64.b64decode(data)
+
+
+# CSV parsing
+def ipp_csv_parse(csv_string, delimiter=","):
+    """Parse CSV string to list of lists"""
+    from ipp.interpreter.interpreter import IppList
+    reader = csv.reader(io.StringIO(csv_string), delimiter=delimiter)
+    return IppList([IppList(row) for row in reader])
+
+
+def ipp_csv_parse_dict(csv_string, delimiter=","):
+    """Parse CSV string to list of dicts (using first row as headers)"""
+    from ipp.interpreter.interpreter import IppList, IppDict
+    reader = csv.DictReader(io.StringIO(csv_string), delimiter=delimiter)
+    return IppList([IppDict(dict(row)) for row in reader])
+
+
+def ipp_csv_to_string(data, delimiter=",", headers=None):
+    """Convert list of lists/dicts to CSV string"""
+    output = io.StringIO()
+    if headers:
+        writer = csv.DictWriter(output, fieldnames=headers, delimiter=delimiter)
+        writer.writeheader()
+        for row in data:
+            if hasattr(row, 'data'):
+                writer.writerow(row.data)
+            else:
+                writer.writerow(row)
+    else:
+        writer = csv.writer(output, delimiter=delimiter)
+        for row in data:
+            if hasattr(row, 'elements'):
+                writer.writerow(row.elements)
+            else:
+                writer.writerow(row)
+    return output.getvalue()
+
+
+# OS utilities
+def ipp_os_platform():
+    """Get OS platform"""
+    return os.name
+
+
+def ipp_os_getenv(key, default=None):
+    """Get environment variable"""
+    return os.environ.get(key, default)
+
+
+def ipp_os_setenv(key, value):
+    """Set environment variable"""
+    os.environ[key] = value
+    return True
+
+
+def ipp_os_listenv():
+    """List all environment variables"""
+    from ipp.interpreter.interpreter import IppDict
+    return IppDict(dict(os.environ))
+
+
+def ipp_os_cwd():
+    """Get current working directory"""
+    return os.getcwd()
+
+
+def ipp_os_chdir(path):
+    """Change working directory"""
+    os.chdir(path)
+    return True
+
+
+# Complex numbers
+class Complex:
+    """Complex number class"""
+    def __init__(self, real=0, imag=0):
+        self.real = real
+        self.imag = imag
+    
+    def __add__(self, other):
+        if isinstance(other, Complex):
+            return Complex(self.real + other.real, self.imag + other.imag)
+        return Complex(self.real + other, self.imag)
+    
+    def __sub__(self, other):
+        if isinstance(other, Complex):
+            return Complex(self.real - other.real, self.imag - other.imag)
+        return Complex(self.real - other, self.imag)
+    
+    def __mul__(self, other):
+        if isinstance(other, Complex):
+            return Complex(
+                self.real * other.real - self.imag * other.imag,
+                self.real * other.imag + self.imag * other.real
+            )
+        return Complex(self.real * other, self.imag * other)
+    
+    def __truediv__(self, other):
+        if isinstance(other, Complex):
+            denom = other.real ** 2 + other.imag ** 2
+            return Complex(
+                (self.real * other.real + self.imag * other.imag) / denom,
+                (self.imag * other.real - self.real * other.imag) / denom
+            )
+        return Complex(self.real / other, self.imag / other)
+    
+    def __neg__(self):
+        return Complex(-self.real, -self.imag)
+    
+    def __abs__(self):
+        return math.sqrt(self.real ** 2 + self.imag ** 2)
+    
+    def conjugate(self):
+        return Complex(self.real, -self.imag)
+    
+    def abs(self):
+        return abs(self)
+    
+    def __str__(self):
+        if self.imag >= 0:
+            return f"{self.real}+{self.imag}i"
+        return f"{self.real}{self.imag}i"
+    
+    def __repr__(self):
+        return f"Complex({self.real}, {self.imag})"
+
+
+def ipp_complex(real=0, imag=0):
+    """Create Complex number"""
+    return Complex(real, imag)
+
+
 
 BUILTINS = {
     "print": ipp_print,
@@ -1030,4 +1385,32 @@ BUILTINS = {
     "lcm": ipp_lcm,
     "hypot": ipp_hypot,
     "floor_div": ipp_floor_div,
+    
+    # v0.11.0 Standard Library
+    "datetime": ipp_datetime_now,
+    "datetime_create": ipp_datetime_create,
+    "path": ipp_path,
+    "path_dirname": ipp_path_dirname,
+    "path_basename": ipp_path_basename,
+    "path_join": ipp_path_join,
+    "path_exists": ipp_path_exists,
+    "md5": ipp_md5,
+    "sha256": ipp_sha256,
+    "sha1": ipp_sha1,
+    "sha512": ipp_sha512,
+    "hash": ipp_hash,
+    "base64_encode": ipp_base64_encode,
+    "base64_decode": ipp_base64_decode,
+    "base64_encode_bytes": ipp_base64_encode_bytes,
+    "base64_decode_bytes": ipp_base64_decode_bytes,
+    "csv_parse": ipp_csv_parse,
+    "csv_parse_dict": ipp_csv_parse_dict,
+    "csv_to_string": ipp_csv_to_string,
+    "os_platform": ipp_os_platform,
+    "env_get": ipp_os_getenv,
+    "env_set": ipp_os_setenv,
+    "list_env": ipp_os_listenv,
+    "os_cwd": ipp_os_cwd,
+    "os_chdir": ipp_os_chdir,
+    "complex": ipp_complex,
 }

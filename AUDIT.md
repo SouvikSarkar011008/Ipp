@@ -564,10 +564,10 @@ See [ROADMAP_V2.md](ROADMAP_V2.md) for detailed version-by-version plan.
 | v0.5.x | Syntax Fixes | ✅ DONE |
 | v0.6.x | Type System | ✅ DONE |
 | v0.7.x | Comprehensions | ✅ DONE |
-| v0.8.0 | Advanced Operators + Tuples | ⏳ PENDING |
-| v0.9.0 | Control Flow + Exceptions | ⏳ PENDING |
-| v0.10.0 | Functions + OOP Enhancements | ⏳ PENDING |
-| v0.11.0 | Standard Library Expansion | ⏳ PENDING |
+| v0.8.0 | Advanced Operators + Tuples | ✅ DONE |
+| v0.9.0 | Control Flow + Exceptions | ✅ DONE |
+| v0.10.0 | Functions + OOP Enhancements | ✅ DONE |
+| v0.11.0 | Standard Library Expansion | ✅ DONE |
 | v0.12.0 | Module System + Package Manager | ⏳ PENDING |
 | v0.13.0 | Tooling + REPL Improvements | ⏳ PENDING |
 | v1.0.0 | Performance (Bytecode VM) | ⏳ PENDING |

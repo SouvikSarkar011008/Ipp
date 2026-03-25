@@ -15,6 +15,9 @@ TESTS = [
     ("v0.6.0", "tests/v06/test_features.ipp"),
     ("v0.7.0", "tests/v07/test_features.ipp"),
     ("v0.8.0", "tests/v08/test_features.ipp"),
+    ("v0.9.0", "tests/v09/test_features.ipp"),
+    ("v0.10.0", "tests/v10/test_features.ipp"),
+    ("v0.11.0", "tests/v11/test_features.ipp"),
 ]
 
 def run_test(version, filepath):

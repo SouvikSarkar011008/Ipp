@@ -19,7 +19,7 @@
 | **v0.8.0** | ✅ DONE | Advanced Operators + Tuples |
 | **v0.9.0** | ✅ DONE | Control Flow + Exceptions |
 | **v0.10.0** | ✅ DONE | Functions + OOP Enhancements |
-| **v0.11.0** | **PENDING | Standard Library Expansion |
+| **v0.11.0** | ✅ DONE | Standard Library Expansion |
 | **v0.12.0** | **PENDING** | Module System + Package Manager |
 | **v0.13.0** | **PENDING** | Tooling + REPL Improvements |
 | **v1.0.0** | **PENDING** | Performance (Bytecode VM) |
@@ -218,7 +218,7 @@ class Point {
 
 ---
 
-## v0.11.0 - Standard Library Expansion (PENDING)
+## v0.11.0 - Standard Library Expansion ✅ DONE
 
 **Goal**: Rich standard library for game dev
 
