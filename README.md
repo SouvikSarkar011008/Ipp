@@ -1,7 +1,7 @@
 # Ipp Language
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.4.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.5.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 </p>
@@ -16,7 +16,31 @@ Ipp is a simple, beginner-friendly scripting language designed exclusively for h
 - **First-Class Functions** - Closures and higher-order functions
 - **Modules** - Import and reuse code
 - **REPL** - Interactive programming
+- **Pattern Matching** - match...case statements
+- **Error Handling** - try...catch...finally
 - **Game Dev Focused** - Built for game scripting
+
+## Installation
+
+### Download from GitHub
+
+```bash
+# Clone the repository
+git clone https://github.com/anomalyco/Ipp.git
+cd Ipp
+
+# Run a script
+python main.py your_script.ipp
+
+# Start the REPL
+python main.py
+```
+
+Or download as ZIP:
+1. Go to https://github.com/anomalyco/Ipp
+2. Click the green "Code" button
+3. Click "Download ZIP"
+4. Extract and run `python main.py`
 
 ## Quick Start
 
@@ -99,6 +123,48 @@ for i in 0..10 {
 while x > 0 {
     x = x - 1
 }
+
+# Ternary operator
+var result = x > 0 ? "positive" : "negative"
+
+# Pattern matching
+match direction {
+    "up" => y += speed
+    "down" => y -= speed
+    "left" => x -= speed
+    "right" => x += speed
+    default => print("invalid")
+}
+
+# Error handling
+try {
+    var data = load_level("level1")
+} catch e {
+    print("Failed: " + e)
+    var data = load_level("default")
+} finally {
+    cleanup()
+}
+```
+
+### Operators
+
+```ipp
+# Arithmetic
+var a = 10 + 5       # 15
+var b = 10 // 3      # 3 (floor division)
+var c = 2 ^ 3        # 8 (power)
+
+# Bitwise
+var d = 5 & 3        # 1 (AND)
+var e = 5 | 3        # 7 (OR)
+var f = 5 ^ 3        # 6 (XOR)
+var g = 2 << 3       # 16 (left shift)
+var h = 8 >> 1       # 4 (right shift)
+
+# Logical
+var i = true && false   # false
+var j = true || false   # true
 ```
 
 ### Functions

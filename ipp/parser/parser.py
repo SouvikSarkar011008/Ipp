@@ -123,6 +123,10 @@ class Parser:
             return self.for_statement()
         if self.match(TokenType.WHILE):
             return self.while_statement()
+        if self.match(TokenType.MATCH):
+            return self.match_statement()
+        if self.match(TokenType.TRY):
+            return self.try_statement()
         if self.match(TokenType.RETURN):
             return self.return_statement()
         if self.match(TokenType.BREAK):
@@ -169,6 +173,51 @@ class Parser:
         
         return WhileStmt(condition, body)
 
+    def match_statement(self):
+        subject = self.expression()
+        
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after match subject")
+        self.skip_newlines()
+        
+        cases = []
+        
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            self.skip_newlines()
+            
+            if not self.match(TokenType.CASE) and not self.match(TokenType.DEFAULT):
+                break
+            
+            pattern = None
+            if self.previous().type == TokenType.CASE:
+                pattern = self.expression()
+            
+            self.consume(TokenType.ARROW, "Expect '=>' after case pattern")
+            
+            body = self.block_or_statement()
+            cases.append((pattern, body))
+            
+            self.skip_newlines()
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after match cases")
+        
+        return MatchStmt(subject, cases)
+
+    def try_statement(self):
+        try_body = self.block_or_statement()
+        
+        catch_var = None
+        catch_body = []
+        if self.match(TokenType.CATCH):
+            if self.match(TokenType.IDENTIFIER):
+                catch_var = self.previous().lexeme
+            catch_body = self.block_or_statement()
+        
+        finally_body = []
+        if self.match(TokenType.FINALLY):
+            finally_body = self.block_or_statement()
+        
+        return TryStmt(try_body, catch_var, catch_body, finally_body)
+
     def return_statement(self):
         value = None
         self.skip_newlines()
@@ -205,6 +254,10 @@ class Parser:
             return self.for_statement()
         if self.match(TokenType.WHILE):
             return self.while_statement()
+        if self.match(TokenType.MATCH):
+            return self.match_statement()
+        if self.match(TokenType.TRY):
+            return self.try_statement()
         if self.match(TokenType.RETURN):
             return self.return_statement()
         if self.match(TokenType.BREAK):
@@ -224,7 +277,7 @@ class Parser:
         return self.assignment()
     
     def assignment(self):
-        left = self.or_expr()
+        left = self.ternary()
         
         if self.match(TokenType.EQUAL):
             if isinstance(left, Identifier):
@@ -233,6 +286,17 @@ class Parser:
             if isinstance(left, GetExpr):
                 value = self.assignment()
                 return SetExpr(left.object, left.name, value)
+        
+        return left
+
+    def ternary(self):
+        left = self.or_expr()
+        
+        if self.match(TokenType.QUESTION):
+            then_expr = self.ternary()
+            self.consume(TokenType.COLON, "Expect ':' after ternary then-expression")
+            else_expr = self.ternary()
+            return ConditionalExpr(left, then_expr, else_expr)
         
         return left
 
@@ -267,10 +331,10 @@ class Parser:
         return left
 
     def range_expr(self):
-        left = self.addition()
+        left = self.bitwise_or()
         
         if self.match(TokenType.DOTDOT):
-            right = self.addition()
+            right = self.bitwise_or()
             return BinaryExpr(left, "..", right)
         
         return left
@@ -288,9 +352,49 @@ class Parser:
     def multiplication(self):
         left = self.unary()
         
-        while self.match_in(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
+        while self.match_in(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT, TokenType.DOUBLE_SLASH):
             operator = self.previous().lexeme
             right = self.unary()
+            left = BinaryExpr(left, operator, right)
+        
+        return left
+
+    def bitwise_or(self):
+        left = self.bitwise_xor()
+        
+        while self.match_in(TokenType.OR, TokenType.DOUBLE_PIPE):
+            operator = self.previous().lexeme
+            right = self.bitwise_xor()
+            left = BinaryExpr(left, operator, right)
+        
+        return left
+
+    def bitwise_xor(self):
+        left = self.bitwise_and()
+        
+        while self.match(TokenType.CARET):
+            operator = self.previous().lexeme
+            right = self.bitwise_and()
+            left = BinaryExpr(left, operator, right)
+        
+        return left
+
+    def bitwise_and(self):
+        left = self.bitwise_shift()
+        
+        while self.match_in(TokenType.AND, TokenType.DOUBLE_AMP):
+            operator = self.previous().lexeme
+            right = self.bitwise_shift()
+            left = BinaryExpr(left, operator, right)
+        
+        return left
+
+    def bitwise_shift(self):
+        left = self.addition()
+        
+        while self.match_in(TokenType.DOUBLE_LESS, TokenType.DOUBLE_GREATER):
+            operator = self.previous().lexeme
+            right = self.addition()
             left = BinaryExpr(left, operator, right)
         
         return left

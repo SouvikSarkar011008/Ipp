@@ -146,6 +146,16 @@ class LambdaExpr(ASTNode):
         return visitor.visit_lambda_expr(self)
 
 
+@dataclass
+class ConditionalExpr(ASTNode):
+    condition: ASTNode
+    then_expr: ASTNode
+    else_expr: ASTNode
+    
+    def accept(self, visitor):
+        return visitor.visit_conditional_expr(self)
+
+
 # Statement nodes
 @dataclass
 class VarDecl(ASTNode):
@@ -221,6 +231,26 @@ class WhileStmt(ASTNode):
     
     def accept(self, visitor):
         return visitor.visit_while_stmt(self)
+
+
+@dataclass
+class MatchStmt(ASTNode):
+    subject: ASTNode
+    cases: List[tuple[Optional[ASTNode], List[ASTNode]]]
+    
+    def accept(self, visitor):
+        return visitor.visit_match_stmt(self)
+
+
+@dataclass
+class TryStmt(ASTNode):
+    try_body: List[ASTNode]
+    catch_var: Optional[str]
+    catch_body: List[ASTNode]
+    finally_body: List[ASTNode]
+    
+    def accept(self, visitor):
+        return visitor.visit_try_stmt(self)
 
 
 @dataclass

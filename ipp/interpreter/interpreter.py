@@ -278,6 +278,8 @@ class Interpreter:
             return left / right
         elif node.operator == "%":
             return left % right
+        elif node.operator == "//":
+            return int(left) // int(right)
         elif node.operator == "^":
             return left ** right
         elif node.operator == "==":
@@ -298,6 +300,20 @@ class Interpreter:
             return bool(left) or bool(right)
         elif node.operator == "..":
             return list(range(int(left), int(right)))
+        elif node.operator == "&":
+            return int(left) & int(right)
+        elif node.operator == "|":
+            return int(left) | int(right)
+        elif node.operator == "^":
+            return int(left) ^ int(right)
+        elif node.operator == "<<":
+            return int(left) << int(right)
+        elif node.operator == ">>":
+            return int(left) >> int(right)
+        elif node.operator == "&&":
+            return bool(left) and bool(right)
+        elif node.operator == "||":
+            return bool(left) or bool(right)
         
         raise RuntimeError(f"Unknown operator: {node.operator}")
 
@@ -418,6 +434,13 @@ class Interpreter:
         closure = Environment(self.environment)
         return IppFunction(node.parameters, node.body, closure)
 
+    def visit_conditional_expr(self, node: ConditionalExpr):
+        condition = node.condition.accept(self)
+        if condition:
+            return node.then_expr.accept(self)
+        else:
+            return node.else_expr.accept(self)
+
     def visit_var_decl(self, node: VarDecl):
         value = None
         if node.initializer:
@@ -527,6 +550,51 @@ class Interpreter:
                 if self.return_value is not None:
                     break
                 stmt.accept(self)
+
+    def visit_match_stmt(self, node: MatchStmt):
+        subject_value = node.subject.accept(self)
+        
+        for pattern, body in node.cases:
+            if pattern is None:
+                for stmt in body:
+                    if self.return_value is not None:
+                        break
+                    stmt.accept(self)
+                return
+            
+            pattern_value = pattern.accept(self)
+            if subject_value == pattern_value:
+                for stmt in body:
+                    if self.return_value is not None:
+                        break
+                    stmt.accept(self)
+                return
+
+    def visit_try_stmt(self, node: TryStmt):
+        error = None
+        try:
+            for stmt in node.try_body:
+                if self.return_value is not None:
+                    break
+                stmt.accept(self)
+        except Exception as e:
+            error = e
+            if node.catch_body:
+                if node.catch_var:
+                    self.environment.define(node.catch_var, str(e))
+                for stmt in node.catch_body:
+                    if self.return_value is not None:
+                        break
+                    stmt.accept(self)
+        finally:
+            if node.finally_body:
+                for stmt in node.finally_body:
+                    if self.return_value is not None:
+                        break
+                    stmt.accept(self)
+        
+        if error and not node.catch_body:
+            raise error
 
     def visit_for_stmt(self, node: ForStmt):
         iterable = node.iterator.accept(self)

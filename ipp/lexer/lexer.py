@@ -51,7 +51,12 @@ class Lexer:
             else:
                 self.add_token(TokenType.DOT)
         elif c == ':':
-            self.add_token(TokenType.COLON)
+            if self.match(':'):
+                self.add_token(TokenType.DOUBLE_COLON)
+            else:
+                self.add_token(TokenType.COLON)
+        elif c == '?':
+            self.add_token(TokenType.QUESTION)
         
         # Multi-character operators
         elif c == '+':
@@ -62,7 +67,7 @@ class Lexer:
             self.add_token(TokenType.STAR)
         elif c == '/':
             if self.match('/'):
-                self.add_token(TokenType.SLASH)
+                self.add_token(TokenType.DOUBLE_SLASH)
             else:
                 self.add_token(TokenType.SLASH)
         elif c == '%':
@@ -70,15 +75,42 @@ class Lexer:
         elif c == '^':
             self.add_token(TokenType.CARET)
         
+        # Bitwise operators
+        elif c == '&':
+            if self.match('&'):
+                self.add_token(TokenType.DOUBLE_AMP)
+            else:
+                self.add_token(TokenType.AND)
+        elif c == '|':
+            if self.match('|'):
+                self.add_token(TokenType.DOUBLE_PIPE)
+            else:
+                self.add_token(TokenType.OR)
+        elif c == '~':
+            self.add_token(TokenType.TILDE)
+        
         # Comparison operators
         elif c == '!':
             self.add_token(TokenType.BANG_EQUAL if self.match('=') else TokenType.BANG)
         elif c == '=':
-            self.add_token(TokenType.EQUAL_EQUAL if self.match('=') else TokenType.EQUAL)
+            if self.match('>'):
+                self.add_token(TokenType.ARROW)
+            else:
+                self.add_token(TokenType.EQUAL_EQUAL if self.match('=') else TokenType.EQUAL)
         elif c == '<':
-            self.add_token(TokenType.LESS_EQUAL if self.match('=') else TokenType.LESS)
+            if self.match('<'):
+                self.add_token(TokenType.DOUBLE_LESS)
+            elif self.match('='):
+                self.add_token(TokenType.LESS_EQUAL)
+            else:
+                self.add_token(TokenType.LESS)
         elif c == '>':
-            self.add_token(TokenType.GREATER_EQUAL if self.match('=') else TokenType.GREATER)
+            if self.match('>'):
+                self.add_token(TokenType.DOUBLE_GREATER)
+            elif self.match('='):
+                self.add_token(TokenType.GREATER_EQUAL)
+            else:
+                self.add_token(TokenType.GREATER)
         
         # String literals
         elif c == '"' or c == "'":

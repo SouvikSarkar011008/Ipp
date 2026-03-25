@@ -30,6 +30,12 @@ class TokenType(Enum):
     CLASS = auto()
     SELF = auto()
     INIT = auto()
+    MATCH = auto()
+    CASE = auto()
+    DEFAULT = auto()
+    TRY = auto()
+    CATCH = auto()
+    FINALLY = auto()
 
     # Operators
     PLUS = auto()
@@ -39,6 +45,15 @@ class TokenType(Enum):
     PERCENT = auto()
     CARET = auto()
     DOTDOT = auto()
+    QUESTION = auto()
+    DOUBLE_COLON = auto()
+    ARROW = auto()
+    DOUBLE_AMP = auto()
+    DOUBLE_PIPE = auto()
+    DOUBLE_LESS = auto()
+    DOUBLE_GREATER = auto()
+    TILDE = auto()
+    DOUBLE_SLASH = auto()
 
     EQUAL = auto()
     EQUAL_EQUAL = auto()
@@ -100,4 +115,10 @@ KEYWORDS = {
     "true": TokenType.TRUE,
     "false": TokenType.FALSE,
     "nil": TokenType.NIL,
+    "match": TokenType.MATCH,
+    "case": TokenType.CASE,
+    "default": TokenType.DEFAULT,
+    "try": TokenType.TRY,
+    "catch": TokenType.CATCH,
+    "finally": TokenType.FINALLY,
 }
