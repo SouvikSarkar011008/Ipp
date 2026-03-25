@@ -20,6 +20,7 @@
 | **v0.9.0** | ✅ DONE | Control Flow + Exceptions |
 | **v0.10.0** | ✅ DONE | Functions + OOP Enhancements |
 | **v0.11.0** | ✅ DONE | Standard Library Expansion |
+| **v0.11.1** | ✅ DONE | Auto-print REPL, minor fixes |
 | **v0.12.0** | **PENDING** | Module System + Package Manager |
 | **v0.13.0** | **PENDING** | Tooling + REPL Improvements |
 | **v1.0.0** | **PENDING** | Performance (Bytecode VM) |

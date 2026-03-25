@@ -222,6 +222,7 @@ class Interpreter:
         self.global_env = Environment()
         self.environment = self.global_env
         self.return_value = None
+        self.last_value = None
         self.break_flag = False
         self.continue_flag = False
         self.current_line = 0
@@ -852,7 +853,9 @@ class Interpreter:
         self.continue_flag = True
 
     def visit_expr_stmt(self, node: ExprStmt):
-        return node.expression.accept(self)
+        result = node.expression.accept(self)
+        self.last_value = result
+        return result
 
 
 def interpret(program: Program, current_file: str = None) -> Any:

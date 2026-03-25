@@ -14,7 +14,7 @@ from ipp.lexer.lexer import tokenize
 from ipp.parser.parser import parse
 from ipp.interpreter.interpreter import Interpreter
 
-REPL_VERSION = "0.11.0"
+REPL_VERSION = "0.11.1"
 
 try:
     from termcolor import colored
@@ -158,7 +158,8 @@ def show_help():
         ]),
         ("Tips", [
             "Multi-line: Open a { or ( and press Enter",
-            "Up/Down: Navigate history"
+            "Up/Down: Navigate history",
+            "Auto-print: Bare expressions print their value"
         ])
     ]
     
@@ -246,10 +247,13 @@ def run_repl():
                 interpreter.run(ast)
                 buffer = []
                 
-                # Auto-print return values
+                # Auto-print return values and expression results
                 if interpreter.return_value is not None:
                     print(c(f"  -> {interpreter.return_value}", "white"))
+                elif interpreter.last_value is not None:
+                    print(c(f"  -> {interpreter.last_value}", "white"))
                 interpreter.return_value = None
+                interpreter.last_value = None
                 
             except Exception as e:
                 error_msg = str(e)
