@@ -452,8 +452,68 @@ class Interpreter:
         raise RuntimeError("Only instances have properties")
 
     def visit_list_literal(self, node: ListLiteral):
-        elements = [elem.accept(self) for elem in node.elements]
-        return IppList(elements)
+        result = []
+        for elem in node.elements:
+            if isinstance(elem, SpreadExpr):
+                spread_result = elem.accept(self)
+                if hasattr(spread_result, '__iter__'):
+                    result.extend(spread_result)
+            else:
+                result.append(elem.accept(self))
+        return IppList(result)
+
+    def visit_list_comprehension(self, node: ListComprehension):
+        result = []
+        iterable = node.iterator.accept(self)
+        
+        if hasattr(iterable, '__iter__'):
+            iterable = list(iterable)
+        
+        old_env = self.environment
+        self.environment = Environment(self.environment)
+        
+        try:
+            for item in iterable:
+                self.environment.define(node.variable, item, constant=False)
+                
+                if node.condition:
+                    cond = node.condition.accept(self)
+                    if not cond:
+                        continue
+                
+                value = node.element.accept(self)
+                result.append(value)
+        finally:
+            self.environment = old_env
+        
+        return IppList(result)
+
+    def visit_dict_comprehension(self, node: DictComprehension):
+        result = {}
+        iterable = node.iterator.accept(self)
+        
+        if hasattr(iterable, '__iter__'):
+            iterable = list(iterable)
+        
+        old_env = self.environment
+        self.environment = Environment(self.environment)
+        
+        try:
+            for item in iterable:
+                self.environment.define(node.variable, item, constant=False)
+                
+                if node.condition:
+                    cond = node.condition.accept(self)
+                    if not cond:
+                        continue
+                
+                key = node.key.accept(self)
+                value = node.value.accept(self)
+                result[key] = value
+        finally:
+            self.environment = old_env
+        
+        return IppDict(result)
 
     def visit_dict_literal(self, node: DictLiteral):
         data = {}
@@ -473,6 +533,47 @@ class Interpreter:
             return node.then_expr.accept(self)
         else:
             return node.else_expr.accept(self)
+
+    def visit_nullish_coalescing_expr(self, node: NullishCoalescingExpr):
+        left = node.left.accept(self)
+        if left is None:
+            return node.right.accept(self)
+        return left
+
+    def visit_optional_chaining_expr(self, node: OptionalChainingExpr):
+        obj = node.object.accept(self)
+        if obj is None:
+            return None
+        if hasattr(obj, 'get'):
+            return obj.get(node.property)
+        if isinstance(obj, dict) and node.property in obj:
+            return obj[node.property]
+        return None
+
+    def visit_spread_expr(self, node: SpreadExpr):
+        iterable = node.iterable.accept(self)
+        if hasattr(iterable, '__iter__'):
+            return list(iterable)
+        return []
+
+    def visit_tuple_literal(self, node: TupleLiteral):
+        return tuple(elem.accept(self) for elem in node.elements)
+
+    def visit_unpack_expr(self, node: UnpackExpr):
+        iterable = node.iterable.accept(self)
+        if hasattr(iterable, '__iter__'):
+            iterable = list(iterable)
+        old_env = self.environment
+        self.environment = Environment(self.environment)
+        try:
+            for i, target in enumerate(node.targets):
+                if i < len(iterable):
+                    self.environment.define(target, iterable[i], constant=False)
+                else:
+                    self.environment.define(target, None, constant=False)
+        finally:
+            self.environment = old_env
+        return None
 
     def visit_var_decl(self, node: VarDecl):
         value = None

@@ -147,6 +147,29 @@ class LambdaExpr(ASTNode):
 
 
 @dataclass
+class ListComprehension(ASTNode):
+    element: ASTNode
+    variable: str
+    iterator: ASTNode
+    condition: Optional[ASTNode] = None
+    
+    def accept(self, visitor):
+        return visitor.visit_list_comprehension(self)
+
+
+@dataclass
+class DictComprehension(ASTNode):
+    key: ASTNode
+    value: ASTNode
+    variable: str
+    iterator: ASTNode
+    condition: Optional[ASTNode] = None
+    
+    def accept(self, visitor):
+        return visitor.visit_dict_comprehension(self)
+
+
+@dataclass
 class ConditionalExpr(ASTNode):
     condition: ASTNode
     then_expr: ASTNode
@@ -154,6 +177,49 @@ class ConditionalExpr(ASTNode):
     
     def accept(self, visitor):
         return visitor.visit_conditional_expr(self)
+
+
+@dataclass
+class NullishCoalescingExpr(ASTNode):
+    left: ASTNode
+    right: ASTNode
+    
+    def accept(self, visitor):
+        return visitor.visit_nullish_coalescing_expr(self)
+
+
+@dataclass
+class OptionalChainingExpr(ASTNode):
+    object: ASTNode
+    property: str
+    
+    def accept(self, visitor):
+        return visitor.visit_optional_chaining_expr(self)
+
+
+@dataclass
+class SpreadExpr(ASTNode):
+    iterable: ASTNode
+    
+    def accept(self, visitor):
+        return visitor.visit_spread_expr(self)
+
+
+@dataclass
+class TupleLiteral(ASTNode):
+    elements: List[ASTNode]
+    
+    def accept(self, visitor):
+        return visitor.visit_tuple_literal(self)
+
+
+@dataclass
+class UnpackExpr(ASTNode):
+    targets: List[str]
+    iterable: ASTNode
+    
+    def accept(self, visitor):
+        return visitor.visit_unpack_expr(self)
 
 
 # Statement nodes

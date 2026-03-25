@@ -1,24 +1,31 @@
 # Ipp Language
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.6.1-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.8.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
-</p>
+ </p>
 
 Ipp is a simple, beginner-friendly scripting language designed exclusively for high-performance game development. It feels like Python + Lua with modern syntax.
 
 ## Features
 
-- **Simple Syntax** - Python-like indentation-based syntax
+- **Simple Syntax** - Python-like syntax with braces
 - **Dynamic Typing** - Easy to learn and use
+- **Type Annotations** - Optional type hints (v0.6.0)
 - **Object-Oriented** - Classes with methods and inheritance
 - **First-Class Functions** - Closures and higher-order functions
 - **Modules** - Import and reuse code
-- **REPL** - Interactive programming
-- **Pattern Matching** - match...case statements
-- **Error Handling** - try...catch...finally
-- **Enums** - Type-safe enumerated values
+- **REPL** - Interactive programming with history
+- **Pattern Matching** - match...case statements (v0.5.0)
+- **Error Handling** - try...catch...finally (v0.5.0)
+- **Enums** - Type-safe enumerated values (v0.6.0)
+- **List Comprehensions** - Python-style `[x*x for x in list]` (v0.7.0)
+- **Dict Comprehensions** - `{k: v*2 for k, v in pairs}` (v0.7.0)
+- **Nullish Coalescing** - `nil ?? "default"` (v0.8.0)
+- **Optional Chaining** - `user?.profile?.name` (v0.8.0)
+- **Spread Operator** - `[...arr1, ...arr2]` (v0.8.0)
+- **Tuples** - `(1, 2, 3)` (v0.8.0)
 - **Game Dev Focused** - Built for game scripting
 
 ## Installation
@@ -95,12 +102,40 @@ let y = 20           # Immutable binding
 ### Types
 
 ```ipp
-var num = 42         # Number
+var num = 42         # Integer (v0.6.0)
+var flt = 3.14       # Float
 var str = "hello"    # String
 var flag = true      # Boolean
 var nothing = nil    # Nil
 var list = [1, 2, 3] # List
 var dict = {"a": 1}  # Dictionary
+
+# Type annotations (v0.6.0)
+var count: int = 10
+var name: string = "Ipp"
+func add(a: int, b: int): int {
+    return a + b
+}
+```
+
+### Comprehensions (v0.7.0)
+
+```ipp
+# List comprehension
+var squares = [i*i for i in 0..10]
+# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+# With condition
+var evens = [x for x in 1..20 if x % 2 == 0]
+# [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+
+# Dict comprehension
+var doubled = {k: k*2 for k in 1..5}
+# {1: 2, 2: 4, 3: 6, 4: 8, 5: 10}
+
+# Nested comprehension
+var matrix = [[i*j for j in 1..4] for i in 1..4]
+# [[1, 2, 3, 4], [2, 4, 6, 8], [3, 6, 9, 12], [4, 8, 12, 16]]
 ```
 
 ### Control Flow
@@ -265,12 +300,21 @@ python main.py your_script.ipp
 
 ## Roadmap
 
-See [roadmap.md](roadmap.md) for the full development plan.
+See [ROADMAP_V2.md](ROADMAP_V2.md) for the detailed development plan.
 
-- **v0.1.0** - Foundation (current)
-- **v1.0.0** - Stable release with modules
-- **v2.0.0** - Performance with bytecode
-- **v3.0.0** - JIT/AOT compilation
+### Current Release
+- **v0.7.0** - Comprehensions (List/Dict comprehensions, type annotations, enums)
+
+### Coming Releases
+- **v0.8.0** - Advanced Operators (nullish coalescing, optional chaining, spread, tuples)
+- **v0.9.0** - Control Flow (do-while, labeled breaks, throw/raise)
+- **v0.10.0** - Functions + OOP (generators, async/await, private members, static methods)
+- **v0.11.0** - Standard Library (datetime, path, hashlib, csv)
+- **v0.12.0** - Package Manager (ippkg, virtual environments)
+- **v0.13.0** - Tooling (REPL history, autocomplete, formatter)
+- **v1.0.0** - Performance (Bytecode VM)
+- **v2.0.0** - Game Features (Matrix, Physics, Graphics)
+- **v3.0.0** - Embedding (C API, Rust bindings)
 
 ## Contributing
 

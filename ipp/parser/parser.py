@@ -322,13 +322,22 @@ class Parser:
         return left
 
     def ternary(self):
-        left = self.or_expr()
+        left = self.nullish_coalescing()
         
         if self.match(TokenType.QUESTION):
             then_expr = self.ternary()
             self.consume(TokenType.COLON, "Expect ':' after ternary then-expression")
             else_expr = self.ternary()
             return ConditionalExpr(left, then_expr, else_expr)
+        
+        return left
+
+    def nullish_coalescing(self):
+        left = self.or_expr()
+        
+        if self.match(TokenType.DOUBLE_QUESTION):
+            right = self.nullish_coalescing()
+            return NullishCoalescingExpr(left, right)
         
         return left
 
@@ -481,6 +490,19 @@ class Parser:
                         expr = CallExpr(GetExpr(expr, name.lexeme), arguments)
                     else:
                         expr = GetExpr(expr, name.lexeme)
+                elif self.match(TokenType.QUESTION_DOT):
+                    name = self.consume(TokenType.IDENTIFIER, "Expect property name")
+                    if self.match(TokenType.LEFT_PAREN):
+                        arguments = []
+                        if not self.check(TokenType.RIGHT_PAREN):
+                            while True:
+                                arguments.append(self.expression())
+                                if not self.match(TokenType.COMMA):
+                                    break
+                        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments")
+                        expr = CallExpr(OptionalChainingExpr(expr, name.lexeme), arguments)
+                    else:
+                        expr = OptionalChainingExpr(expr, name.lexeme)
                 else:
                     break
         
@@ -510,10 +532,25 @@ class Parser:
         
         if self.match(TokenType.LEFT_PAREN):
             self.skip_newlines()
-            expr = self.expression()
+            
+            if self.check(TokenType.RIGHT_PAREN):
+                self.advance()
+                return TupleLiteral([])
+            
+            elements = [self.expression()]
             self.skip_newlines()
-            self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression")
-            return expr
+            
+            while self.match(TokenType.COMMA):
+                self.skip_newlines()
+                elements.append(self.expression())
+                self.skip_newlines()
+            
+            self.consume(TokenType.RIGHT_PAREN, "Expect ')' after tuple elements")
+            
+            if len(elements) == 1:
+                return elements[0]
+            
+            return TupleLiteral(elements)
         
         if self.match(TokenType.LEFT_BRACKET):
             return self.list_literal()
@@ -524,38 +561,108 @@ class Parser:
         self.error(f"Unexpected token: {self.peek()}")
 
     def list_literal(self):
+        if self.check(TokenType.FOR):
+            return self.list_comprehension(None)
+        
         elements = []
         
         if not self.check(TokenType.RIGHT_BRACKET):
             self.skip_newlines()
+            
+            if self.match(TokenType.TRIPLE_DOT):
+                elements.append(SpreadExpr(self.expression()))
+            else:
+                first_expr = self.expression()
+                if self.match(TokenType.FOR):
+                    return self.list_comprehension(first_expr)
+                elements.append(first_expr)
+            
             while True:
-                elements.append(self.expression())
                 if not self.match(TokenType.COMMA):
                     break
                 self.skip_newlines()
+                if self.match(TokenType.TRIPLE_DOT):
+                    elements.append(SpreadExpr(self.expression()))
+                else:
+                    elements.append(self.expression())
         
         self.skip_newlines()
         self.consume(TokenType.RIGHT_BRACKET, "Expect ']' after list elements")
         return ListLiteral(elements)
 
     def dict_literal(self):
+        if self.check(TokenType.FOR):
+            return self.dict_comprehension(None, None)
+        
         entries = []
         
         if not self.check(TokenType.RIGHT_BRACE):
             self.skip_newlines()
+            
+            key_expr = self.expression()
+            if self.match(TokenType.COLON):
+                value_expr = self.expression()
+                if self.match(TokenType.FOR):
+                    return self.dict_comprehension(key_expr, value_expr)
+                entries.append((key_expr, value_expr))
+            elif self.match(TokenType.FOR):
+                return self.dict_comprehension(key_expr, None)
+            else:
+                self.error("Expect ':' or 'for' in dict")
+            
             while True:
+                if not self.match(TokenType.COMMA):
+                    break
+                self.skip_newlines()
                 key = self.expression()
                 self.consume(TokenType.COLON, "Expect ':' after key in dict")
                 value = self.expression()
                 entries.append((key, value))
-                
-                if not self.match(TokenType.COMMA):
-                    break
-                self.skip_newlines()
         
         self.skip_newlines()
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after dict entries")
         return DictLiteral(entries)
+
+    def list_comprehension(self, element):
+        variable = self.consume(TokenType.IDENTIFIER, "Expect variable name after 'for'")
+        self.consume(TokenType.IN, "Expect 'in' after variable")
+        iterator = self.expression()
+        
+        condition = None
+        if self.match(TokenType.IF):
+            condition = self.expression()
+        
+        self.consume(TokenType.RIGHT_BRACKET, "Expect ']' after list comprehension")
+        return ListComprehension(
+            element=element,
+            variable=variable.lexeme,
+            iterator=iterator,
+            condition=condition
+        )
+
+    def dict_comprehension(self, key_expr, value_expr):
+        if key_expr is None and value_expr is None:
+            variable = self.consume(TokenType.IDENTIFIER, "Expect variable name after 'for'")
+            var_name = variable.lexeme
+        else:
+            var_token = self.consume(TokenType.IDENTIFIER, "Expect variable name after 'for'")
+            var_name = var_token.lexeme
+        
+        self.consume(TokenType.IN, "Expect 'in' after variable")
+        iterator = self.expression()
+        
+        condition = None
+        if self.match(TokenType.IF):
+            condition = self.expression()
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after dict comprehension")
+        return DictComprehension(
+            key=key_expr,
+            value=value_expr,
+            variable=var_name,
+            iterator=iterator,
+            condition=condition
+        )
 
     # Helper methods
     def match(self, *types):

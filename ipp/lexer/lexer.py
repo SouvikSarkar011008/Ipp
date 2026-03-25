@@ -46,8 +46,13 @@ class Lexer:
         elif c == ',':
             self.add_token(TokenType.COMMA)
         elif c == '.':
-            if self.match('.'):
-                self.add_token(TokenType.DOTDOT)
+            if self.peek() == '.':
+                self.advance()
+                if self.peek() == '.':
+                    self.advance()
+                    self.add_token(TokenType.TRIPLE_DOT)
+                else:
+                    self.add_token(TokenType.DOTDOT)
             else:
                 self.add_token(TokenType.DOT)
         elif c == ':':
@@ -56,7 +61,21 @@ class Lexer:
             else:
                 self.add_token(TokenType.COLON)
         elif c == '?':
-            self.add_token(TokenType.QUESTION)
+            if self.match('.'):
+                self.add_token(TokenType.QUESTION_DOT)
+            elif self.match('?'):
+                self.add_token(TokenType.DOUBLE_QUESTION)
+            else:
+                self.add_token(TokenType.QUESTION)
+        
+        # Pipeline operator and bitwise OR
+        elif c == '|':
+            if self.match('>'):
+                self.add_token(TokenType.PIPE)
+            elif self.match('|'):
+                self.add_token(TokenType.DOUBLE_PIPE)
+            else:
+                self.add_token(TokenType.OR)
         
         # Multi-character operators
         elif c == '+':

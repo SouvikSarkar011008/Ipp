@@ -60,6 +60,11 @@ class TokenType(Enum):
     TILDE = auto()
     DOUBLE_SLASH = auto()
     DOUBLE_STAR = auto()
+    QUESTION_DOT = auto()
+    DOUBLE_QUESTION = auto()
+    TRIPLE_DOT = auto()
+    PIPE = auto()
+    ARROW2 = auto()
 
     EQUAL = auto()
     EQUAL_EQUAL = auto()
