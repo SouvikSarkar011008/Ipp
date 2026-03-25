@@ -96,6 +96,15 @@ class Parser:
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect variable name")
         
+        # Optional type annotation
+        var_type = None
+        if self.match(TokenType.COLON):
+            # Accept type keywords or identifiers as type names
+            if self.match_in(TokenType.IDENTIFIER, TokenType.INT, TokenType.FLOAT, TokenType.STRING, TokenType.BOOL, TokenType.VOID):
+                var_type = self.previous().lexeme
+            else:
+                self.error("Expect type name")
+        
         initializer = None
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
@@ -433,9 +442,9 @@ class Parser:
     def exponent(self):
         left = self.call()
         
-        if self.match(TokenType.CARET):
+        if self.match(TokenType.DOUBLE_STAR):
             right = self.unary()
-            return BinaryExpr(left, "^", right)
+            return BinaryExpr(left, "**", right)
         
         return left
 

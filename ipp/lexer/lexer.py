@@ -64,7 +64,10 @@ class Lexer:
         elif c == '-':
             self.add_token(TokenType.MINUS)
         elif c == '*':
-            self.add_token(TokenType.STAR)
+            if self.match('*'):
+                self.add_token(TokenType.DOUBLE_STAR)
+            else:
+                self.add_token(TokenType.STAR)
         elif c == '/':
             if self.match('/'):
                 self.add_token(TokenType.DOUBLE_SLASH)
@@ -150,16 +153,22 @@ class Lexer:
             self.add_token(TokenType.IDENTIFIER)
 
     def number(self):
+        has_decimal = False
         while self.peek().isdigit():
             self.advance()
         
         # Decimal part
         if self.peek() == '.' and self.peek_next().isdigit():
+            has_decimal = True
             self.advance()
             while self.peek().isdigit():
                 self.advance()
         
-        value = float(self.source[self.start:self.current])
+        # Create integer if no decimal point
+        if has_decimal:
+            value = float(self.source[self.start:self.current])
+        else:
+            value = int(self.source[self.start:self.current])
         self.add_token(TokenType.NUMBER, literal=value)
 
     def string(self, quote_char):

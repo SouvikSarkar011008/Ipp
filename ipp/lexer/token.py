@@ -37,6 +37,10 @@ class TokenType(Enum):
     CATCH = auto()
     FINALLY = auto()
     ENUM = auto()
+    INT = auto()
+    FLOAT = auto()
+    BOOL = auto()
+    VOID = auto()
 
     # Operators
     PLUS = auto()
@@ -55,6 +59,7 @@ class TokenType(Enum):
     DOUBLE_GREATER = auto()
     TILDE = auto()
     DOUBLE_SLASH = auto()
+    DOUBLE_STAR = auto()
 
     EQUAL = auto()
     EQUAL_EQUAL = auto()
@@ -123,4 +128,10 @@ KEYWORDS = {
     "catch": TokenType.CATCH,
     "finally": TokenType.FINALLY,
     "enum": TokenType.ENUM,
+    "int": TokenType.INT,
+    "float": TokenType.FLOAT,
+    "number": TokenType.NUMBER,
+    "string": TokenType.STRING,
+    "bool": TokenType.BOOL,
+    "void": TokenType.VOID,
 }

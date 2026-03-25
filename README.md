@@ -1,7 +1,7 @@
 # Ipp Language
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.6.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.6.1-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 </p>
@@ -177,7 +177,7 @@ match direction {
 # Arithmetic
 var a = 10 + 5       # 15
 var b = 10 // 3      # 3 (floor division)
-var c = 2 ^ 3        # 8 (power)
+var c = 2 ** 3       # 8 (power)
 
 # Bitwise
 var d = 5 & 3        # 1 (AND)

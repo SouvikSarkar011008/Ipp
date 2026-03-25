@@ -307,12 +307,22 @@ class Interpreter:
             if hasattr(left, '__truediv__'):
                 return left / right
             return left / right
+        elif node.operator == "**":
+            return left ** right
         elif node.operator == "%":
             return left % right
         elif node.operator == "//":
             return int(left) // int(right)
+        elif node.operator == "<<":
+            return int(left) << int(right)
+        elif node.operator == ">>":
+            return int(left) >> int(right)
+        elif node.operator == "&":
+            return int(left) & int(right)
+        elif node.operator == "|":
+            return int(left) | int(right)
         elif node.operator == "^":
-            return left ** right
+            return int(left) ^ int(right)
         elif node.operator == "==":
             return left == right
         elif node.operator == "!=":
@@ -331,16 +341,6 @@ class Interpreter:
             return bool(left) or bool(right)
         elif node.operator == "..":
             return list(range(int(left), int(right)))
-        elif node.operator == "&":
-            return int(left) & int(right)
-        elif node.operator == "|":
-            return int(left) | int(right)
-        elif node.operator == "^":
-            return int(left) ^ int(right)
-        elif node.operator == "<<":
-            return int(left) << int(right)
-        elif node.operator == ">>":
-            return int(left) >> int(right)
         elif node.operator == "&&":
             return bool(left) and bool(right)
         elif node.operator == "||":
