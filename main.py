@@ -121,27 +121,27 @@ def _check_ansi_support():
 _USE_ANSI = _check_ansi_support() if not _FORCE_ANSI else True
 
 def _fg(n, t):
-    if not _USE_ANSI:
+    if not _USE_ANSI or not IS_TTY:
         return t
     return f"\033[38;5;{n}m{t}\033[0m"
 
 def _rgb(r, g, b, t):
-    if not _USE_ANSI:
+    if not _USE_ANSI or not IS_TTY:
         return t
     return f"\033[38;2;{r};{g};{b}m{t}\033[0m"
 
 def BOLD(t):
-    if not _USE_ANSI:
+    if not _USE_ANSI or not IS_TTY:
         return t
     return f"\033[1m{t}\033[0m"
 
 def DIM(t):
-    if not _USE_ANSI:
+    if not _USE_ANSI or not IS_TTY:
         return t
     return f"\033[2m{t}\033[0m"
 
 def ITALIC(t):
-    if not _USE_ANSI:
+    if not _USE_ANSI or not IS_TTY:
         return t
     return f"\033[3m{t}\033[0m"
 
@@ -196,7 +196,7 @@ _BUILTINS = frozenset([
 ])
 
 def highlight(code: str) -> str:
-    if not IS_TTY:
+    if not _USE_ANSI:
         return code
     lines = code.split('\n')
     out = []
