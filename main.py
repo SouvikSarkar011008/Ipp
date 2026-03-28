@@ -19,42 +19,79 @@ from ipp.interpreter.interpreter import Interpreter
 
 VERSION = "1.2.0"
 
-# ─── ANSI colour helpers (no external deps) ───────────────────────────────────
-def _esc(*codes): return f"\033[{';'.join(str(c) for c in codes)}m"
-RESET   = _esc(0)
-BOLD    = lambda t: f"{_esc(1)}{t}{RESET}"
-DIM     = lambda t: f"{_esc(2)}{t}{RESET}"
-ITALIC  = lambda t: f"{_esc(3)}{t}{RESET}"
+# ─── Windows ANSI enablement ──────────────────────────────────────────────────
+# Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
+# Without this, escape codes print as literal ←[ garbage.
+def _enable_windows_ansi() -> bool:
+    """Enable ANSI escape processing on Windows 10+. Returns True if succeeded."""
+    if sys.platform != "win32":
+        return True
+    try:
+        import ctypes
+        import ctypes.wintypes
+        kernel32 = ctypes.windll.kernel32
+        # Get handle to stdout (STD_OUTPUT_HANDLE = -11)
+        hout = kernel32.GetStdHandle(-11)
+        if hout == -1:
+            return False
+        # Get current console mode
+        mode = ctypes.wintypes.DWORD()
+        if not kernel32.GetConsoleMode(hout, ctypes.byref(mode)):
+            return False
+        # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+        ENABLE_VTP = 0x0004
+        if mode.value & ENABLE_VTP:
+            return True  # already enabled
+        new_mode = mode.value | ENABLE_VTP
+        if kernel32.SetConsoleMode(hout, new_mode):
+            return True
+        return False
+    except Exception:
+        return False
 
-def _fg(n, t):   return f"{_esc(38,5,n)}{t}{RESET}"   # 256-colour fg
-def _rgb(r,g,b,t): return f"{_esc(38,2,r,g,b)}{t}{RESET}"  # true-colour fg
+# Try to enable ANSI; if it fails, we will strip all escape codes
+_ANSI_OK = _enable_windows_ansi()
 
-# Palette (Gemini-inspired: cyan/teal/purple gradient)
-C_PROMPT   = lambda t: _rgb(100,200,255,t)   # bright sky blue
-C_CONT     = lambda t: _rgb(100,140,200,t)   # muted blue  (continuation)
-C_RESULT   = lambda t: _rgb(180,255,180,t)   # mint green
-C_ERROR    = lambda t: _rgb(255,100,100,t)   # soft red
-C_WARN     = lambda t: _rgb(255,200,80,t)    # amber
-C_OK       = lambda t: _rgb(80,220,120,t)    # green
-C_CMD      = lambda t: _rgb(150,120,255,t)   # violet (commands)
-C_TYPE     = lambda t: _rgb(255,160,80,t)    # orange (types)
-C_KW       = lambda t: _rgb(100,200,255,t)   # cyan (keywords)
-C_STR      = lambda t: _rgb(150,255,150,t)   # green (strings)
-C_NUM      = lambda t: _rgb(255,180,100,t)   # orange (numbers)
-C_COMMENT  = lambda t: _rgb(120,120,140,t)   # grey (comments)
-C_FN       = lambda t: _rgb(130,170,255,t)   # blue (functions)
-C_BOOL     = lambda t: _rgb(220,130,255,t)   # purple (booleans)
-C_HEADER   = lambda t: _rgb(80,200,255,t)    # header text
-C_LOGO1    = lambda t: _fg(51,  t)
-C_LOGO2    = lambda t: _fg(45,  t)
-C_LOGO3    = lambda t: _fg(39,  t)
-C_LOGO4    = lambda t: _fg(33,  t)
-C_LOGO5    = lambda t: _fg(27,  t)
+# Also check if we're in a real terminal (not redirected to a file)
+IS_TTY = sys.stdout.isatty() and _ANSI_OK
 
-IS_TTY = sys.stdout.isatty()
+# ─── ANSI colour helpers ──────────────────────────────────────────────────────
+# IS_TTY is set above; when False every colour function returns plain text.
+
+def _fg(n, t):
+    return (f"\033[38;5;{n}m{t}\033[0m" if IS_TTY else t)
+
+def _rgb(r, g, b, t):
+    return (f"\033[38;2;{r};{g};{b}m{t}\033[0m" if IS_TTY else t)
+
+BOLD   = lambda t: (f"\033[1m{t}\033[0m" if IS_TTY else t)
+DIM    = lambda t: (f"\033[2m{t}\033[0m" if IS_TTY else t)
+ITALIC = lambda t: (f"\033[3m{t}\033[0m" if IS_TTY else t)
+
+# ── Palette ───────────────────────────────────────────────────────────────────
+C_PROMPT  = lambda t: _rgb(100, 200, 255, t)
+C_CONT    = lambda t: _rgb(100, 140, 200, t)
+C_RESULT  = lambda t: _rgb(180, 255, 180, t)
+C_ERROR   = lambda t: _rgb(255, 100, 100, t)
+C_WARN    = lambda t: _rgb(255, 200,  80, t)
+C_OK      = lambda t: _rgb( 80, 220, 120, t)
+C_CMD     = lambda t: _rgb(150, 120, 255, t)
+C_TYPE    = lambda t: _rgb(255, 160,  80, t)
+C_KW      = lambda t: _rgb(100, 200, 255, t)
+C_STR     = lambda t: _rgb(150, 255, 150, t)
+C_NUM     = lambda t: _rgb(255, 180, 100, t)
+C_COMMENT = lambda t: _rgb(120, 120, 140, t)
+C_FN      = lambda t: _rgb(130, 170, 255, t)
+C_BOOL    = lambda t: _rgb(220, 130, 255, t)
+C_HEADER  = lambda t: _rgb( 80, 200, 255, t)
+C_LOGO1   = lambda t: _fg(51, t)
+C_LOGO2   = lambda t: _fg(45, t)
+C_LOGO3   = lambda t: _fg(39, t)
+C_LOGO4   = lambda t: _fg(33, t)
+C_LOGO5   = lambda t: _fg(27, t)
 
 def colour(fn, text):
-    return fn(text) if IS_TTY else text
+    return fn(text)   # lambdas already no-op when IS_TTY=False
 
 def strip_ansi(s):
     return re.sub(r'\033\[[0-9;]*m', '', s)
@@ -120,43 +157,73 @@ def highlight(code: str) -> str:
     return '\n'.join(out)
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
-_LOGO_LINES = [
-    ("  ██╗██████╗ ██████╗  ", C_LOGO1),
-    ("  ██║██╔══██╗██╔══██╗ ", C_LOGO2),
-    ("  ██║██████╔╝██████╔╝ ", C_LOGO3),
-    ("  ██║██╔═══╝ ██╔═══╝  ", C_LOGO4),
-    ("  ██║██║     ██║      ", C_LOGO5),
-    ("  ╚═╝╚═╝     ╚═╝      ", C_LOGO1),
-]
+# Use Unicode box-drawing on terminals that support it, plain ASCII otherwise
+def _supports_unicode():
+    """Check if stdout can render Unicode box-drawing characters."""
+    try:
+        enc = (getattr(sys.stdout, 'encoding', None) or 'ascii').lower()
+        return enc in ('utf-8', 'utf8', 'utf-16', 'cp65001')
+    except Exception:
+        return False
 
-def _bar(ch='─', w=58): return colour(C_HEADER, ch * w)
+_UNI = _supports_unicode()
+
+if _UNI:
+    _LOGO_LINES = [
+        ("  IPP  LANG  ",    C_LOGO1),   # compact safe label
+        ("  +-----------+  ", C_LOGO2),
+        ("  | Ipp v{v}  |  ".format(v=VERSION), C_LOGO3),
+        ("  +-----------+  ", C_LOGO4),
+    ]
+    _LOGO_FULL = [
+        ("  ██╗██████╗ ██████╗  ", C_LOGO1),
+        ("  ██║██╔══██╗██╔══██╗ ", C_LOGO2),
+        ("  ██║██████╔╝██████╔╝ ", C_LOGO3),
+        ("  ██║██╔═══╝ ██╔═══╝  ", C_LOGO4),
+        ("  ██║██║     ██║      ", C_LOGO5),
+        ("  ╚═╝╚═╝     ╚═╝      ", C_LOGO1),
+    ]
+    _LOGO_LINES = _LOGO_FULL
+else:
+    # Pure ASCII logo for old Windows console
+    _LOGO_LINES = [
+        ("  ###  ######  ######  ", C_LOGO1),
+        ("  ##   ##  ##  ##  ##  ", C_LOGO2),
+        ("  ##   ######  ######  ", C_LOGO3),
+        ("  ##   ##      ##      ", C_LOGO4),
+        ("  ###  ##      ##      ", C_LOGO5),
+    ]
+
+def _bar(ch=None, w=58):
+    if ch is None:
+        ch = '-' if not _UNI else '─'
+    return colour(C_HEADER, ch * w)
 
 def print_banner():
-    W = shutil.get_terminal_size((80,24)).columns
-    pad = max(0, (W - 60) // 2)
+    W = shutil.get_terminal_size((80, 24)).columns
+    pad = max(0, (W - 62) // 2)
     sp = ' ' * pad
 
     print()
     for text, clr in _LOGO_LINES:
         print(sp + colour(clr, BOLD(text)))
     print()
-    print(sp + _bar())
-    tag   = colour(C_HEADER, BOLD(f"  Ipp  v{VERSION}"))
-    sub   = colour(DIM,     "  A scripting language for game development")
+    bar = _bar(w=54)
+    print(sp + bar)
+    tag = colour(C_HEADER, BOLD(f"  Ipp  v{VERSION}"))
+    sub = DIM("  A scripting language for game development")
     print(sp + tag)
-    print(sp + colour(DIM, sub))
-    print(sp + _bar())
+    print(sp + sub)
+    print(sp + bar)
     print()
-    hints = [
-        (colour(C_CMD, ".help"),    "commands"),
-        (colour(C_CMD, ".vars"),    "variables"),
-        (colour(C_CMD, "exit"),     "quit"),
-        (colour(C_CMD, "Tab"),      "autocomplete"),
+    sep = "   "
+    parts = [
+        colour(C_CMD, ".help") + " " + DIM("commands"),
+        colour(C_CMD, ".vars") + " " + DIM("variables"),
+        colour(C_CMD, "exit")  + " " + DIM("quit"),
+        colour(C_CMD, "Tab")   + " " + DIM("autocomplete"),
     ]
-    row = "  "
-    for k, v in hints:
-        row += f"{k} {colour(DIM, v)}   "
-    print(sp + row)
+    print(sp + "  " + sep.join(parts))
     print()
 
 # ─── Readline / autocomplete ──────────────────────────────────────────────────
@@ -267,7 +334,8 @@ def _needs_more(src: str) -> bool:
 def _section(title):
     print()
     print("  " + colour(C_CMD, BOLD(f" {title} ")))
-    print("  " + colour(DIM, "─" * 50))
+    div = '-' * 50 if not _UNI else '─' * 50
+    print("  " + colour(DIM, div))
 
 def print_help():
     _section("Commands")
@@ -377,9 +445,11 @@ def run_repl():
     while True:
         try:
             if buf:
-                prompt_txt = colour(C_CONT, f"  {'·' * 3} ")
+                dot = '...' if not _UNI else '···'
+                prompt_txt = colour(C_CONT, f"  {dot} ")
             else:
-                prompt_txt = colour(C_PROMPT, "  ❯ ")
+                arrow = '>>>' if not _UNI else '❯'
+                prompt_txt = colour(C_PROMPT, f"  {arrow} ")
 
             raw = input(prompt_txt)
 
@@ -387,20 +457,20 @@ def run_repl():
             print()
             if buf:
                 buf.clear()
-                print(f"  {colour(C_WARN, '↩  Buffer cleared')}")
+                print(f"  {colour(C_WARN, '<< Buffer cleared')}")
             else:
                 print(f"  {colour(DIM, 'Ctrl+C  — type exit to quit')}")
             continue
         except EOFError:
             print()
-            print(f"  {colour(C_OK, 'Goodbye! 👋')}")
+            print(f"  {colour(C_OK, 'Goodbye!')}")
             break
 
         # ── Meta commands (only at fresh prompt) ──────────────────────
         stripped = raw.strip()
         if not buf:
             if stripped in ('exit', 'exit()', 'quit', '.exit', '.quit'):
-                print(f"  {colour(C_OK, 'Goodbye! 👋')}")
+                print(f"  {colour(C_OK, 'Goodbye!')}")
                 break
             if stripped == '.help':    print_help();         continue
             if stripped == '.types':   print_types();        continue
@@ -410,7 +480,7 @@ def run_repl():
                 buf.clear()
                 interp = Interpreter()
                 setup_readline(interp)
-                print(f"  {colour(C_WARN, '✦  Session cleared')}")
+                print(f"  {colour(C_WARN, '>> Session cleared')}")
                 continue
 
         if not stripped and not buf:
@@ -437,7 +507,8 @@ def run_repl():
             if val is not None:
                 fmted = format_output(val)
                 ms_str = colour(DIM, f"  {elapsed*1000:.1f}ms")
-                print(f"  {colour(DIM, '→')} {fmted}{ms_str}")
+                arrow2 = '->' if not _UNI else '→'
+                print(f"  {colour(DIM, arrow2)} {fmted}{ms_str}")
 
             buf.clear()
             line_num += 1
@@ -448,10 +519,12 @@ def run_repl():
             # Extract line info if present
             m = re.search(r'line (\d+)', msg)
             loc = f" {colour(DIM, f'(line {m.group(1)})')}" if m else ''
-            print(f"  {colour(C_ERROR, '✗')} {colour(C_ERROR, msg)}{loc}")
+            cross = 'x' if not _UNI else '✗'
+            print(f"  {colour(C_ERROR, cross)} {colour(C_ERROR, msg)}{loc}")
         except Exception as e:
             buf.clear()
-            print(f"  {colour(C_ERROR, '✗')} {colour(C_ERROR, str(e))}")
+            cross = 'x' if not _UNI else '✗'
+            print(f"  {colour(C_ERROR, cross)} {colour(C_ERROR, str(e))}")
 
 # ─── File runner ──────────────────────────────────────────────────────────────
 def run_file(path: str) -> int:
