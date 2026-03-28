@@ -45,7 +45,6 @@ class TokenType(Enum):
     UNTIL = auto()
     THROW = auto()
     WITH = auto()
-    COLONCOLON = auto()
     STATIC = auto()
 
     # Operators
@@ -54,23 +53,22 @@ class TokenType(Enum):
     STAR = auto()
     SLASH = auto()
     PERCENT = auto()
-    CARET = auto()
+    CARET = auto()       # ^ bitwise XOR
     DOTDOT = auto()
     QUESTION = auto()
-    DOUBLE_COLON = auto()
-    ARROW = auto()
-    DOUBLE_AMP = auto()
-    DOUBLE_PIPE = auto()
-    DOUBLE_LESS = auto()
-    DOUBLE_GREATER = auto()
-    TILDE = auto()
-    DOUBLE_SLASH = auto()
-    DOUBLE_STAR = auto()
-    QUESTION_DOT = auto()
-    DOUBLE_QUESTION = auto()
-    TRIPLE_DOT = auto()
-    PIPE = auto()
-    ARROW2 = auto()
+    DOUBLE_COLON = auto()   # ::  (COLONCOLON removed as duplicate)
+    ARROW = auto()           # =>
+    DOUBLE_AMP = auto()      # &&
+    DOUBLE_PIPE = auto()     # ||
+    DOUBLE_LESS = auto()     # <<
+    DOUBLE_GREATER = auto()  # >>
+    TILDE = auto()           # ~
+    DOUBLE_SLASH = auto()    # //
+    DOUBLE_STAR = auto()     # **  power
+    QUESTION_DOT = auto()    # ?.
+    DOUBLE_QUESTION = auto() # ??
+    TRIPLE_DOT = auto()      # ...
+    PIPE = auto()            # |>  pipeline
 
     EQUAL = auto()
     EQUAL_EQUAL = auto()
@@ -81,8 +79,15 @@ class TokenType(Enum):
     LESS = auto()
     LESS_EQUAL = auto()
 
-    AND = auto()
-    OR = auto()
+    # Compound assignment  (FIX: BUG-L / DESIGN-1)
+    PLUS_EQUAL = auto()      # +=
+    MINUS_EQUAL = auto()     # -=
+    STAR_EQUAL = auto()      # *=
+    SLASH_EQUAL = auto()     # /=
+    PERCENT_EQUAL = auto()   # %=
+
+    AND = auto()   # keyword 'and'
+    OR = auto()    # keyword 'or'
 
     # Delimiters
     LEFT_PAREN = auto()
@@ -141,8 +146,6 @@ KEYWORDS = {
     "enum": TokenType.ENUM,
     "int": TokenType.INT,
     "float": TokenType.FLOAT,
-    "number": TokenType.NUMBER,
-    "string": TokenType.STRING,
     "bool": TokenType.BOOL,
     "void": TokenType.VOID,
     "repeat": TokenType.REPEAT,
@@ -150,4 +153,8 @@ KEYWORDS = {
     "throw": TokenType.THROW,
     "with": TokenType.WITH,
     "static": TokenType.STATIC,
+    "this": TokenType.SELF,      # alias for self
+    "and": TokenType.DOUBLE_AMP,   # 'and' keyword maps to logical AND
+    "or": TokenType.DOUBLE_PIPE,   # 'or' keyword maps to logical OR
+    "not": TokenType.BANG,         # 'not' keyword maps to logical NOT
 }

@@ -1,196 +1,277 @@
+<div align="center">
+
 # Ipp Language
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
-  <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
- </p>
+<img src="https://img.shields.io/badge/version-1.2.0-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
+<img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
+<img src="https://img.shields.io/badge/bugs_fixed-57-brightgreen.svg" alt="Bugs Fixed">
+<img src="https://img.shields.io/badge/tests-passing-success.svg" alt="Tests">
 
-Ipp is a simple, beginner-friendly scripting language designed exclusively for high-performance game development. It feels like Python + Lua with modern syntax.
+**A beginner-friendly scripting language for game development.**  
+Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Bytecode VM
 
-## Features
+</div>
 
-- **Simple Syntax** - Python-like syntax with braces
-- **Dynamic Typing** - Easy to learn and use
-- **Type Annotations** - Optional type hints (v0.6.0)
-- **Object-Oriented** - Classes with methods and inheritance
-- **First-Class Functions** - Closures and higher-order functions
-- **Modules** - Import and reuse code
-- **REPL** - Interactive programming with history
-- **Pattern Matching** - match...case statements (v0.5.0)
-- **Error Handling** - try...catch...finally (v0.5.0)
-- **Enums** - Type-safe enumerated values (v0.6.0)
-- **List Comprehensions** - Python-style `[x*x for x in list]` (v0.7.0)
-- **Dict Comprehensions** - `{k: v*2 for k, v in pairs}` (v0.7.0)
-- **Nullish Coalescing** - `nil ?? "default"` (v0.8.0)
-- **Optional Chaining** - `user?.profile?.name` (v0.8.0)
-- **Spread Operator** - `[...arr1, ...arr2]` (v0.8.0)
-- **Tuples** - `(1, 2, 3)` (v0.8.0)
-- **Do-While Loop** - `repeat { } until condition` (v0.9.0)
-- **Throw/RAISE** - `throw "error"` (v0.9.0)
-- **With Statement** - `with f = open("file") { }` (v0.9.0)
-- **Custom __str__** - `func __str__() { }` (v0.10.0)
-- **Game Dev Focused** - Built for game scripting
+---
 
-## Installation
+## What is Ipp?
 
-### Download from GitHub
+Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
+
+**v1.2.0** includes a full bug-fix pass — 57 bugs resolved — and a redesigned Gemini-CLI-inspired REPL with true-colour syntax highlighting.
+
+---
+
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/anomalyco/Ipp.git
+# Clone your fork
+git clone https://github.com/SouvikSarkar011008/Ipp.git
 cd Ipp
 
 # Run a script
-python main.py your_script.ipp
+python main.py examples/hello_world.ipp
 
 # Start the REPL
 python main.py
 ```
 
-Or download as ZIP:
-1. Go to (https://github.com/authorss81/Ipp)
-2. Click the green "Code" button
-3. Click "Download ZIP"
-4. Extract and run `python main.py`
+No dependencies required. Python 3.8+ only.
 
-## Quick Start
+---
 
-```bash
-# Run a script
-python main.py examples/hello_world.ipp
+## REPL
 
-# Start REPL
-python main.py
+```
+  ██╗██████╗ ██████╗
+  ██║██╔══██╗██╔══██╗
+  ██║██████╔╝██████╔╝
+  ██║██╔═══╝ ██╔═══╝
+  ██║██║     ██║
+  ╚═╝╚═╝     ╚═╝
+
+  Ipp  v1.2.0
+  A scripting language for game development
+──────────────────────────────────────────
+  .help  commands   .vars  variables   exit  quit   Tab  autocomplete
+
+  ❯ var x = 2 ** 10
+  → 1024  0.1ms
+
+  ❯ var name = "World"
+  ❯ print("Hello, " + name + "!")
+  Hello, World!
+
+  ❯ .vars
+   x       number    1024
 ```
 
-## Hello World
+**REPL commands:**
 
-```ipp
-# Hello World in Ipp
-print("Hello, World!")
+| Command | Description |
+|---|---|
+| `.help` | Show help and quick reference |
+| `.vars` | List all defined variables with types |
+| `.types` | Show the type system |
+| `.clear` | Reset the session |
+| `.version` | Show version |
+| `exit` | Exit |
 
-# Variables
-var x = 10
-let name = "Ipp"
+---
 
-# Functions
-func add(a, b) {
-    return a + b
-}
-
-# Classes
-class Dog {
-    func init(name) {
-        self.name = name
-    }
-    
-    func bark() {
-        return "Woof!"
-    }
-}
-
-var dog = Dog("Buddy")
-print(dog.bark())
-```
-
-## Language Basics
+## Language Tour
 
 ### Variables
 
 ```ipp
-var x = 10           # Mutable variable
-let y = 20           # Immutable binding
+var x = 10          # mutable
+let y = 20          # immutable binding
+var name: string = "Ipp"   # optional type annotation
 ```
 
-### Types
+### Compound Assignment *(v1.2.0)*
 
 ```ipp
-var num = 42         # Integer (v0.6.0)
-var flt = 3.14       # Float
-var str = "hello"    # String
-var flag = true      # Boolean
-var nothing = nil    # Nil
-var list = [1, 2, 3] # List
-var dict = {"a": 1}  # Dictionary
+var score = 0
+score += 10
+score *= 2
+score -= 5
+print(score)   # 15
+```
 
-# Type annotations (v0.6.0)
-var count: int = 10
-var name: string = "Ipp"
-func add(a: int, b: int): int {
+### Numbers and Literals *(v1.2.0)*
+
+```ipp
+var dec  = 1_000_000     # underscores for readability
+var hex  = 0xFF          # 255
+var oct  = 0o77          # 63
+var bin  = 0b1010        # 10
+var flt  = 3.14
+var pwr  = 2 ** 10       # 1024  (** is power)
+var xor  = 5 ^ 3         # 6     (^ is bitwise XOR)
+```
+
+### Strings with Escape Sequences *(v1.2.0)*
+
+```ipp
+var s = "Hello\nWorld"       # newline
+var t = "Tab\there"          # tab
+var u = "Quote: \""          # escaped quote
+var v = "\u0041"             # unicode → A
+```
+
+### Functions and Lambdas
+
+```ipp
+func add(a, b) {
     return a + b
 }
+
+# Lambda (v1.2.0)
+var double = func(x) => x * 2
+var square = func(x) => x * x
+
+print(add(3, 4))      # 7
+print(double(5))      # 10
+
+# Closures
+func make_counter() {
+    var count = 0
+    func increment() {
+        count += 1
+        return count
+    }
+    return increment
+}
+
+var c = make_counter()
+print(c())   # 1
+print(c())   # 2
+print(c())   # 3
 ```
 
-### Comprehensions (v0.7.0)
+### Classes and Inheritance *(inheritance fixed v1.2.0)*
 
 ```ipp
-# List comprehension
-var squares = [i*i for i in 0..10]
-# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+class Animal {
+    func init(name, sound) {
+        self.name = name
+        self.sound = sound
+    }
 
-# With condition
-var evens = [x for x in 1..20 if x % 2 == 0]
-# [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    func speak() {
+        return self.name + " says " + self.sound
+    }
 
-# Dict comprehension
-var doubled = {k: k*2 for k in 1..5}
-# {1: 2, 2: 4, 3: 6, 4: 8, 5: 10}
+    func __str__() {
+        return "<Animal: " + self.name + ">"
+    }
+}
 
-# Nested comprehension
-var matrix = [[i*j for j in 1..4] for i in 1..4]
-# [[1, 2, 3, 4], [2, 4, 6, 8], [3, 6, 9, 12], [4, 8, 12, 16]]
+class Dog : Animal {
+    func init(name) {
+        self.name = name
+        self.sound = "Woof!"
+    }
+
+    func fetch(item) {
+        return self.name + " fetches the " + item
+    }
+}
+
+var dog = Dog("Rex")
+print(dog.speak())       # Rex says Woof!
+print(dog.fetch("ball")) # Rex fetches the ball
 ```
 
 ### Control Flow
 
 ```ipp
-# If statement
-if x > 5 {
+# If / elif / else
+if x > 100 {
     print("big")
-} elif x > 10 {
-    print("very big")
+} elif x > 50 {
+    print("medium")
 } else {
     print("small")
 }
+
+# Ternary
+var label = x > 0 ? "positive" : "non-positive"
 
 # For loop
 for i in 0..10 {
     print(i)
 }
 
-# While loop
+# While
 while x > 0 {
-    x = x - 1
+    x -= 1
 }
 
-# Ternary operator
-var result = x > 0 ? "positive" : "negative"
+# Repeat/Until (do-while)
+var n = 0
+repeat {
+    n += 1
+} until n >= 5
 
 # Pattern matching
 match direction {
-    "up" => y += speed
-    "down" => y -= speed
-    "left" => x -= speed
-    "right" => x += speed
-    default => print("invalid")
+    case "up"    => y -= speed
+    case "down"  => y += speed
+    case "left"  => x -= speed
+    case "right" => x += speed
+    default      => print("invalid direction")
 }
+```
 
-# Error handling
+### Comprehensions
+
+```ipp
+# List comprehension
+var squares = [i*i for i in 0..10]
+# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# With condition
+var evens = [x for x in 1..20 if x % 2 == 0]
+
+# Dict comprehension
+var doubled = {k: k*2 for k in 1..5}
+```
+
+### Error Handling *(finally fixed v1.2.0)*
+
+```ipp
 try {
     var data = load_level("level1")
+    process(data)
 } catch e {
-    print("Failed: " + e)
-    var data = load_level("default")
+    print("Failed to load: " + e)
 } finally {
-    cleanup()
+    cleanup()     # always runs now (was broken before v1.2.0)
 }
 
-# Enums
-enum Direction {
-    UP, DOWN, LEFT, RIGHT
+# Throw
+func divide(a, b) {
+    if b == 0 {
+        throw "Division by zero"
+    }
+    return a / b
 }
-var dir = Direction.UP
+```
+
+### Nullish Coalescing and Optional Chaining
+
+```ipp
+# Nullish coalescing
+var name = player?.name ?? "Unknown"
+
+# Optional chaining
+var hp = player?.stats?.health ?? 100
+
+# Pipeline operator
+var result = items |> filter_alive |> sort_by_distance
 ```
 
 ### Enums
@@ -201,12 +282,11 @@ enum Direction {
 }
 
 var dir = Direction.UP
-print(dir)           # Direction.UP
-print(dir == Direction.UP)  # true
-
-match direction {
-    Direction.UP => print("going up")
-    Direction.DOWN => print("going down")
+match dir {
+    case Direction.UP    => move(0, -1)
+    case Direction.DOWN  => move(0,  1)
+    case Direction.LEFT  => move(-1, 0)
+    case Direction.RIGHT => move( 1, 0)
 }
 ```
 
@@ -214,116 +294,120 @@ match direction {
 
 ```ipp
 # Arithmetic
-var a = 10 + 5       # 15
-var b = 10 // 3      # 3 (floor division)
-var c = 2 ** 3       # 8 (power)
++  -  *  /  %       # basic
+**                   # power  (2 ** 8 = 256)
+//                   # floor division  (7 // 2 = 3)
 
 # Bitwise
-var d = 5 & 3        # 1 (AND)
-var e = 5 | 3        # 7 (OR)
-var f = 5 ^ 3        # 6 (XOR)
-var g = 2 << 3       # 16 (left shift)
-var h = 8 >> 1       # 4 (right shift)
+^   &   |   ~        # XOR, AND, OR, NOT
+<<  >>               # shifts
 
 # Logical
-var i = true && false   # false
-var j = true || false   # true
-```
+and  or  not         # keywords
+&&   ||  !           # symbols (same)
 
-### Functions
+# Comparison
+==  !=  <  >  <=  >=
 
-```ipp
-func greet(name) {
-    return "Hello, " + name + "!"
-}
+# Compound assignment (NEW in v1.2.0)
++=  -=  *=  /=  %=
 
-# Closures
-func make_counter() {
-    var count = 0
-    func increment() {
-        count = count + 1
-        return count
-    }
-    return increment
-}
-```
-
-### Classes
-
-```ipp
-class Person {
-    func init(name, age) {
-        self.name = name
-        self.age = age
-    }
-    
-    func greet() {
-        return "Hi, I'm " + self.name
-    }
-}
-
-var alice = Person("Alice", 25)
-print(alice.greet())
+# Special
+?.    # optional chaining
+??    # nullish coalescing
+...   # spread
+|>    # pipeline
+..    # range  (0..5 = [0,1,2,3,4])
 ```
 
 ### Modules
 
 ```ipp
-# math.ipp
-func add(a, b) {
-    return a + b
-}
-var PI = 3.14159
-
-# main.ipp
+# Import all
 import "math.ipp"
-print(add(5, 3))
+
+# Import with alias
+import "utils.ipp" as utils
+utils.helper()
+
+# Selective import
+import "math.ipp" as { PI, sin, cos }
 print(PI)
 ```
 
+---
+
 ## Built-in Functions
 
-- `print(...)` - Print to console
-- `len(obj)` - Get length
-- `type(obj)` - Get type
-- `range(start, end)` - Create range
-- `abs()`, `min()`, `max()`, `round()`
-- `sqrt()`, `pow()`, `sin()`, `cos()`, `tan()`
-- `input(prompt)` - Read user input
+| Function | Description |
+|---|---|
+| `print(...)` | Print to console |
+| `len(obj)` | Get length |
+| `type(obj)` | Get type name |
+| `range(start, end, step?)` | Create range list |
+| `abs(n)` | Absolute value |
+| `min(...)` `max(...)` | Min / max |
+| `sum(...)` | Sum values |
+| `round(n)` `floor(n)` `ceil(n)` | Rounding |
+| `sqrt(n)` `pow(a,b)` | Power/roots |
+| `sin(n)` `cos(n)` `tan(n)` | Trigonometry |
+| `str(v)` `int(v)` `float(v)` `bool(v)` | Type conversion |
+| `input(prompt?)` | Read user input |
+| `keys(d)` `values(d)` | Dict iteration |
+| `randint(a,b)` `random()` | Random numbers |
+| `json_parse(s)` `json_stringify(v)` | JSON |
+| `md5(s)` `sha256(s)` | Hashing |
+| `base64_encode(s)` `base64_decode(s)` | Base64 |
+| `upper(s)` `lower(s)` `split(s,sep)` | Strings |
+| `assert(cond, msg?)` | Assertions |
 
-## Installation
+---
 
-```bash
-# Clone the repository
-git clone https://github.com/authorss81/Ipp.git
-cd Ipp
+## v1.2.0 Bug Fixes
 
-# Run
-python main.py your_script.ipp
-```
+57 bugs were identified and fixed in this release. Key highlights:
+
+- **VM loops**: `for` and `while` loops were jumping to wrong addresses — fixed
+- **VM locals**: local variables inside functions were reading from wrong stack positions — fixed
+- **VM exception handlers**: nested `try/catch` was silently discarding outer handlers — fixed
+- **`finally` blocks**: were parsed but never actually executed — fixed
+- **`**` power operator**: was silently emitting no bytecode — fixed
+- **`^` XOR operator**: was incorrectly mapped to power — fixed
+- **`&&`/`||` precedence**: bitwise ops had wrong precedence relative to comparisons — fixed
+- **`+=` compound assignment**: not supported — added
+- **Hex/octal/binary literals**: not lexed — added
+- **Escape sequences**: `\n \t \\` in strings were not processed — fixed
+- **Class inheritance**: `class Dog : Animal {}` was not parsed — fixed
+- **Lambda expressions**: `func(x) => x*2` was not parsed — added
+- **`finally` blocks**: never executed in VM — fixed
+- **`with` statement**: resource cleanup was a stub — implemented
+- **`self` in methods**: was broken in certain call paths — fixed
+
+See `IPP_FULL_AUDIT.md` for the complete list of all 57 bugs with exact file/line references.
+
+---
 
 ## Roadmap
 
-See [ROADMAP_V2.md](ROADMAP_V2.md) for the detailed development plan.
+| Version | Focus |
+|---|---|
+| v1.3.0 | String interpolation `f"Hello {name}"` |
+| v1.4.0 | Named parameters `func(x, y=0)` |
+| v1.5.0 | Generator functions `yield` |
+| v1.6.0 | Async/await |
+| v2.0.0 | Game engine integration (Vector2, Physics, Graphics) |
+| v3.0.0 | C API for embedding |
 
-### Current Release
-- **v0.7.0** - Comprehensions (List/Dict comprehensions, type annotations, enums)
-
-### Coming Releases
-- **v0.8.0** - Advanced Operators (nullish coalescing, optional chaining, spread, tuples)
-- **v0.9.0** - Control Flow (do-while, labeled breaks, throw/raise)
-- **v0.10.0** - Functions + OOP (generators, async/await, private members, static methods)
-- **v0.11.0** - Standard Library (datetime, path, hashlib, csv)
-- **v0.12.0** - Package Manager (ippkg, virtual environments)
-- **v0.13.0** - Tooling (REPL history, autocomplete, formatter)
-- **v1.0.0** - Performance (Bytecode VM)
-- **v2.0.0** - Game Features (Matrix, Physics, Graphics)
-- **v3.0.0** - Embedding (C API, Rust bindings)
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Fork → Branch → Fix → Pull Request
+
+---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
