@@ -272,15 +272,19 @@ def ipp_assert(condition, message="Assertion failed"):
 
 
 def ipp_keys(d):
-    if not isinstance(d, dict):
-        raise RuntimeError("keys requires a dict")
-    return list(d.keys())
+    if hasattr(d, 'data'):
+        return list(d.data.keys())
+    if isinstance(d, dict):
+        return list(d.keys())
+    raise RuntimeError("keys requires a dict")
 
 
 def ipp_values(d):
-    if not isinstance(d, dict):
-        raise RuntimeError("values requires a dict")
-    return list(d.values())
+    if hasattr(d, 'data'):
+        return list(d.data.values())
+    if isinstance(d, dict):
+        return list(d.values())
+    raise RuntimeError("values requires a dict")
 
 
 def ipp_items(d):

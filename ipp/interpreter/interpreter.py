@@ -15,15 +15,21 @@ class IppFunction:
 
 
 class IppClass:
-    def __init__(self, name: str, methods: Dict[str, IppFunction]):
+    def __init__(self, name: str, methods: Dict[str, IppFunction], superclass=None):
         self.name = name
         self.methods = methods
-    
+        self.superclass = superclass  # FIX: BUG-M6
+
     def __repr__(self):
         return f"<class {self.name}>"
-    
+
     def get_method(self, name: str):
-        return self.methods.get(name)
+        if name in self.methods:
+            return self.methods[name]
+        # FIX: BUG-M6 — walk superclass chain
+        if self.superclass:
+            return self.superclass.get_method(name)
+        return None
 
 
 class IppInstance:
@@ -366,26 +372,23 @@ class Interpreter:
         elif node.operator == ">=":
             return left >= right
         elif node.operator == "and":
-            return bool(left) and bool(right)
+            # FIX: BUG-M3 proper short-circuit (already correct in interpreter; compiler fix needed for VM)
+            return left if not bool(left) else right
         elif node.operator == "or":
-            return bool(left) or bool(right)
+            return left if bool(left) else right
         elif node.operator == "..":
             return list(range(int(left), int(right)))
-        elif node.operator == "&&":
-            return bool(left) and bool(right)
-        elif node.operator == "||":
-            return bool(left) or bool(right)
         
         raise RuntimeError(f"Unknown operator: {node.operator}")
 
     def visit_unary_expr(self, node: UnaryExpr):
         right = node.right.accept(self)
-        
         if node.operator == "-":
             return -right
-        elif node.operator == "not":
-            return not right
-        
+        elif node.operator in ("not", "!"):
+            return not bool(right)
+        elif node.operator == "~":
+            return ~int(right)
         raise RuntimeError(f"Unknown unary operator: {node.operator}")
 
     def visit_call_expr(self, node: CallExpr):
@@ -403,9 +406,7 @@ class Interpreter:
             instance = IppInstance(callee)
             init_method = callee.get_method("init")
             if init_method:
-                self.this_instance = instance
                 self.call_function(init_method, [instance] + args)
-                self.this_instance = None
             return instance
         
         if isinstance(callee, IppFunction):
@@ -418,32 +419,36 @@ class Interpreter:
 
     def call_function(self, func: IppFunction, args: List[Any]):
         new_env = Environment(func.closure)
-        
-        instance = args[0] if args and isinstance(args[0], IppInstance) else None
-        for param, arg in zip(func.parameters, args):
+
+        instance = None
+        param_start = 0
+        if func.parameters and func.parameters[0] == "self":
+            if args and isinstance(args[0], IppInstance):
+                instance = args[0]
+                new_env.define("self", instance, constant=False)
+                param_start = 1
+
+        for param, arg in zip(func.parameters[param_start:], args[param_start:]):
             new_env.define(param, arg)
-        
+
         saved_env = self.environment
         saved_return = self.return_value
         saved_this = getattr(self, 'this_instance', None)
-        
+
         self.environment = new_env
         self.return_value = None
         self.this_instance = instance
-        
-        if instance:
-            new_env.define("this", instance, constant=False)
-        
+
         for stmt in func.body:
             stmt.accept(self)
             if self.return_value is not None:
                 break
-        
+
         self.environment = saved_env
         result = self.return_value
         self.return_value = saved_return
         self.this_instance = saved_this
-        
+
         return result
 
     def visit_index_expr(self, node: IndexExpr):
@@ -631,6 +636,64 @@ class Interpreter:
             self.environment = old_env
         return None
 
+
+    def visit_super_expr(self, node):
+        """FIX: BUG-C5 — handle super.method()"""
+        instance = self.this_instance
+        if instance is None:
+            raise RuntimeError("'super' used outside of a class method")
+        superclass = instance.ipp_class.superclass
+        if superclass is None:
+            raise RuntimeError(f"Class '{instance.ipp_class.name}' has no superclass")
+        method = superclass.get_method(node.method)
+        if method is None:
+            raise RuntimeError(f"Superclass has no method '{node.method}'")
+        return BoundMethod(instance, method)
+
+    def visit_compound_assign_expr(self, node):
+        """FIX: DESIGN-1 — +=, -=, *=, /=, %="""
+        current = self.environment.get(node.name)
+        rhs = node.value.accept(self)
+        ops = {'+': lambda a,b: a+b, '-': lambda a,b: a-b,
+               '*': lambda a,b: a*b, '/': lambda a,b: a/b, '%': lambda a,b: a%b}
+        result = ops[node.operator](current, rhs)
+        self.environment.assign(node.name, result)
+        return result
+
+    def visit_compound_set_expr(self, node):
+        """FIX: DESIGN-1 — obj.field += val"""
+        obj = node.object.accept(self)
+        rhs = node.value.accept(self)
+        ops = {'+': lambda a,b: a+b, '-': lambda a,b: a-b,
+               '*': lambda a,b: a*b, '/': lambda a,b: a/b, '%': lambda a,b: a%b}
+        if isinstance(obj, IppInstance):
+            current = obj.fields.get(node.name)
+            result = ops[node.operator](current, rhs)
+            obj.set(node.name, result)
+            return result
+        raise RuntimeError(f"Cannot compound-assign property on {type(obj)}")
+
+    def visit_index_compound_set_expr(self, node):
+        """FIX: DESIGN-1 — obj[i] += val"""
+        obj = node.object.accept(self)
+        index = node.index.accept(self)
+        rhs = node.value.accept(self)
+        ops = {'+': lambda a,b: a+b, '-': lambda a,b: a-b,
+               '*': lambda a,b: a*b, '/': lambda a,b: a/b, '%': lambda a,b: a%b}
+        if isinstance(obj, IppList):
+            idx = int(index)
+            result = ops[node.operator](obj.elements[idx], rhs)
+            obj.elements[idx] = result
+            return result
+        if isinstance(obj, IppDict):
+            result = ops[node.operator](obj.data.get(index), rhs)
+            obj.data[index] = result
+            return result
+        raise RuntimeError(f"Cannot compound-assign index on {type(obj)}")
+
+    def visit_labeled_stmt(self, node):
+        node.statement.accept(self)
+
     def visit_var_decl(self, node: VarDecl):
         value = None
         if node.initializer:
@@ -650,15 +713,27 @@ class Interpreter:
         self.environment.define(node.name, func, constant=False)
 
     def visit_class_decl(self, node: ClassDecl):
+        superclass = None
+        if node.superclass:
+            superclass = self.environment.get(node.superclass)
+            if not isinstance(superclass, IppClass):
+                raise RuntimeError(f"Superclass must be a class, got: {node.superclass}")
+
         methods = {}
         for method_node in node.methods:
-            func = IppFunction(method_node.parameters, method_node.body, self.environment)
+            closure = Environment(self.environment)
+            params = method_node.parameters
+            # ALL methods get 'self' as first param (not just init)
+            if params and params[0] == "self":
+                pass  # already has self
+            else:
+                params = ["self"] + list(params)
+            func = IppFunction(params, method_node.body, closure)
             if method_node.name == "init":
                 func.is_init = True
-                func.parameters = ["self"] + func.parameters
             methods[method_node.name] = func
-        
-        ipp_class = IppClass(node.name, methods)
+
+        ipp_class = IppClass(node.name, methods, superclass)
         self.environment.define(node.name, ipp_class, constant=False)
         return None
 
@@ -668,7 +743,16 @@ class Interpreter:
         return None
 
     def visit_self_expr(self, node: SelfExpr):
-        return self.this_instance
+        # FIX: check environment first (self is defined as first local param)
+        try:
+            val = self.environment.get("self")
+            if val is not None:
+                return val
+        except RuntimeError:
+            pass
+        if self.this_instance is not None:
+            return self.this_instance
+        raise RuntimeError("'self' used outside of a class method")
 
     def visit_import_decl(self, node: ImportDecl):
         import os
