@@ -218,7 +218,83 @@ class IppDict:
         self.data = {}
 
 
-class Environment:
+class IppSet:
+    """FIX BUG-NEW-M6 — Unordered collection of unique values.
+
+    Mirrors the IppList/IppDict API style: thin wrapper around a Python set
+    with Ipp-friendly method names.
+    """
+
+    def __init__(self, elements=None):
+        if elements is None:
+            self._data: set = set()
+        elif isinstance(elements, set):
+            self._data = elements
+        else:
+            self._data = set(elements)
+
+    # ── dunder helpers ────────────────────────────────────────────────────────
+
+    def __repr__(self):
+        if not self._data:
+            return "set()"
+        items = ", ".join(repr(e) for e in sorted(self._data, key=str))
+        return "{" + items + "}"
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __contains__(self, item):
+        return item in self._data
+
+    # ── Ipp-callable methods ──────────────────────────────────────────────────
+
+    def add(self, item):
+        self._data.add(item)
+
+    def remove(self, item):
+        self._data.discard(item)   # discard = remove without raising on missing
+
+    def contains(self, item):
+        return item in self._data
+
+    def len(self):
+        return len(self._data)
+
+    def clear(self):
+        self._data.clear()
+
+    def to_list(self):
+        from ipp.interpreter.interpreter import IppList
+        return IppList(list(self._data))
+
+    # ── Set algebra ───────────────────────────────────────────────────────────
+
+    def union(self, other):
+        other_set = other._data if isinstance(other, IppSet) else set(other)
+        return IppSet(self._data | other_set)
+
+    def intersection(self, other):
+        other_set = other._data if isinstance(other, IppSet) else set(other)
+        return IppSet(self._data & other_set)
+
+    def difference(self, other):
+        other_set = other._data if isinstance(other, IppSet) else set(other)
+        return IppSet(self._data - other_set)
+
+    def is_subset(self, other):
+        other_set = other._data if isinstance(other, IppSet) else set(other)
+        return self._data <= other_set
+
+    def is_superset(self, other):
+        other_set = other._data if isinstance(other, IppSet) else set(other)
+        return self._data >= other_set
     def __init__(self, parent: Optional['Environment'] = None):
         self.values: Dict[str, Any] = {}
         self.parent = parent
@@ -545,6 +621,8 @@ class Interpreter:
         if isinstance(obj, IppList):
             return getattr(obj, node.name)
         if isinstance(obj, IppDict):
+            return getattr(obj, node.name)
+        if isinstance(obj, IppSet):
             return getattr(obj, node.name)
         if hasattr(obj, node.name):
             return getattr(obj, node.name)

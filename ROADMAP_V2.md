@@ -31,7 +31,7 @@
 | **v1.2.4** | ✅ DONE | Full VM Class Support |
 | **v1.3.0** | ✅ DONE | REPL Enhancements (`.vars`, `.fns`, `.history`, `.vm`, `\`, Ctrl+C, colors) |
 | **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed (for-loop, line 0, overload, defaults, int/float, closures) |
-| **v1.3.2** | 📋 PLANNED | VM Stabilization (upvalues) + Set type |
+| **v1.3.2** | ✅ DONE | VM Stabilization (upvalues) + Set type |
 | **v1.3.3** | 📋 PLANNED | Game SDK Alpha |
 | **v1.4.0** | 📋 PLANNED | Game Engine Integration |
 | **v2.0.0** | 📋 PLANNED | Game Features |
@@ -96,24 +96,19 @@
 
 ---
 
-## v1.3.2 - VM Stabilization & Set Type 📋 PLANNED
+## v1.3.2 - VM Stabilization & Set Type ✅ DONE
 
 **Audit reference:** BUG-NEW-M5, BUG-NEW-M6
 
-### BUG-NEW-M5: VM Upvalues by Reference ⏳ TODO
-- [ ] Implement proper upvalue cells in VM
-- [ ] Move to heap on `CLOSE_UPVALUE`
-- [ ] Read/write through upvalue pointer
+### BUG-NEW-M5: VM Upvalues by Reference ✅ DONE
+- [x] Implement proper upvalue cells in VM
+- [x] Move to heap on `CLOSE_UPVALUE`
+- [x] Read/write through upvalue pointer
 
-### BUG-NEW-M6: Set Data Type ⏳ TODO
-- [ ] Implement `IppSet` class
-- [ ] Add `add()`, `remove()`, `contains()`
-- [ ] Expose `set()` builtin
-
-### BUG-NEW-M6: Set Data Type ⏳ TODO
-- [ ] Implement `IppSet` class
-- [ ] Add `add()`, `remove()`, `contains()`
-- [ ] Expose `set()` builtin
+### BUG-NEW-M6: Set Data Type ✅ DONE
+- [x] Implement `IppSet` class
+- [x] Add `add()`, `remove()`, `contains()`
+- [x] Expose `set()` builtin
 
 ---
 
@@ -464,4 +459,4 @@ body.update(delta_time)
 
 ---
 
-*Last Updated: 2026-03-29 (v1.3.1 DONE - Critical bugs fixed!)*
+*Last Updated: 2026-03-29 (v1.3.2 DONE - VM upvalues fixed, Set type added!)*
