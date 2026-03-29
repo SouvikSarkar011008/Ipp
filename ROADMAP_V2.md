@@ -30,8 +30,8 @@
 | **v1.2.0** | ✅ DONE | Benchmark Suite vs Other Languages |
 | **v1.2.4** | ✅ DONE | Full VM Class Support |
 | **v1.3.0** | ✅ DONE | REPL Enhancements (`.vars`, `.fns`, `.history`, `.vm`, `\`, Ctrl+C, colors) |
-| **v1.3.1** | ✅ DONE | Critical Bug Fixes (C1/C2/C3: for-loop, line 0, operator overload) |
-| **v1.3.2** | 📋 PLANNED | Standard Library Completion |
+| **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed (for-loop, line 0, overload, defaults, int/float, closures) |
+| **v1.3.2** | 📋 PLANNED | VM Stabilization (upvalues) + Set type |
 | **v1.3.3** | 📋 PLANNED | Game SDK Alpha |
 | **v1.4.0** | 📋 PLANNED | Game Engine Integration |
 | **v2.0.0** | 📋 PLANNED | Game Features |
@@ -70,19 +70,24 @@
 
 ---
 
-## v1.3.1 - Closures, F-strings, Default Params 📋 PLANNED
+## v1.3.1 - Closures, F-strings, Default Params, Type System ✅ DONE
 
-**Audit reference:** BUG-NEW-M1, BUG-NEW-M3, BUG-NEW-N3
+**Audit reference:** BUG-NEW-M1, BUG-NEW-M2, BUG-NEW-M3, BUG-NEW-N3
 
-### BUG-NEW-M1: Closures Capture by Value ⏳ TODO
-- [ ] Fix closure cells to capture mutable references
-- [ ] Verify `count += 1` propagates to outer scope
-- [ ] Test nested closures
+### BUG-NEW-M1: Closures Capture by Reference ✅ DONE (Interpreter)
+- [x] Interpreter closures work correctly
+- [x] `count += 1` propagates to outer scope
+- [x] Nested closures tested
+- ⚠️ VM closures still broken (BUG-NEW-M5)
 
-### BUG-NEW-M3: Default Parameter Values ⏳ TODO
-- [ ] Parse `func f(x, y=0)` syntax
-- [ ] Store defaults in `FunctionDecl`
-- [ ] Fill in missing args in `call_function()`
+### BUG-NEW-M2: int/float Type Distinction ✅ DONE
+- [x] `type(5)` returns `"int"` ✅
+- [x] `type(5.0)` returns `"float"` ✅
+
+### BUG-NEW-M3: Default Parameter Values ✅ DONE
+- [x] Parse `func f(x, y=0)` syntax
+- [x] Store defaults in `FunctionDecl`
+- [x] Fill in missing args in `call_function()`
 
 ### BUG-NEW-N3: F-strings / String Interpolation ⏳ TODO
 - [ ] Lex `f"..."` as f-string token
@@ -91,25 +96,19 @@
 
 ---
 
-## v1.3.2 - VM For-Loop, Int/Float Types, Set 📋 PLANNED
+## v1.3.2 - VM Stabilization & Set Type 📋 PLANNED
 
-**Audit reference:** BUG-NEW-C1, BUG-NEW-M2, BUG-NEW-M5, BUG-NEW-M6
-
-### BUG-NEW-C1: VM For-Loop Implementation ⏳ TODO
-- [ ] Implement proper iteration bytecode
-- [ ] Push list + index as locals
-- [ ] Check `idx < len(list)` each iteration
-- [ ] Get `list[idx]`, increment `idx`, loop back
-
-### BUG-NEW-M2: int/float Type Distinction ⏳ TODO
-- [ ] Track int/float in `IppNumber`
-- [ ] Return `"int"` or `"float"` from `type()`
-- [ ] Distinguish in equality comparison
+**Audit reference:** BUG-NEW-M5, BUG-NEW-M6
 
 ### BUG-NEW-M5: VM Upvalues by Reference ⏳ TODO
-- [ ] Implement proper upvalue cells
+- [ ] Implement proper upvalue cells in VM
 - [ ] Move to heap on `CLOSE_UPVALUE`
 - [ ] Read/write through upvalue pointer
+
+### BUG-NEW-M6: Set Data Type ⏳ TODO
+- [ ] Implement `IppSet` class
+- [ ] Add `add()`, `remove()`, `contains()`
+- [ ] Expose `set()` builtin
 
 ### BUG-NEW-M6: Set Data Type ⏳ TODO
 - [ ] Implement `IppSet` class

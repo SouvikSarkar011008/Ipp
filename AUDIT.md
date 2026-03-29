@@ -774,54 +774,84 @@ var c = Vec2(1, 2) + Vec2(3, 4)  # c.x = 4, c.y = 6
 ### 🟠 MAJOR — BUG-NEW-M1: Closures do not capture mutable variables by reference
 
 **File:** `ipp/interpreter/interpreter.py`, `call_function()`
-**Verified:** Basic closure read works (`add5(3) = 8` ✅) but mutation of captured variable from inner function does NOT propagate back to the outer environment. Each call to `call_function` creates a fresh `Environment(func.closure)` — which copies the value at the time of the call, not a live reference. This means:
+**Status:** ⚠️ PARTIALLY FIXED - Interpreter works, VM broken
 
+**Interpreter (✅ WORKS):**
 ```ipp
 func make_counter() {
     var count = 0
     func increment() {
-        count += 1   # modifies local copy, NOT the outer count
+        count += 1
         return count
     }
     return increment
 }
 var c = make_counter()
-print(c())  # prints 1
-print(c())  # SHOULD print 2, but prints 1
+print(c())  # 1 ✅
+print(c())  # 2 ✅
+print(c())  # 3 ✅
 ```
 
-This is one of the oldest and most fundamental closure bugs. Real closures capture a **cell** (mutable reference), not a snapshot.
+**VM (❌ BROKEN - BUG-NEW-M5):**
+```ipp
+# VM fails with: Undefined variable 'count'
+```
 
-**Fix required:** Use a mutable container (list or dict with single key) as the closure cell instead of copying the raw value. Both the enclosing scope and the inner function must reference the same mutable cell.
+**Fix required for VM:** Implement proper upvalue cells - create `Upvalue` objects that point to stack slots, move to heap on `CLOSE_UPVALUE`, read/write through upvalue pointer.
 
 ---
 
 ### 🟠 MAJOR — BUG-NEW-M2: No integer vs float type distinction at runtime
 
-**Verified:**
+**Status:** ✅ FIXED in v1.3.1
+
+**Verified (before fix):**
 ```
 type(5)    → "number"
 type(5.0)  → "number"
-5 == 5.0   → true
-type(7/2)  → "number"    (returns 3.5, not an integer)
-type(7//2) → "number"    (returns 3, but still "number")
 ```
-Python internally stores `5` as `int` and `5.0` as `float`, but Ipp's `ipp_type()` collapses both to `"number"`. For game development, confusing integers and floats causes silent bugs in array indexing, bitwise operations, and physics calculations. A language that cannot tell you whether a value is an integer or a float cannot be used reliably for game math. `type(5)` must return `"int"` and `type(5.0)` must return `"float"`.
 
-**Fix required:** Track whether a number was created as int or float in IppNumber, return `"int"` or `"float"` from `type()`, and distinguish them in equality comparison.
+**Verified (after fix):**
+```
+type(5)    → "int" ✅
+type(5.0)  → "float" ✅
+type(7//2) → "int" ✅
+```
+
+**Fix applied:** Updated `ipp_type()` in `builtins.py` to return `"int"` for Python `int` and `"float"` for Python `float`.
 
 ---
 
 ### 🟠 MAJOR — BUG-NEW-M3: No default parameter values
 
-**Verified:**
+**Status:** ✅ FIXED in v1.3.1
+
+**Verified (before fix):**
 ```
 func greet(name, greeting = "Hello") { }
 → Parse error at line 1, col 27: Expect ')' after parameters
 ```
-This is standard in every modern language. `func f(x, y=0)` does not parse. There is no mechanism in the parser, AST, or interpreter to handle default values. Every function in Ipp requires all arguments to be passed explicitly. This is a daily-use friction point for any non-trivial codebase.
 
-**Fix required:** Add default value support to parser: `ParamName("y", default=Expr)`. Store defaults in `FunctionDecl`. In `call_function()`, fill in defaults for any missing positional args.
+**Verified (after fix):**
+```ipp
+func greet(name, greeting = "Hello") {
+    print(greeting + " " + name)
+}
+greet("World")           # Hello World ✅
+greet("Alice", "Hi")     # Hi Alice ✅
+
+func add(x, y = 10) {
+    return x + y
+}
+add(5)                   # 15 ✅
+add(5, 3)                # 8 ✅
+```
+
+**Fix applied:**
+1. Added `defaults` field to `FunctionDecl` and `LambdaExpr` AST nodes
+2. Added `defaults` parameter to `IppFunction` class
+3. Updated parser to parse `= expression` for default values
+4. Updated `call_function()` to fill in defaults for missing args
 
 ---
 
@@ -997,16 +1027,17 @@ The parser supports `break label` and `continue label` syntax. The interpreter i
 | Syntax | 6.5 | 6.5 | 6.5 | → | No f-strings, no default params yet |
 | Types | 5.5 | 5.0 | 5.0 | → | int/float conflation remains |
 | Control Flow | 7.5 | 7.0 | 8.0 | ↑ | VM for-loop now works! |
-| Functions | 6.0 | 5.5 | 6.5 | ↑ | Operator overloading fixed |
+| Functions | 6.0 | 5.5 | 7.5 | ↑ | Defaults + operator overloading |
 | OOP | 6.0 | 5.5 | 7.0 | ↑ | Operator overloading fixed |
 | Standard Library | 6.5 | 6.5 | 6.5 | → | Stable |
 | Game Features | 5.5 | 5.5 | 5.5 | → | No new game primitives |
 | Performance | 5.0 | 4.5 | 6.0 | ↑ | VM for-loop works |
-| Closures | 6.0 | 4.0 | 4.0 | → | Mutable capture still broken |
+| Closures | 6.0 | 4.0 | 5.0 | ↑ | Interpreter works (VM still broken) |
 | Error Messages | 3.0 | 3.0 | 7.0 | ↑ | Line numbers now correct! |
+| Types | 5.5 | 5.0 | 7.0 | ↑ | int/float now distinguished |
 | Tooling | 5.0 | 5.5 | 7.0 | ↑ | REPL improved |
 | Ecosystem | 1.0 | 1.0 | 1.0 | → | Still zero packages |
-| **TOTAL** | **63.0** | **59.5** | **66.0** | **↑** | Critical bugs fixed |
+| **TOTAL** | **63.0** | **59.5** | **69.5** | **↑** | Major bugs fixed! |
 
 ---
 
@@ -1019,11 +1050,11 @@ Ordered by severity × frequency of impact:
 | BUG-NEW-C1 | VM `for` loop is a stub | 🔴 Critical | ✅ FIXED v1.3.1 | High |
 | BUG-NEW-C2 | Runtime errors always say `line 0` | 🔴 Critical | ✅ FIXED v1.3.1 | Medium |
 | BUG-NEW-C3 | User-class operator overloading broken | 🔴 Critical | ✅ FIXED v1.3.1 | Medium |
-| BUG-NEW-M1 | Closures don't capture by reference | 🟠 Major | ⏳ TODO | High |
-| BUG-NEW-M2 | int/float indistinguishable at runtime | 🟠 Major | ⏳ TODO | Medium |
-| BUG-NEW-M3 | No default parameter values | 🟠 Major | ⏳ TODO | Medium |
+| BUG-NEW-M1 | Closures (interpreter) | 🟠 Major | ✅ FIXED v1.3.1 | Low |
+| BUG-NEW-M2 | int/float indistinguishable at runtime | 🟠 Major | ✅ FIXED v1.3.1 | Low |
+| BUG-NEW-M3 | No default parameter values | 🟠 Major | ✅ FIXED v1.3.1 | Medium |
 | BUG-NEW-M4 | Named args silently produce wrong results | 🟠 Major | ⏳ TODO | High |
-| BUG-NEW-M5 | VM upvalues captured by value, not reference | 🟠 Major | ⏳ TODO | High |
+| BUG-NEW-M5 | VM upvalues captured by value | 🟠 Major | ⏳ TODO | High |
 | BUG-NEW-M6 | No Set type | 🟠 Major | ⏳ TODO | Low |
 | BUG-NEW-M7 | No tuple unpacking / multi-assignment | 🟠 Major | ⏳ TODO | Medium |
 | BUG-NEW-N1 | No access control enforcement | 🟡 Notable | ⏳ TODO | Low |

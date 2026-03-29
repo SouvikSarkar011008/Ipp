@@ -4,10 +4,11 @@ from ..runtime.builtins import BUILTINS
 
 
 class IppFunction:
-    def __init__(self, parameters: List[str], body: List[ASTNode], closure: 'Environment'):
+    def __init__(self, parameters: List[str], body: List[ASTNode], closure: 'Environment', defaults: Optional[List[ASTNode]] = None):
         self.parameters = parameters
         self.body = body
         self.closure = closure
+        self.defaults = defaults or []
         self.is_init = False
     
     def __repr__(self):
@@ -456,8 +457,25 @@ class Interpreter:
                 new_env.define("self", instance, constant=False)
                 param_start = 1
 
-        for param, arg in zip(func.parameters[param_start:], args[param_start:]):
-            new_env.define(param, arg)
+        # Fill in parameters with provided args, then defaults
+        defaults = getattr(func, 'defaults', None) or []
+        num_params = len(func.parameters)
+        num_args = len(args)
+        
+        for i in range(param_start, num_params):
+            param = func.parameters[i]
+            arg_idx = i - param_start
+            
+            if arg_idx < num_args:
+                # Use provided argument
+                new_env.define(param, args[arg_idx])
+            elif defaults and i < len(defaults) and defaults[i] is not None:
+                # Use default value
+                default_val = defaults[i].accept(self)
+                new_env.define(param, default_val)
+            else:
+                # No argument, no default - error
+                raise RuntimeError(f"Missing required argument: {param}")
 
         saved_env = self.environment
         saved_return = self.return_value
@@ -614,7 +632,8 @@ class Interpreter:
 
     def visit_lambda_expr(self, node: LambdaExpr):
         closure = Environment(self.environment)
-        return IppFunction(node.parameters, node.body, closure)
+        defaults = getattr(node, 'defaults', None) or []
+        return IppFunction(node.parameters, node.body, closure, defaults)
 
     def visit_conditional_expr(self, node: ConditionalExpr):
         condition = node.condition.accept(self)
@@ -737,7 +756,8 @@ class Interpreter:
 
     def visit_function_decl(self, node: FunctionDecl):
         closure = Environment(self.environment)
-        func = IppFunction(node.parameters, node.body, closure)
+        defaults = getattr(node, 'defaults', None) or []
+        func = IppFunction(node.parameters, node.body, closure, defaults)
         self.environment.define(node.name, func, constant=False)
 
     def visit_class_decl(self, node: ClassDecl):
@@ -751,12 +771,14 @@ class Interpreter:
         for method_node in node.methods:
             closure = Environment(self.environment)
             params = method_node.parameters
+            defaults = getattr(method_node, 'defaults', None) or []
             # ALL methods get 'self' as first param (not just init)
             if params and params[0] == "self":
                 pass  # already has self
             else:
                 params = ["self"] + list(params)
-            func = IppFunction(params, method_node.body, closure)
+                defaults = [None] + list(defaults)  # self has no default
+            func = IppFunction(params, method_node.body, closure, defaults)
             if method_node.name == "init":
                 func.is_init = True
             methods[method_node.name] = func

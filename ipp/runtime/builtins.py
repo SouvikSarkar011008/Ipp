@@ -55,9 +55,9 @@ def ipp_type(obj):
     if isinstance(obj, bool):
         return "bool"
     if isinstance(obj, int):
-        return "number"
+        return "int"
     if isinstance(obj, float):
-        return "number"
+        return "float"
     if isinstance(obj, str):
         return "string"
     if isinstance(obj, (list, tuple)):
