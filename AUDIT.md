@@ -1071,4 +1071,6 @@ Ordered by severity × frequency of impact:
 ---
 
 *Supplement audit completed: 2026-03-28 | v1.3.0*
+*v1.3.1 completed: 2026-03-29 - Critical bugs fixed*
+*v1.3.2 completed: 2026-03-29 - VM upvalues + Set type*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
