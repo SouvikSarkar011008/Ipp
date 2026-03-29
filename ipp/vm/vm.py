@@ -188,6 +188,35 @@ class IppInstance:
     def __repr__(self):
         return f"<{self.cls.name} instance>"
 
+    def __str__(self):
+        str_method = self.cls.get_method('__str__')
+        if str_method:
+            return _call_ipp_method(self, str_method)
+        return f"<{self.cls.name} instance>"
+
+
+def _call_ipp_method(instance: IppInstance, method) -> Any:
+    """Helper to call an Ipp method from Python code."""
+    from ipp.vm.vm import VM, Chunk, Closure, IppFunction
+    vm = VM()
+    if isinstance(method, Chunk):
+        chunk = method
+    elif isinstance(method, Closure):
+        chunk = method.chunk
+    else:
+        raise VMError(f"Cannot call method of type {type(method).__name__}")
+    base = len(vm.stack)
+    vm.stack.append(instance)
+    frame = VMFrame(chunk, closure=method if isinstance(method, Closure) else None, function=method, stack_base=base)
+    vm.frames.append(frame)
+    try:
+        vm.run()
+    except:
+        pass
+    if vm.stack:
+        return vm.stack[-1]
+    return None
+
 
 class BoundMethod:
     """FIX: BUG-V8 — wraps instance + method chunk so CALL can dispatch correctly."""
@@ -802,14 +831,12 @@ class VM:
         elif opcode == OpCode.METHOD:
             name_idx = code[ip + 1]
             name = constants[name_idx]
-            # The next instruction should be CLOSURE which pushes the method chunk
-            # We handle by reading ahead
-            if self.stack and isinstance(self.stack[-1], (IppClass,)):
-                pass  # method chunk not yet on stack; pushed by next CLOSURE
-            # Actually the method pattern is: METHOD name_idx, CLOSURE chunk_idx
-            # So we store the name for the upcoming CLOSURE to pick up
-            # For simplicity, track pending_method_name
-            self._pending_method_name = name
+            if self.stack and isinstance(self.stack[-1], Closure):
+                method = self.stack.pop()
+                if self.stack and isinstance(self.stack[-1], IppClass):
+                    self.stack[-1].methods[name] = method
+                else:
+                    self.stack.append(method)
 
         elif opcode == OpCode.END_METHOD:
             pass

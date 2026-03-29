@@ -63,11 +63,21 @@ class IppInstance:
                 if result is not None:
                     if hasattr(result, 'ipp_class'):
                         return f"<{result.ipp_class.name} instance>"
-                    return str(result)
         return f"<{self.ipp_class.name} instance>"
+    
+    def _is_private(self, name: str) -> bool:
+        return name.startswith('__')
+    
+    def _is_internal_access(self) -> bool:
+        interp = _ipp_get_interpreter()
+        if interp and hasattr(interp, 'current_class'):
+            return interp.current_class == self.ipp_class
+        return False
     
     def get(self, name: str):
         if name in self.fields:
+            if self._is_private(name) and not self._is_internal_access():
+                raise RuntimeError(f"Cannot access private field '{name}' from outside class '{self.ipp_class.name}'")
             return self.fields[name]
         method = self.ipp_class.get_method(name)
         if method:
@@ -75,6 +85,8 @@ class IppInstance:
         raise RuntimeError(f"Undefined property: {name}")
     
     def set(self, name: str, value: Any):
+        if self._is_private(name) and not self._is_internal_access():
+            raise RuntimeError(f"Cannot modify private field '{name}' from outside class '{self.ipp_class.name}'")
         self.fields[name] = value
 
 
@@ -349,8 +361,22 @@ class Environment:
         return name in self.values or (self.parent and self.parent.has(name))
 
 
+_ipp_current_interpreter = None
+
+
+def _ipp_set_interpreter(interp):
+    global _ipp_current_interpreter
+    _ipp_current_interpreter = interp
+
+
+def _ipp_get_interpreter():
+    return _ipp_current_interpreter
+
+
 class Interpreter:
-    def __init__(self):
+    def __init__(self, max_depth: int = 1000):
+        global _ipp_current_interpreter
+        _ipp_current_interpreter = self
         self.global_env = Environment()
         self.environment = self.global_env
         self.return_value = None
@@ -359,6 +385,9 @@ class Interpreter:
         self.continue_flag = False
         self.current_line = 0
         self.call_stack = []
+        self.call_depth = 0
+        self.max_depth = max_depth
+        self.current_class = None
         
         for name, func in BUILTINS.items():
             self.global_env.define(name, func, constant=False)
@@ -546,53 +575,67 @@ class Interpreter:
         raise RuntimeError(f"Cannot call {type(callee)}")
 
     def call_function(self, func: IppFunction, args: List[Any]):
-        new_env = Environment(func.closure)
-
-        instance = None
-        param_start = 0
-        if func.parameters and func.parameters[0] == "self":
-            if args and isinstance(args[0], IppInstance):
-                instance = args[0]
-                new_env.define("self", instance, constant=False)
-                param_start = 1
-
-        # Fill in parameters with provided args, then defaults
-        defaults = getattr(func, 'defaults', None) or []
-        num_params = len(func.parameters)
-        num_args = len(args)
+        # FIX BUG-NEW-N2: Check recursion depth
+        self.call_depth += 1
+        if self.call_depth > self.max_depth:
+            self.call_depth -= 1
+            raise RuntimeError(f"Maximum recursion depth ({self.max_depth}) exceeded. Possible infinite recursion.")
         
-        for i in range(param_start, num_params):
-            param = func.parameters[i]
-            arg_idx = i - param_start
+        try:
+            new_env = Environment(func.closure)
+
+            instance = None
+            param_start = 0
+            owning_class = None
+            if func.parameters and func.parameters[0] == "self":
+                if args and isinstance(args[0], IppInstance):
+                    instance = args[0]
+                    new_env.define("self", instance, constant=False)
+                    param_start = 1
+                    owning_class = instance.ipp_class
+
+            # Fill in parameters with provided args, then defaults
+            defaults = getattr(func, 'defaults', None) or []
+            num_params = len(func.parameters)
+            num_args = len(args)
             
-            if arg_idx < num_args:
-                # Use provided argument
-                new_env.define(param, args[arg_idx])
-            elif defaults and i < len(defaults) and defaults[i] is not None:
-                # Use default value
-                default_val = defaults[i].accept(self)
-                new_env.define(param, default_val)
-            else:
-                # No argument, no default - error
-                raise RuntimeError(f"Missing required argument: {param}")
+            for i in range(param_start, num_params):
+                param = func.parameters[i]
+                arg_idx = i - param_start
+                
+                if arg_idx < num_args:
+                    # Use provided argument
+                    new_env.define(param, args[arg_idx])
+                elif defaults and i < len(defaults) and defaults[i] is not None:
+                    # Use default value
+                    default_val = defaults[i].accept(self)
+                    new_env.define(param, default_val)
+                else:
+                    # No argument, no default - error
+                    raise RuntimeError(f"Missing required argument: {param}")
 
-        saved_env = self.environment
-        saved_return = self.return_value
-        saved_this = getattr(self, 'this_instance', None)
+            saved_env = self.environment
+            saved_return = self.return_value
+            saved_this = getattr(self, 'this_instance', None)
+            saved_class = getattr(self, 'current_class', None)
 
-        self.environment = new_env
-        self.return_value = None
-        self.this_instance = instance
+            self.environment = new_env
+            self.return_value = None
+            self.this_instance = instance
+            self.current_class = owning_class
 
-        for stmt in func.body:
-            stmt.accept(self)
-            if self.return_value is not None:
-                break
+            for stmt in func.body:
+                stmt.accept(self)
+                if self.return_value is not None:
+                    break
 
-        self.environment = saved_env
-        result = self.return_value
-        self.return_value = saved_return
-        self.this_instance = saved_this
+            self.environment = saved_env
+            result = self.return_value
+            self.return_value = saved_return
+            self.this_instance = saved_this
+            self.current_class = saved_class
+        finally:
+            self.call_depth -= 1
 
         return result
 
@@ -1160,19 +1203,11 @@ class Interpreter:
         return result
 
 
-_ipp_current_interpreter = None
-
-def _ipp_set_interpreter(interp):
-    global _ipp_current_interpreter
-    _ipp_current_interpreter = interp
-
-def _ipp_get_interpreter():
-    return _ipp_current_interpreter
-
 def interpret(program: Program, current_file: str = None) -> Any:
     interpreter = Interpreter()
     if current_file:
         interpreter.current_file = current_file
-    _ipp_set_interpreter(interpreter)
+    interpreter.run(program)
+    return interpreter.return_value
     interpreter.run(program)
     return interpreter.return_value

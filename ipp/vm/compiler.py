@@ -256,13 +256,13 @@ class Compiler:
                 midx = len(self.chunk.constants)
                 # FIX BUG-NEW-M5: store FunctionProto for method closures too
                 self.chunk.constants.append(FunctionProto(sub.chunk, sub.upvalues, name=method.name))
+                self.chunk.write(OpCode.CLOSURE, self.current_line)
+                self.chunk.write(midx, self.current_line)
                 self.chunk.write(OpCode.METHOD, self.current_line)
                 mnidx = len(self.chunk.constants)
                 self.chunk.constants.append(method.name)
                 self.chunk.write(mnidx, self.current_line)
                 self.chunk.lines.append(self.current_line)
-                self.chunk.write(OpCode.CLOSURE, self.current_line)
-                self.chunk.write(midx, self.current_line)
 
         self.chunk.write(OpCode.END_METHOD, self.current_line)
 
