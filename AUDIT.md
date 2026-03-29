@@ -1054,8 +1054,8 @@ Ordered by severity × frequency of impact:
 | BUG-NEW-M2 | int/float indistinguishable at runtime | 🟠 Major | ✅ FIXED v1.3.1 | Low |
 | BUG-NEW-M3 | No default parameter values | 🟠 Major | ✅ FIXED v1.3.1 | Medium |
 | BUG-NEW-M4 | Named args silently produce wrong results | 🟠 Major | ⏳ TODO | High |
-| BUG-NEW-M5 | VM upvalues captured by value | 🟠 Major | ⏳ TODO | High |
-| BUG-NEW-M6 | No Set type | 🟠 Major | ⏳ TODO | Low |
+| BUG-NEW-M5 | VM upvalues captured by value | 🟠 Major | ✅ FIXED v1.3.2 | High |
+| BUG-NEW-M6 | No Set type | 🟠 Major | ✅ FIXED v1.3.2 | Low |
 | BUG-NEW-M7 | No tuple unpacking / multi-assignment | 🟠 Major | ⏳ TODO | Medium |
 | BUG-NEW-N1 | No access control enforcement | 🟡 Notable | ⏳ TODO | Low |
 | BUG-NEW-N2 | No Ipp-level recursion limit | 🟡 Notable | Low |

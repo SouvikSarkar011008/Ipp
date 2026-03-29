@@ -1,6 +1,6 @@
 from ..parser.ast import *
 from .bytecode import Chunk, OpCode, opcode_size
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class CompilerError(Exception):
@@ -16,7 +16,26 @@ class Local:
         self.name = name
         self.depth = depth
         self.is_const = is_const
-        self.is_captured = False
+        self.is_captured = False  # True when a nested function captures this local
+
+
+class FunctionProto:
+    """Wraps a compiled Chunk together with its upvalue descriptors.
+
+    Each descriptor is (is_local: bool, index: int):
+      - is_local=True  → capture slot `index` from the enclosing frame's locals
+      - is_local=False → inherit upvalue `index` from the enclosing closure
+    """
+    __slots__ = ('chunk', 'upvalue_descs', 'name')
+
+    def __init__(self, chunk: Chunk, upvalue_descs: List[Tuple[bool, int]],
+                 name: str = '<fn>'):
+        self.chunk = chunk
+        self.upvalue_descs = upvalue_descs
+        self.name = name
+
+    def __repr__(self):
+        return f"<proto {self.name} upvalues={self.upvalue_descs}>"
 
 
 class Compiler:
@@ -27,6 +46,8 @@ class Compiler:
         self.loop_stack: List[Dict] = []
         self.current_line = 0
         self.parent = parent
+        # FIX BUG-NEW-M5: upvalue descriptors collected while compiling this function
+        self.upvalues: List[Tuple[bool, int]] = []
 
     def error(self, msg: str):
         raise CompilerError(f"Compile error at line {self.current_line}: {msg}")
@@ -35,14 +56,47 @@ class Compiler:
         self.depth += 1
 
     def pop_scope(self):
-        # emit POP for every local at this depth
-        count = 0
+        """Emit POP or CLOSE_UPVALUE for every local leaving scope."""
+        # Collect locals at current depth (deepest first)
+        leaving: List[Local] = []
         while self.locals and self.locals[-1].depth == self.depth:
-            self.locals.pop()
-            count += 1
+            leaving.append(self.locals.pop())
         self.depth -= 1
-        for _ in range(count):
-            self.chunk.write(OpCode.POP, self.current_line)
+        # Emit cleanup for each leaving local (they're already removed from self.locals)
+        for local in leaving:
+            if local.is_captured:
+                # FIX BUG-NEW-M5: close the upvalue cell rather than discarding the value
+                self.chunk.write(OpCode.CLOSE_UPVALUE, self.current_line)
+            else:
+                self.chunk.write(OpCode.POP, self.current_line)
+
+    # ── Upvalue resolution (FIX BUG-NEW-M5) ─────────────────────────────────
+
+    def _add_upvalue(self, is_local: bool, index: int) -> int:
+        """Register an upvalue descriptor; return its index (dedup)."""
+        for i, (loc, idx) in enumerate(self.upvalues):
+            if loc == is_local and idx == index:
+                return i
+        self.upvalues.append((is_local, index))
+        return len(self.upvalues) - 1
+
+    def resolve_upvalue(self, name: str) -> Optional[int]:
+        """Walk the parent compiler chain looking for *name* as an upvalue.
+
+        Returns the upvalue slot index in *this* compiler, or None.
+        """
+        if self.parent is None:
+            return None
+        # Is it a local in the immediate parent?
+        idx = self.parent.resolve_local(name)
+        if idx is not None:
+            self.parent.locals[idx].is_captured = True
+            return self._add_upvalue(True, idx)   # capture from parent's stack
+        # Maybe it's already an upvalue in the parent (transitive capture)
+        idx = self.parent.resolve_upvalue(name)
+        if idx is not None:
+            return self._add_upvalue(False, idx)  # inherit from parent's closure
+        return None
 
     def define_local(self, name: str, is_const: bool = False) -> int:
         """Add local at current depth. Returns its slot index."""
@@ -156,8 +210,10 @@ class Compiler:
             sub.chunk.write(OpCode.RETURN_VAL, self.current_line)
 
         func_chunk = sub.chunk
+        # FIX BUG-NEW-M5: store FunctionProto so VM can capture upvalues at runtime
+        proto = FunctionProto(func_chunk, sub.upvalues, name=node.name)
         idx = len(self.chunk.constants)
-        self.chunk.constants.append(func_chunk)
+        self.chunk.constants.append(proto)
         self.chunk.write(OpCode.CLOSURE, self.current_line)
         self.chunk.write(idx, self.current_line)
 
@@ -198,7 +254,8 @@ class Compiler:
                     sub.chunk.write(OpCode.RETURN_VAL, self.current_line)
 
                 midx = len(self.chunk.constants)
-                self.chunk.constants.append(sub.chunk)
+                # FIX BUG-NEW-M5: store FunctionProto for method closures too
+                self.chunk.constants.append(FunctionProto(sub.chunk, sub.upvalues, name=method.name))
                 self.chunk.write(OpCode.METHOD, self.current_line)
                 mnidx = len(self.chunk.constants)
                 self.chunk.constants.append(method.name)
@@ -650,7 +707,8 @@ class Compiler:
                 sub.chunk.write(OpCode.NIL, 0)
                 sub.chunk.write(OpCode.RETURN_VAL, 0)
             idx = len(self.chunk.constants)
-            self.chunk.constants.append(sub.chunk)
+            # FIX BUG-NEW-M5: wrap lambda in FunctionProto for upvalue support
+            self.chunk.constants.append(FunctionProto(sub.chunk, sub.upvalues, name='__lambda__'))
             self.chunk.write(OpCode.CLOSURE, self.current_line)
             self.chunk.write(idx, self.current_line)
         elif isinstance(node, ListComprehension):
@@ -671,29 +729,41 @@ class Compiler:
             self.chunk.write(OpCode.SPREAD, self.current_line)
 
     def compile_identifier(self, name: str):
+        # FIX BUG-NEW-M5: check upvalue chain before falling back to globals
         idx = self.resolve_local(name)
         if idx is not None:
             self.chunk.write(OpCode.GET_LOCAL, self.current_line)
             self.chunk.write(idx, self.current_line)
-        else:
-            self.chunk.write(OpCode.GET_GLOBAL, self.current_line)
-            cidx = len(self.chunk.constants)
-            self.chunk.constants.append(name)
-            self.chunk.write(cidx, self.current_line)
-            self.chunk.lines.append(self.current_line)
+            return
+        idx = self.resolve_upvalue(name)
+        if idx is not None:
+            self.chunk.write(OpCode.GET_UPVALUE, self.current_line)
+            self.chunk.write(idx, self.current_line)
+            return
+        self.chunk.write(OpCode.GET_GLOBAL, self.current_line)
+        cidx = len(self.chunk.constants)
+        self.chunk.constants.append(name)
+        self.chunk.write(cidx, self.current_line)
+        self.chunk.lines.append(self.current_line)
 
     def compile_assign_name(self, name: str):
         """Assign TOS to a named variable (local or global)."""
+        # FIX BUG-NEW-M5: assign through upvalue cell when variable is captured
         idx = self.resolve_local(name)
         if idx is not None:
             self.chunk.write(OpCode.SET_LOCAL, self.current_line)
             self.chunk.write(idx, self.current_line)
-        else:
-            self.chunk.write(OpCode.SET_GLOBAL, self.current_line)
-            cidx = len(self.chunk.constants)
-            self.chunk.constants.append(name)
-            self.chunk.write(cidx, self.current_line)
-            self.chunk.lines.append(self.current_line)
+            return
+        idx = self.resolve_upvalue(name)
+        if idx is not None:
+            self.chunk.write(OpCode.SET_UPVALUE, self.current_line)
+            self.chunk.write(idx, self.current_line)
+            return
+        self.chunk.write(OpCode.SET_GLOBAL, self.current_line)
+        cidx = len(self.chunk.constants)
+        self.chunk.constants.append(name)
+        self.chunk.write(cidx, self.current_line)
+        self.chunk.lines.append(self.current_line)
 
     def compile_set_property(self, name: str):
         pidx = len(self.chunk.constants)

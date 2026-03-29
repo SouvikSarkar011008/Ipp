@@ -1,4 +1,5 @@
 from .bytecode import Chunk, OpCode, opcode_size
+from .compiler import FunctionProto
 from typing import List, Any, Dict, Optional
 import math
 import time
@@ -88,10 +89,56 @@ class VMFrame:
         self.stack_base = stack_base    # FIX: BUG-C2 — locals are relative to this
 
 
+class UpvalueCell:
+    """FIX BUG-NEW-M5 — heap cell for a captured variable.
+
+    While the enclosing function is still running (open state) the cell
+    holds a reference to the *VM stack list* and an *index* into it.
+    When the enclosing function returns (or the variable leaves scope via
+    CLOSE_UPVALUE) we copy the value into ``closed_value`` and drop the
+    stack reference (closed state).
+    """
+    __slots__ = ('_stack', '_index', '_closed', '_closed_value')
+
+    _OPEN = object()  # sentinel: cell is still open
+
+    def __init__(self, stack: list, index: int):
+        self._stack = stack
+        self._index = index
+        self._closed = False
+        self._closed_value = UpvalueCell._OPEN
+
+    # -- value property -------------------------------------------------------
+
+    @property
+    def value(self):
+        if not self._closed:
+            return self._stack[self._index]
+        return self._closed_value
+
+    @value.setter
+    def value(self, v):
+        if not self._closed:
+            self._stack[self._index] = v
+        else:
+            self._closed_value = v
+
+    def close(self):
+        """Snapshot the stack value and detach from the stack."""
+        if not self._closed:
+            self._closed_value = self._stack[self._index]
+            self._closed = True
+            self._stack = None   # allow GC
+
+    def __repr__(self):
+        state = "closed" if self._closed else f"open@{self._index}"
+        return f"<UpvalueCell {state} = {self.value!r}>"
+
+
 class Closure:
     def __init__(self, chunk: Chunk, upvalues: List = None):
         self.chunk = chunk
-        self.upvalues = upvalues or []
+        self.upvalues: List[UpvalueCell] = upvalues or []
 
 
 class IppFunction:
@@ -190,6 +237,9 @@ class VM:
         self._global_cache = InlineCache(max_size=2048)
         self._string_cache: Dict[str, str] = {}
 
+        # FIX BUG-NEW-M5: track open upvalue cells (cells still pointing at stack slots)
+        self.open_upvalues: List[UpvalueCell] = []
+
         self.profiler = Profiler()
         self._init_builtins()
 
@@ -200,6 +250,7 @@ class VM:
             'print': self._builtin_print,
             'len': self._builtin_len,
             'type': self._builtin_type,
+            'set': self._builtin_set,   # FIX BUG-NEW-M6
             'abs': abs,
             'min': min,
             'max': max,
@@ -253,10 +304,14 @@ class VM:
     def _builtin_type(self, obj):
         if obj is None:           return "nil"
         if isinstance(obj, bool): return "bool"
-        if isinstance(obj, (int, float)): return "number"
+        if isinstance(obj, int):  return "int"
+        if isinstance(obj, float): return "float"
         if isinstance(obj, str):  return "string"
         if isinstance(obj, (list, tuple)): return "list"
+        if hasattr(obj, 'elements'): return "list"   # IppList
         if isinstance(obj, dict): return "dict"
+        if hasattr(obj, '_data') and hasattr(obj, 'add'): return "set"  # IppSet (BUG-NEW-M6)
+        if hasattr(obj, 'data'): return "dict"       # IppDict
         if isinstance(obj, IppClass): return "class"
         if isinstance(obj, IppInstance): return obj.cls.name
         return type(obj).__name__
@@ -276,6 +331,20 @@ class VM:
         if not self._is_truthy(cond):
             raise VMError(str(msg))
         return None
+
+    def _builtin_set(self, *args):
+        """FIX BUG-NEW-M6 — set() / set(iterable) factory."""
+        from ipp.interpreter.interpreter import IppSet, IppList
+        if not args:
+            return IppSet()
+        iterable = args[0]
+        if isinstance(iterable, IppList):
+            return IppSet(iterable.elements)
+        if isinstance(iterable, IppSet):
+            return IppSet(iterable._data.copy())
+        if isinstance(iterable, (list, tuple, set)):
+            return IppSet(iterable)
+        raise VMError(f"set() argument must be iterable, got {type(iterable).__name__}")
 
     def _intern_string(self, s: str) -> str:
         if s not in self._string_cache:
@@ -336,6 +405,8 @@ class VM:
 
             if result is _RETURN_FRAME:
                 ret_val = self.stack.pop() if self.stack else None
+                # FIX BUG-NEW-M5: close any upvalues still open in the returning frame
+                self._close_frame_upvalues(frame)
                 self.frames.pop()
                 if self.frames:
                     self.stack.append(ret_val)
@@ -350,6 +421,31 @@ class VM:
                 frame.ip += opcode_size(opcode)
 
         return self._return_value
+
+    # ── Upvalue helpers (FIX BUG-NEW-M5) ─────────────────────────────────────
+
+    def _capture_upvalue(self, slot: int) -> UpvalueCell:
+        """Return an existing open cell for *slot*, or create a new one."""
+        for cell in self.open_upvalues:
+            if cell._index == slot and not cell._closed:
+                return cell
+        cell = UpvalueCell(self.stack, slot)
+        self.open_upvalues.append(cell)
+        return cell
+
+    def _close_upvalues(self, last_slot: int):
+        """Close (and remove from open list) all upvalues at index >= last_slot."""
+        remaining = []
+        for cell in self.open_upvalues:
+            if not cell._closed and cell._index >= last_slot:
+                cell.close()
+            else:
+                remaining.append(cell)
+        self.open_upvalues = remaining
+
+    def _close_frame_upvalues(self, frame: VMFrame):
+        """Close all upvalues whose stack slots belong to *frame*."""
+        self._close_upvalues(frame.stack_base)
 
     def _handle_exception(self, exc: VMError, frame: VMFrame):
         """FIX: BUG-V5 — pop handler stack and jump to catch block."""
@@ -468,27 +564,41 @@ class VM:
 
         # ── Upvalues ─────────────────────────────────────────────────────
         elif opcode == OpCode.GET_UPVALUE:
+            # FIX BUG-NEW-M5: read value through UpvalueCell
             idx = code[ip + 1]
             if frame.closure and idx < len(frame.closure.upvalues):
-                self.stack.append(frame.closure.upvalues[idx])
+                cell = frame.closure.upvalues[idx]
+                self.stack.append(cell.value if isinstance(cell, UpvalueCell) else cell)
             else:
                 self.stack.append(None)
 
         elif opcode == OpCode.SET_UPVALUE:
+            # FIX BUG-NEW-M5: write value through UpvalueCell
             idx = code[ip + 1]
             if frame.closure and idx < len(frame.closure.upvalues) and self.stack:
-                frame.closure.upvalues[idx] = self.stack[-1]
+                cell = frame.closure.upvalues[idx]
+                if isinstance(cell, UpvalueCell):
+                    cell.value = self.stack[-1]
+                else:
+                    frame.closure.upvalues[idx] = self.stack[-1]
 
         elif opcode == OpCode.GET_CAPTURED:
             # FIX: BUG-V7 — use operand index, not hardcoded 0
+            # FIX BUG-NEW-M5: also read through UpvalueCell
             idx = code[ip + 1]
             if frame.closure and idx < len(frame.closure.upvalues):
-                self.stack.append(frame.closure.upvalues[idx])
+                cell = frame.closure.upvalues[idx]
+                self.stack.append(cell.value if isinstance(cell, UpvalueCell) else cell)
             else:
                 self.stack.append(None)
 
         elif opcode == OpCode.CLOSE_UPVALUE:
-            pass  # for now upvalues are captured by value
+            # FIX BUG-NEW-M5: snapshot top-of-stack into any upvalue cell pointing there,
+            # then pop the stack slot.
+            if self.stack:
+                top_slot = len(self.stack) - 1
+                self._close_upvalues(top_slot)
+                self.stack.pop()
 
         # ── Properties ───────────────────────────────────────────────────
         elif opcode == OpCode.GET_PROPERTY:
@@ -636,12 +746,34 @@ class VM:
             return _SUSPEND
 
         elif opcode == OpCode.CLOSURE:
+            # FIX BUG-NEW-M5: FunctionProto carries upvalue descriptors; wire up cells.
             idx = code[ip + 1]
-            chunk = constants[idx]
-            if isinstance(chunk, Chunk):
-                self.stack.append(Closure(chunk))
+            proto = constants[idx]
+            if isinstance(proto, FunctionProto):
+                upvalue_cells = []
+                for is_local, up_idx in proto.upvalue_descs:
+                    if is_local:
+                        # Capture a local from the *current* frame's stack
+                        slot = frame.stack_base + up_idx
+                        upvalue_cells.append(self._capture_upvalue(slot))
+                    else:
+                        # Inherit an upvalue from the enclosing closure
+                        if frame.closure and up_idx < len(frame.closure.upvalues):
+                            upvalue_cells.append(frame.closure.upvalues[up_idx])
+                        else:
+                            # Fallback: create a closed cell with None
+                            dummy = UpvalueCell.__new__(UpvalueCell)
+                            dummy._stack = None
+                            dummy._index = -1
+                            dummy._closed = True
+                            dummy._closed_value = None
+                            upvalue_cells.append(dummy)
+                self.stack.append(Closure(proto.chunk, upvalue_cells))
+            elif isinstance(proto, Chunk):
+                # Legacy bare Chunk (e.g. from backup/v1.2.4 code paths)
+                self.stack.append(Closure(proto))
             else:
-                self.stack.append(chunk)
+                self.stack.append(proto)
 
         elif opcode == OpCode.RETURN:
             return _RETURN_FRAME
