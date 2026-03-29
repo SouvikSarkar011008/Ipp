@@ -563,7 +563,9 @@ class Parser:
             self.current = saved  # backtrack if it's a named function
 
         if self.match(TokenType.IDENTIFIER):
-            return Identifier(self.previous().lexeme)
+            ident = Identifier(self.previous().lexeme)
+            ident.line = self.previous().line
+            return ident
 
         if self.match(TokenType.LEFT_PAREN):
             self.skip_newlines()

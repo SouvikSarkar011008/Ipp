@@ -283,6 +283,7 @@ class Interpreter:
             print(f"Runtime error: {e}")
 
     def execute(self, stmt: ASTNode):
+        self.current_line = getattr(stmt, 'line', 0) or 0
         return stmt.accept(self)
 
     def visit_program(self, node: Program):
@@ -304,6 +305,7 @@ class Interpreter:
         return None
 
     def visit_identifier(self, node: Identifier):
+        self.current_line = getattr(node, 'line', 0) or 0
         return self.environment.get(node.name)
 
     def visit_assign_expr(self, node: AssignExpr):
@@ -315,6 +317,21 @@ class Interpreter:
         left = node.left.accept(self)
         right = node.right.accept(self)
         
+        def _ipp_has_method(obj, method_name):
+            """Check if IppInstance has a method (not Python's dunder methods)."""
+            if isinstance(obj, IppInstance):
+                method = obj.ipp_class.get_method(method_name)
+                return method is not None
+            return False
+        
+        def _ipp_call_method(obj, method_name, arg):
+            """Call an IppInstance method."""
+            method = obj.ipp_class.get_method(method_name)
+            if method:
+                bound = BoundMethod(obj, method)
+                return self.call_function(bound.method, [obj, arg])
+            raise RuntimeError(f"Undefined method: {method_name}")
+        
         if node.operator == "+":
             if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                 return left + right
@@ -322,27 +339,51 @@ class Interpreter:
                 return left + right
             if isinstance(left, IppList) and isinstance(right, IppList):
                 return IppList(left.elements + right.elements)
-            if hasattr(left, '__add__'):
-                return left + right
-            return str(left) + str(right)
+            if _ipp_has_method(left, '__add__'):
+                return _ipp_call_method(left, '__add__', right)
+            if isinstance(left, (int, float, str)):
+                return str(left) + str(right)
+            return left + right
         elif node.operator == "-":
-            if hasattr(left, '__sub__'):
-                return left - right
+            if _ipp_has_method(left, '__sub__'):
+                return _ipp_call_method(left, '__sub__', right)
             return left - right
         elif node.operator == "*":
             if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                 return left * right
-            if hasattr(left, '__mul__'):
-                return left * right
-            if hasattr(right, '__rmul__'):
-                return right * left
+            if _ipp_has_method(left, '__mul__'):
+                return _ipp_call_method(left, '__mul__', right)
             return left * right
         elif node.operator == "/":
             if right == 0:
                 raise RuntimeError("Division by zero")
-            if hasattr(left, '__truediv__'):
-                return left / right
+            if _ipp_has_method(left, '__truediv__'):
+                return _ipp_call_method(left, '__truediv__', right)
             return left / right
+        elif node.operator == "==":
+            if _ipp_has_method(left, '__eq__'):
+                return _ipp_call_method(left, '__eq__', right)
+            return left == right
+        elif node.operator == "!=":
+            if _ipp_has_method(left, '__ne__'):
+                return _ipp_call_method(left, '__ne__', right)
+            return left != right
+        elif node.operator == "<":
+            if _ipp_has_method(left, '__lt__'):
+                return _ipp_call_method(left, '__lt__', right)
+            return left < right
+        elif node.operator == ">":
+            if _ipp_has_method(left, '__gt__'):
+                return _ipp_call_method(left, '__gt__', right)
+            return left > right
+        elif node.operator == "<=":
+            if _ipp_has_method(left, '__le__'):
+                return _ipp_call_method(left, '__le__', right)
+            return left <= right
+        elif node.operator == ">=":
+            if _ipp_has_method(left, '__ge__'):
+                return _ipp_call_method(left, '__ge__', right)
+            return left >= right
         elif node.operator == "**":
             return left ** right
         elif node.operator == "%":
@@ -359,20 +400,7 @@ class Interpreter:
             return int(left) | int(right)
         elif node.operator == "^":
             return int(left) ^ int(right)
-        elif node.operator == "==":
-            return left == right
-        elif node.operator == "!=":
-            return left != right
-        elif node.operator == "<":
-            return left < right
-        elif node.operator == ">":
-            return left > right
-        elif node.operator == "<=":
-            return left <= right
-        elif node.operator == ">=":
-            return left >= right
         elif node.operator == "and":
-            # FIX: BUG-M3 proper short-circuit (already correct in interpreter; compiler fix needed for VM)
             return left if not bool(left) else right
         elif node.operator == "or":
             return left if bool(left) else right

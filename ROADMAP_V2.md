@@ -1,5 +1,5 @@
 # Ipp Language — Detailed Roadmap v3
-> Last Updated: 2026-03-28 | Reflects audit findings through v1.3.0
+> Last Updated: 2026-03-29 | Reflects audit findings through v1.3.1
 
 ---
 
@@ -30,7 +30,7 @@
 | **v1.2.0** | ✅ DONE | Benchmark Suite vs Other Languages |
 | **v1.2.4** | ✅ DONE | Full VM Class Support |
 | **v1.3.0** | ✅ DONE | REPL Enhancements (`.vars`, `.fns`, `.history`, `.vm`, `\`, Ctrl+C, colors) |
-| **v1.3.1** | 📋 PLANNED | Critical Bug Fixes (C1/C2/C3: for-loop, line 0, operator overload) |
+| **v1.3.1** | ✅ DONE | Critical Bug Fixes (C1/C2/C3: for-loop, line 0, operator overload) |
 | **v1.3.2** | 📋 PLANNED | Standard Library Completion |
 | **v1.3.3** | 📋 PLANNED | Game SDK Alpha |
 | **v1.4.0** | 📋 PLANNED | Game Engine Integration |
@@ -56,17 +56,17 @@
 - [x] ANSI garbage prevention
 - [x] Git tags created for all releases (v0.6-v1.3.0)
 
-### Critical Bug Fixes (MUST FIX BEFORE v1.3.1) ⏳ TODO
-- [ ] BUG-NEW-C1: **VM `for` loop is a non-functional stub** (CRASHES)
-- [ ] BUG-NEW-C2: **Runtime errors always report `line 0`** (useless debugging)
-- [ ] BUG-NEW-C3: **User-class operator overloading silently broken**
+### Critical Bug Fixes ✅ DONE
+- [x] BUG-NEW-C1: **VM `for` loop is a non-functional stub** ✅ FIXED
+- [x] BUG-NEW-C2: **Runtime errors always report `line 0`** ✅ FIXED
+- [x] BUG-NEW-C3: **User-class operator overloading silently broken** ✅ FIXED
 
 **Fix Complexity:**
 | Bug | Complexity | Priority |
 |-----|------------|----------|
-| BUG-NEW-C1 | HIGH | P0 |
-| BUG-NEW-C2 | MEDIUM | P0 |
-| BUG-NEW-C3 | MEDIUM | P0 |
+| BUG-NEW-C1 | HIGH | ✅ DONE |
+| BUG-NEW-C2 | MEDIUM | ✅ DONE |
+| BUG-NEW-C3 | MEDIUM | ✅ DONE |
 
 ---
 
@@ -414,7 +414,12 @@ body.update(delta_time)
 3. **Bytecode Serialization** - Compile to .ipbc files
 4. **CLI Flags** - --vm, --no-color, etc.
 
-### Phase 2: Documentation (v1.3.1)
+### Phase 2: Critical Bugs Fixed (v1.3.1) ✅ DONE
+1. **BUG-NEW-C1** - VM for loop fixed ✅
+2. **BUG-NEW-C2** - Runtime error line numbers fixed ✅
+3. **BUG-NEW-C3** - Operator overloading fixed ✅
+
+### Phase 3: Documentation (v1.3.2)
 1. **Language Tutorial** - Getting started guide
 2. **API Reference** - Auto-generate from docstrings
 3. **Examples Repository** - github.com/ipp-lang/examples
@@ -460,4 +465,4 @@ body.update(delta_time)
 
 ---
 
-*Last Updated: 2026-03-29 (v1.3.0 DONE, v1.3.1-1.3.3 planned with bug mapping)*
+*Last Updated: 2026-03-29 (v1.3.1 DONE - Critical bugs fixed!)*

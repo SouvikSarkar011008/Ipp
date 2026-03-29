@@ -283,52 +283,99 @@ class Compiler:
 
     def compile_for(self, node: ForStmt):
         """
-        For loops iterate over a list.  We implement as:
+        For loops iterate over a list. Implementation:
           iter = <expr>           # push list
-          idx = 0                 # push counter
+          len_iter                # push length
+          idx = 0                 # push 0 as index
           [loop_start]
-          if idx >= len(iter): break
-          var = iter[idx]
-          idx += 1
+          DUP2                    # copy list and index for comparison
+          SWAP                    # put index on top
+          LOAD_CONST idx          # load index
+          SWAP                    # put len on top
+          GREATER_EQUAL           # idx >= len?
+          JUMP_IF_FALSE_POP break # if idx >= len, exit
+          DUP                     # duplicate list for indexing
+          LOAD_CONST idx          # load index
+          GET_INDEX               # list[idx]
+          <assign to var>
           <body>
+          LOAD_CONST idx          # load index
+          CONST 1
+          ADD                     # idx + 1
+          SET_LOCAL idx           # idx = idx + 1
           LOOP → loop_start
+          [break]
         """
         self.push_scope()
+        
+        # Push the iterator list
         self.compile_expr(node.iterator)
-
+        
+        # Get list length - we need to call the len() builtin
+        self.chunk.emit_get_global(self.chunk.add_constant("len"), self.current_line)
+        self.chunk.emit_call(1, self.current_line)  # len() takes 1 arg
+        
+        # Reserve local slot for index (will initialize to 0)
+        if node.variable:
+            self.define_local(node.variable)
+        index_slot = self.reserve_local("__for_index__")
+        
+        # Push 0 as initial index
+        self.chunk.emit_constant(self.chunk.add_constant(0), self.current_line)
+        self.chunk.emit_set_local(index_slot, self.current_line)
+        
         loop_start = len(self.chunk.code)
 
         self.loop_stack.append({
             'start': loop_start,
             'break_jumps': [],
-            'continue_target': None,   # will be set
+            'continue_target': None,
             'continue_jumps': [],
         })
 
-        # DUP iterator, check emptiness via JUMP_IF_FALSE_POP stub
-        # Simpler: use RANGE iteration — emit iter on stack and loop via python semantics
-        # For bytecode simplicity, emit the iterator once and rely on POP at end
-        # Use a basic approach: DUP the list, JUMP_IF_FALSE if empty
-        # Actually the cleanest approach: we push the list, push index 0 as a local,
-        # then each iteration increment index and check vs len.
-        # For now emit a simplified "for each" using GET_INDEX pattern:
-        # stack: [iterator_list]  — we walk it with a hidden index counter
+        # Duplicate list and index for bounds check
+        self.chunk.emit(OpCode.DUP, self.current_line)      # stack: [list, len, idx, list]
+        self.chunk.emit(OpCode.DUP, self.current_line)      # stack: [list, len, idx, list, list]
+        self.chunk.emit(OpCode.SWAP, self.current_line)     # stack: [list, len, idx, list, list]
+        
+        # Load index
+        self.chunk.emit_constant(self.chunk.add_constant(index_slot), self.current_line)
+        self.chunk.emit_get_local(index_slot, self.current_line)
+        
+        # Compare: idx >= len
+        self.chunk.emit(OpCode.GREATER_EQUAL, self.current_line)
+        
+        # If idx >= len, jump to exit
+        break_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
 
-        # Emit a length check and loop body — keeping it simple
-        check_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
-
+        # Get list[index] and assign to loop variable
+        self.chunk.emit(OpCode.DUP, self.current_line)      # duplicate list
+        self.chunk.emit_get_local(index_slot, self.current_line)  # load index
+        self.chunk.emit(OpCode.GET_INDEX, self.current_line)
+        
         if node.variable:
-            self.define_local(node.variable)
+            self.chunk.emit(OpCode.SET_LOCAL, self.current_line)
+            self.chunk.emit(self.chunk.add_local(node.variable), self.current_line)
 
+        # Compile body
         for stmt in node.body:
             self.compile_stmt(stmt)
 
-        # continue lands here
+        # continue target: increment index and loop back
         continue_target = len(self.chunk.code)
         self.loop_stack[-1]['continue_target'] = continue_target
 
+        # Increment index: idx = idx + 1
+        self.chunk.emit_get_local(index_slot, self.current_line)
+        self.chunk.emit_constant(self.chunk.add_constant(1), self.current_line)
+        self.chunk.emit(OpCode.ADD, self.current_line)
+        self.chunk.emit_set_local(index_slot, self.current_line)
+        
+        # Loop back to start
         self.chunk.emit_loop(loop_start, self.current_line)
-        self.chunk.patch_jump(check_jump)
+        
+        # Patch the break jump
+        self.chunk.patch_jump(break_jump)
 
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
