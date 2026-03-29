@@ -1081,14 +1081,43 @@ Ordered by severity × frequency of impact:
 
 ## Release: https://github.com/authorss81/Ipp/releases/tag/v1.3.2-bugfix
 
-### Issues Fixed
-1. **arg_idx in interpreter.py** - Fixed parameter index calculation for method calls
-2. **__str__ in vm.py** - Added __str__ method support to IppInstance
-3. **METHOD opcode order in compiler.py** - Fixed CLOSURE/METHOD opcode order
+### PARTIAL FIXES (Need Completion)
+1. **arg_idx in interpreter.py** - Parameter index calculation (interpreter only)
+2. **__str__ in vm.py** - Partial __str__ implementation (incomplete)
+3. **current_class tracking in interpreter.py** - For private field detection (interpreter only)
 
-### Issues Still Broken (Class Instantiation)
-1. **compile_set bytecode generation** - Property assignment emits wrong bytecode
-2. **Class instantiation not working** - `self.x = x` causes stack overflow
+### BUGS STILL NEEDING FIX (CRITICAL)
+
+#### 1. v1.1.0 Test Bug: Class Instantiation BROKEN
+- **Priority:** HIGHEST - Everything depends on this
+- **File:** `ipp/vm/compiler.py` lines 856-860
+- **Issue:** `compile_set` emits wrong bytecode (DUPs wrong value)
+- **Impact:** ALL class features broken (methods, properties, operator overloading)
+
+#### 2. BUG-N1: Private Member Name Mangling (VM)
+- **Priority:** HIGH - Security feature
+- **File:** `ipp/vm/vm.py` IppInstance class
+- **Issue:** Implemented in interpreter but NOT in VM
+- **Impact:** Private fields accessible externally in VM
+
+#### 3. BUG-N2: Recursion Limit (VM)
+- **Priority:** MEDIUM - Stability
+- **File:** `ipp/vm/vm.py` VM class
+- **Issue:** Implemented in interpreter but NOT in VM
+- **Impact:** Infinite recursion crashes Python
+
+#### 4. BUG-N6: __str__ Method (VM)
+- **Priority:** MEDIUM - Usability
+- **File:** `ipp/vm/vm.py` IppInstance class
+- **Issue:** Partial implementation, _call_ipp_method incomplete
+- **Impact:** print() doesn't call __str__ on user classes
+
+### Instructions
+See `BUGFIX_INSTRUCTIONS.md` for detailed fix instructions.
+
+### Test Files
+- `test_vec2.ipp` - Reproduction case for class instantiation
+- `tests/v1_3_2/test_features.ipp` - Create this with all test cases
 
 ### Fix Instructions
 See `BUGFIX_INSTRUCTIONS.md` for detailed instructions.
