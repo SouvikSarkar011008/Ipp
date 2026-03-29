@@ -1074,3 +1074,24 @@ Ordered by severity × frequency of impact:
 *v1.3.1 completed: 2026-03-29 - Critical bugs fixed*
 *v1.3.2 completed: 2026-03-29 - VM upvalues + Set type*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
+
+---
+
+# v1.3.2 Bug Fix Release (v1.3.2-bugfix)
+
+## Release: https://github.com/authorss81/Ipp/releases/tag/v1.3.2-bugfix
+
+### Issues Fixed
+1. **arg_idx in interpreter.py** - Fixed parameter index calculation for method calls
+2. **__str__ in vm.py** - Added __str__ method support to IppInstance
+3. **METHOD opcode order in compiler.py** - Fixed CLOSURE/METHOD opcode order
+
+### Issues Still Broken (Class Instantiation)
+1. **compile_set bytecode generation** - Property assignment emits wrong bytecode
+2. **Class instantiation not working** - `self.x = x` causes stack overflow
+
+### Fix Instructions
+See `BUGFIX_INSTRUCTIONS.md` for detailed instructions.
+
+### Test File
+- `test_vec2.ipp` - Reproduction case for class instantiation bug
