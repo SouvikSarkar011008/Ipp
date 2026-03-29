@@ -1,5 +1,5 @@
 # Ipp Language — Detailed Roadmap v3
-> Last Updated: 2026-03-29 | Reflects audit findings through v1.3.1
+> Last Updated: 2026-03-29 | Reflects audit findings through v1.3.2
 
 ---
 
@@ -32,9 +32,9 @@
 | **v1.3.0** | ✅ DONE | REPL Enhancements (`.vars`, `.fns`, `.history`, `.vm`, `\`, Ctrl+C, colors) |
 | **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed (for-loop, line 0, overload, defaults, int/float, closures) |
 | **v1.3.2** | ✅ DONE | VM Stabilization (upvalues) + Set type |
-| **v1.3.3** | 📋 PLANNED | Game SDK Alpha |
-| **v1.4.0** | 📋 PLANNED | Game Engine Integration |
-| **v2.0.0** | 📋 PLANNED | Game Features |
+| **v1.3.3** | 📋 PLANNED | Game SDK + StdLib + Bug Fixes |
+| **v1.4.0** | 📋 PLANNED | Generators + Engine Integration |
+| **v2.0.0** | 📋 PLANNED | Advanced Game Features |
 
 ---
 
@@ -112,77 +112,61 @@
 
 ---
 
-## v1.3.3 - Structural Match, Operator Overload, Labeled Break 📋 PLANNED
+## v1.3.3 - Game SDK Alpha + Standard Library + Bug Fixes 📋 PLANNED
 
-**Audit reference:** BUG-NEW-C3, BUG-NEW-M4, BUG-NEW-N9, BUG-NEW-N10
+**Goal**: Alpha game development toolkit + Standard Library Completion + Bug Fixes
 
-### BUG-NEW-C3: Operator Overloading Fix ⏳ TODO
+**Audit reference:** BUG-NEW-C3, BUG-NEW-M4, BUG-NEW-N6, BUG-NEW-N8, BUG-NEW-N9, BUG-NEW-N10
+
+### Bug Fixes ⏳ TODO
+
+#### BUG-NEW-C3: Operator Overloading Fix ⏳ TODO
 - [ ] Change `hasattr(left, '__add__')` to check `left.fields`
 - [ ] Dispatch to Ipp methods, not Python dunders
 - [ ] Test `__add__`, `__sub__`, `__mul__`, `__eq__`
 
-### BUG-NEW-M4: Named Arguments ⏳ TODO
+#### BUG-NEW-M4: Named Arguments ⏳ TODO
 - [ ] Lex `NAME =` as `NAMED_ARG` token
 - [ ] Parse named args in `arguments()`
 - [ ] Match by name in `call_function()`
 
-### BUG-NEW-N9: Structural Pattern Matching ⏳ TODO
+#### BUG-NEW-M7: Tuple Unpacking / Multiple Assignment ⏳ TODO
+- [ ] Parse `var a, b = 1, 2` syntax
+- [ ] Parse `var [first, ...rest] = list` destructuring
+- [ ] Implement unpacking in interpreter and VM
+
+#### BUG-NEW-N6: __str__ Method ⏳ TODO
+- [ ] Check for `__str__` method on IppInstance
+- [ ] Execute custom __str__ when print() is called
+- [ ] Avoid infinite recursion with nested instances
+
+#### BUG-NEW-N8: IppList/Native List Inconsistency ⏳ TODO
+- [ ] Wrap all list returns to IppList
+- [ ] Ensure consistent behavior between IppList and native Python lists
+
+#### BUG-NEW-N9: Structural Pattern Matching ⏳ TODO
 - [ ] Add type guards: `case int =>`
 - [ ] Add guards: `case n if n > 0 =>`
 - [ ] Add destructuring: `case [h, ...t] =>`
 
-### BUG-NEW-N10: Labeled Break/Continue ⏳ TODO
+#### BUG-NEW-N10: Labeled Break/Continue ⏳ TODO
 - [ ] Create `LoopContext` stack in compiler
 - [ ] Look up label in context stack
 - [ ] Emit correct jump offset
 
----
+### Standard Library Expansion ⏳ TODO
+- [ ] Missing Builtins: `printf()`, `sprintf()`, `scanf()`, `file_read()`, `file_write()`
+- [ ] Regex module: Full regex support
+- [ ] XML module: XML parsing
+- [ ] YAML module: YAML parsing
+- [ ] TOML module: TOML parsing
+- [ ] ZIP module: Zip file handling
 
-## v1.4.0 — Generators + Async/Await 📋 PLANNED
-
-**Audit reference:** BUG-NEW-N4, BUG-NEW-N7
-
-### BUG-NEW-N4: Generator Functions ⏳ TODO
-- [ ] Lex `yield` as keyword
-- [ ] Create `IppGenerator` object
-- [ ] Serialize/resume execution state
-
-### BUG-NEW-N7: Async/Await ⏳ TODO
-- [ ] Implement async/await over generators
-- [ ] Add event loop
-- [ ] Handle `await expr` as `yield wait(expr)`
-
-### Generator Functions (BUG-NEW-N4)
-
-```ipp
-func fibonacci() {
-    var a = 0
-    var b = 1
-    while true {
-        yield a
-        var temp = a
-        a = b
-        b = temp + b
-    }
-}
-
-for n in fibonacci() |> take(10) {
-    print(n)
-}
-```
-
-**Plan:**
-- `yield` becomes a keyword (TokenType.YIELD)
-- Functions containing `yield` produce `IppGenerator` objects, not immediate values
-- `IppGenerator` stores: function body AST, current execution position, local environment snapshot
-- `next(gen)` resumes execution until next `yield` or return
-- `for x in gen` iterates the generator
-
-### Async/Await (BUG-NEW-N7)
-
-## v1.3.3 - Game SDK Alpha 📋 PLANNED
-
-**Goal**: Alpha game development toolkit
+### Collections ⏳ TODO
+- [ ] `Deque` - Fast queue operations
+- [ ] `PriorityQueue` - Heap-based priority queue
+- [ ] `Tree` - Tree data structure
+- [ ] `Graph` - Graph data structure
 
 ### Math Library ⏳ TODO
 - [ ] `vec2(x, y)` - 2D vector
@@ -222,11 +206,53 @@ for n in fibonacci() |> take(10) {
 - [ ] `Random.shuffle(seq)` - Shuffle in place
 - [ ] `Random.gauss(mu, sigma)` - Gaussian distribution
 
-### Engine Bindings
+### Networking ⏳ TODO
+- [ ] `http.server` - HTTP server
+- [ ] `websocket` - WebSocket client/server
+- [ ] `ftp` - FTP client
+- [ ] `smtp` - Email sending
 
-## v1.4.0 - Game Engine Integration 📋 PLANNED
+---
 
-**Goal**: Bindings for popular game engines
+## v1.4.0 — Generators + Async/Await + Engine Integration 📋 PLANNED
+
+**Audit reference:** BUG-NEW-N4, BUG-NEW-N7
+
+### BUG-NEW-N4: Generator Functions ⏳ TODO
+- [ ] Lex `yield` as keyword
+- [ ] Create `IppGenerator` object
+- [ ] Serialize/resume execution state
+
+### BUG-NEW-N7: Async/Await ⏳ TODO
+- [ ] Implement async/await over generators
+- [ ] Add event loop
+- [ ] Handle `await expr` as `yield wait(expr)`
+
+### Generator Functions (BUG-NEW-N4)
+
+```ipp
+func fibonacci() {
+    var a = 0
+    var b = 1
+    while true {
+        yield a
+        var temp = a
+        a = b
+        b = temp + b
+    }
+}
+
+for n in fibonacci() |> take(10) {
+    print(n)
+}
+```
+
+**Plan:**
+- `yield` becomes a keyword (TokenType.YIELD)
+- Functions containing `yield` produce `IppGenerator` objects, not immediate values
+- `IppGenerator` stores: function body AST, current execution position, local environment snapshot
+- `next(gen)` resumes execution until next `yield` or return
+- `for x in gen` iterates the generator
 
 ### Engine Bindings (FREE Options) ⏳ TODO
 - [ ] Pygame integration (free, Python)
@@ -252,6 +278,9 @@ for n in fibonacci() |> take(10) {
 var body = RigidBody(mass = 1.0, position = vec2(0, 0))
 body.apply_force(vec2(0, -9.8))     # gravity
 body.update(delta_time)
+```
+
+---
 
 ## v2.0.0 - Game Features 📋 PLANNED
 
@@ -385,7 +414,6 @@ body.update(delta_time)
 - [ ] BUG-NEW-N1: **No access control enforcement** (`__field` name mangling)
 - [ ] BUG-NEW-N2: **No Ipp-level recursion limit** (add `max_depth` config)
 - [ ] BUG-NEW-N5: **Runtime errors lack column info** (add column tracking)
-- [ ] BUG-NEW-N6: **`__str__` not called by `print()`** (check for method)
 - [ ] BUG-NEW-N8: **IppList/native list inconsistency** (wrap all list returns)
 
 ### Phase 4: Game SDK (v1.3.3)
@@ -423,4 +451,4 @@ body.update(delta_time)
 
 ---
 
-*Last Updated: 2026-03-29 (v1.3.2 DONE - VM upvalues fixed, Set type added!)*
+*Last Updated: 2026-03-29 (v1.3.2 DONE - VM upvalues fixed, Set type added! Roadmap cleaned up and merged.)*
