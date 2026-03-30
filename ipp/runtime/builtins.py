@@ -310,6 +310,8 @@ def ipp_str(s):
     if isinstance(s, bool):
         return "true" if s else "false"
     # FIX BUG-N6: call str() which triggers __str__ on IppInstance
+    if hasattr(s, 'ipp_class'):
+        return f"<{s.ipp_class.name} instance>"
     return str(s)
 
 
