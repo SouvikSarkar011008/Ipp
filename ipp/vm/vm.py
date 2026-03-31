@@ -79,7 +79,7 @@ class InlineCache:
 
 
 class VMFrame:
-    __slots__ = ('chunk', 'closure', 'function', 'ip', 'stack_base')
+    __slots__ = ('chunk', 'closure', 'function', 'ip', 'stack_base', '_method_instance', '_is_init_call')
 
     def __init__(self, chunk: Chunk, closure=None, function=None, stack_base: int = 0):
         self.chunk = chunk
@@ -87,6 +87,8 @@ class VMFrame:
         self.function = function
         self.ip = 0
         self.stack_base = stack_base    # FIX: BUG-C2 — locals are relative to this
+        self._method_instance = None
+        self._is_init_call = False      # FIX: when True, RETURN_FRAME pushes instance not nil
 
 
 class UpvalueCell:
@@ -244,6 +246,26 @@ def _call_ipp_method(instance: IppInstance, method) -> Any:
     finally:
         instance._current_class = None
     return result if result is not None else f"<{instance.cls.name} instance>"
+    """Helper to call an Ipp method from Python code."""
+    from ipp.vm.vm import VM, Chunk, Closure, IppFunction
+    vm = VM()
+    if isinstance(method, Chunk):
+        chunk = method
+    elif isinstance(method, Closure):
+        chunk = method.chunk
+    else:
+        raise VMError(f"Cannot call method of type {type(method).__name__}")
+    base = len(vm.stack)
+    vm.stack.append(instance)
+    frame = VMFrame(chunk, closure=method if isinstance(method, Closure) else None, function=method, stack_base=base)
+    vm.frames.append(frame)
+    try:
+        vm.run()
+    except:
+        pass
+    if vm.stack:
+        return vm.stack[-1]
+    return None
 
 
 class BoundMethod:
@@ -471,8 +493,12 @@ class VM:
                 # FIX BUG-NEW-M5: close any upvalues still open in the returning frame
                 self._close_frame_upvalues(frame)
                 # FIX BUG-N1: clear private-access flag when leaving a method
-                if hasattr(frame, '_method_instance') and frame._method_instance is not None:
+                if frame._method_instance is not None:
                     frame._method_instance._current_class = None
+                # FIX class instantiation: if this was Vec2(1,2)-style init call,
+                # the caller wants the new instance, not init's nil return value
+                if frame._is_init_call and frame._method_instance is not None:
+                    ret_val = frame._method_instance
                 # FIX BUG-N2: decrement call depth on return
                 if self.call_depth > 0:
                     self.call_depth -= 1
@@ -1165,10 +1191,11 @@ class VM:
             init = callee.get_method("init")
             if init:
                 self._call_method(instance, init, args, return_frame)
-                # After init, the instance (not init's return) is the value
-                # We push instance after init frame completes
-                # For now push it here; the RETURN_VAL will pop and re-push
-                self.stack.append(instance)
+                # FIX: mark the init frame so RETURN_FRAME pushes the instance,
+                # not init's nil return value. Do NOT push instance here — that
+                # was the original bug causing the extra value on the stack.
+                if self.frames:
+                    self.frames[-1]._is_init_call = True
             else:
                 self.stack.append(instance)
             return

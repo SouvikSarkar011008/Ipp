@@ -854,10 +854,13 @@ class Compiler:
         self.chunk.lines.append(self.current_line)
 
     def compile_set(self, node: SetExpr):
-        # FIX: removed DUP — SET_PROPERTY pops both value and obj cleanly
+        # compile_set emits: GET obj, GET value, SET_PROPERTY (pops both), NIL
+        # The NIL is consumed by ExprStmt's POP so the stack stays balanced.
         self.compile_expr(node.object)
         self.compile_expr(node.value)
         self.compile_set_property(node.name)
+        # Push nil so the surrounding ExprStmt's POP has something to consume.
+        self.chunk.write(OpCode.NIL, self.current_line)
 
     def compile_list(self, node: ListLiteral):
         for elem in node.elements:

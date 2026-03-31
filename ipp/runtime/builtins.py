@@ -309,7 +309,7 @@ def ipp_str(s):
         return "nil"
     if isinstance(s, bool):
         return "true" if s else "false"
-    # FIX BUG-N6: call str() which triggers __str__ on IppInstance
+    # FIX BUG-N6: str() triggers IppInstance.__str__ which calls user-defined __str__
     return str(s)
 
 
