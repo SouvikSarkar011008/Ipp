@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.2.4"
+VERSION = "1.3.7"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -487,6 +487,24 @@ def print_help():
         c_desc = colour(DIM, desc)
         print(f"    {c_cmd} {c_desc}")
 
+    _section("REPL Tools (v1.3.7)")
+    tools = [
+        (".load <file>",    "Load and execute file (keeps variables)"),
+        (".save <file>",    "Save command history to file"),
+        (".doc <fn>",       "Show builtin documentation"),
+        (".time <expr>",    "Benchmark expression"),
+        (".which <name>",   "Check if builtin/var/function"),
+        (".last / $_",      "Reference last result"),
+        (".undo",           "Undo last command"),
+        (".edit",           "Edit last command in editor"),
+        (".profile",        "Profile last command"),
+        (".alias n cmd",    "Create command alias"),
+    ]
+    for cmd, desc in tools:
+        c_cmd  = colour(C_CMD, cmd.ljust(16))
+        c_desc = colour(DIM, desc)
+        print(f"    {c_cmd} {c_desc}")
+
     # Windows color warning
     if sys.platform.startswith('win') and _USE_ANSI:
         print()
@@ -768,6 +786,9 @@ def run_repl():
     line_num = 0
     _reset_fn_colors()
     _cmd_history = []
+    _last_result = None
+    _env_snapshots = []  # For .undo
+    _aliases = {}  # For .alias
 
     def show_history(n=20):
         if not _cmd_history:
@@ -857,6 +878,183 @@ def run_repl():
                     print(f"  {colour(C_WARN, 'Colors disabled')}")
                 continue
 
+            # ── v1.3.7 REPL Enhancements ──────────────────────────────
+
+            # .load <file> — Load and execute file in current session
+            m = re.match(r'\.load\s+(.+)$', stripped)
+            if m:
+                filepath = m.group(1).strip().strip('"').strip("'")
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        source = f.read()
+                    tokens = tokenize(source)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    interp.return_value = None
+                    interp.last_value = None
+                    if val is not None:
+                        print(f"  {colour(DIM, '→')} {format_output(val)}")
+                    _cmd_history.append(f".load {filepath}")
+                    print(f"  {colour(C_OK, f'Loaded {filepath}')}")
+                except FileNotFoundError:
+                    print(f"  {colour(C_ERROR, f'File not found: {filepath}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .save <file> — Save session history to file
+            m = re.match(r'\.save\s+(.+)$', stripped)
+            if m:
+                filepath = m.group(1).strip().strip('"').strip("'")
+                try:
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(_cmd_history))
+                    print(f"  {colour(C_OK, f'Saved {len(_cmd_history)} commands to {filepath}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Failed to save: {e}')}")
+                continue
+
+            # .doc <function> — Show docstring/help for builtin
+            m = re.match(r'\.doc\s+(\w+)$', stripped)
+            if m:
+                fn_name = m.group(1)
+                try:
+                    from ipp.runtime.builtins import BUILTINS
+                    if fn_name in BUILTINS:
+                        fn = BUILTINS[fn_name]
+                        doc = fn.__doc__ or "No documentation available."
+                        print(f"  {colour(C_CMD, fn_name)}: {doc}")
+                    else:
+                        print(f"  {colour(C_WARN, f'{fn_name} is not a builtin function')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .time <expr> — Benchmark expression
+            m = re.match(r'\.time\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    t_start = time.perf_counter()
+                    interp.run(ast)
+                    elapsed = time.perf_counter() - t_start
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    interp.return_value = None
+                    interp.last_value = None
+                    if val is not None:
+                        print(f"  {colour(DIM, '→')} {format_output(val)}")
+                    print(f"  {colour(DIM, f'  {elapsed*1000:.2f}ms')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .which <name> — Show if name is builtin/variable/function
+            m = re.match(r'\.which\s+(\w+)$', stripped)
+            if m:
+                name = m.group(1)
+                try:
+                    from ipp.runtime.builtins import BUILTINS
+                    if name in BUILTINS:
+                        print(f"  {colour(C_OK, name)} is a {colour(C_CMD, 'builtin function')}")
+                    elif name in interp_manager.global_env:
+                        val = interp_manager.global_env[name]
+                        if callable(val):
+                            print(f"  {colour(C_OK, name)} is a {colour(C_CMD, 'user-defined function')}")
+                        else:
+                            print(f"  {colour(C_OK, name)} is a {colour(C_CMD, 'variable')} = {format_output(val)}")
+                    else:
+                        print(f"  {colour(C_WARN, f'{name} not found')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .last / $_ — Reference the last result
+            if stripped in ('.last', '$_'):
+                if _last_result is not None:
+                    print(f"  {format_output(_last_result)}")
+                else:
+                    print(f"  {colour(DIM, '(no last result)')}")
+                continue
+
+            # .undo — Undo last command's effect
+            if stripped == '.undo':
+                if _env_snapshots:
+                    snapshot = _env_snapshots.pop()
+                    interp = interp_manager.get_interpreter()
+                    interp.global_env.values.clear()
+                    interp.global_env.values.update(snapshot)
+                    print(f"  {colour(C_OK, 'Last command undone')}")
+                else:
+                    print(f"  {colour(DIM, '(nothing to undo)')}")
+                continue
+
+            # .alias <name> <cmd> — Create custom REPL command alias
+            m = re.match(r'\.alias\s+(\w+)\s+(.+)$', stripped)
+            if m:
+                alias_name = m.group(1)
+                alias_cmd = m.group(2).strip()
+                _aliases[alias_name] = alias_cmd
+                print(f"  {colour(C_OK, f'Alias: .{alias_name} → {alias_cmd}')}")
+                continue
+
+            # Check if input is an alias
+            alias_match = re.match(r'\.(\w+)(.*)', stripped)
+            if alias_match:
+                alias_name = alias_match.group(1)
+                if alias_name in _aliases:
+                    stripped = _aliases[alias_name] + alias_match.group(2)
+
+            # .edit — Open last command in editor
+            if stripped == '.edit':
+                if not _cmd_history:
+                    print(f"  {colour(DIM, '(no history to edit)')}")
+                else:
+                    editor = os.environ.get('EDITOR', os.environ.get('VISUAL', 'notepad'))
+                    last_cmd = _cmd_history[-1]
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.ipp', delete=False) as f:
+                        f.write(last_cmd)
+                        tmpfile = f.name
+                    import subprocess
+                    subprocess.run([editor, tmpfile])
+                    with open(tmpfile, 'r') as f:
+                        edited = f.read()
+                    os.unlink(tmpfile)
+                    if edited.strip():
+                        stripped = edited.strip()
+                    else:
+                        continue
+
+            # .profile — Profile last command
+            if stripped == '.profile':
+                if not _cmd_history:
+                    print(f"  {colour(DIM, '(no history to profile)')}")
+                else:
+                    last_cmd = _cmd_history[-1]
+                    try:
+                        import cProfile
+                        import pstats
+                        import io
+                        tokens = tokenize(last_cmd)
+                        ast = parse(tokens)
+                        interp = interp_manager.get_interpreter()
+                        pr = cProfile.Profile()
+                        pr.enable()
+                        interp.run(ast)
+                        pr.disable()
+                        s = io.StringIO()
+                        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+                        ps.print_stats(10)
+                        print(s.getvalue())
+                    except Exception as e:
+                        print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
         if not stripped and not buf:
             continue
 
@@ -868,6 +1066,11 @@ def run_repl():
 
         buf.append(raw)
         source = '\n'.join(buf)
+
+        # Multi-line paste detection: if source has multiple complete statements
+        # Auto-execute if it looks like a paste (multiple newlines, no continuation)
+        if len(buf) > 1 and not _needs_more(source):
+            pass  # Will execute normally
 
         if _needs_more(source):
             continue
@@ -881,6 +1084,13 @@ def run_repl():
 
         interp = interp_manager.get_interpreter()
         t0 = time.perf_counter()
+        
+        # Save env snapshot for .undo
+        snapshot = dict(interp.global_env.values)
+        _env_snapshots.append(snapshot)
+        if len(_env_snapshots) > 50:
+            _env_snapshots.pop(0)
+        
         exec_result = [None]  # Container for result and exception
         exec_done = threading.Event()
         
@@ -925,6 +1135,7 @@ def run_repl():
                     ms_str = colour(DIM, f"  {elapsed*1000:.1f}ms")
                     arrow2 = '->' if not _UNI else '→'
                     print(f"  {colour(DIM, arrow2)} {fmted}{ms_str}")
+                    _last_result = result_val
                 buf.clear()
                 line_num += 1
             else:

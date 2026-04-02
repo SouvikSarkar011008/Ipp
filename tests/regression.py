@@ -33,6 +33,7 @@ TESTS = [
     ("v1.3.4-math", "tests/v1_3_4/test_math_library.ipp"),
     ("v1.3.4-collections", "tests/v1_3_4/test_collections.ipp"),
     ("v1.3.4-advanced", "tests/v1_3_4/test_advanced_features.ipp"),
+    ("v1.3.7-repl", "tests/v1_3_7/test_repl_enhancements.ipp"),
 ]
 
 def run_test(version, filepath):

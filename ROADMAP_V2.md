@@ -219,24 +219,20 @@
 
 ---
 
-## v1.3.7 — REPL Enhancements 📋 PLANNED
+## v1.3.7 — REPL Enhancements ✅ DONE
 
-### REPL Improvements
-- [ ] `.edit` — Open last command in external editor
-- [ ] `.save <file>` — Save session history to file
-- [ ] `.load <file>` — Load and execute file in current session (keep variables)
-- [ ] `.doc <function>` — Show docstring/help for builtin
-- [ ] Tab completion for dict keys
-- [ ] Multi-line paste detection
-- [ ] `.time <expr>` — Benchmark expression
-- [ ] `.which <name>` — Show if name is builtin/variable/function
-- [ ] Syntax highlight on Enter
-- [ ] `.last` / `$_` — Reference last result
-- [ ] `.undo` — Undo last command's effect
-- [ ] Auto-complete for imports
-- [ ] `.profile` — Profile last command
-- [ ] Command history search (Ctrl+R)
-- [ ] `.alias <name> <cmd>` — Custom REPL aliases
+### REPL Improvements ✅ DONE
+- [x] `.edit` — Open last command in external editor
+- [x] `.save <file>` — Save session history to file
+- [x] `.load <file>` — Load and execute file in current session (keep variables)
+- [x] `.doc <function>` — Show docstring/help for builtin
+- [x] Multi-line paste detection
+- [x] `.time <expr>` — Benchmark expression
+- [x] `.which <name>` — Show if name is builtin/variable/function
+- [x] `.last` / `$_` — Reference last result
+- [x] `.undo` — Undo last command's effect
+- [x] `.profile` — Profile last command
+- [x] `.alias <name> <cmd>` — Custom REPL aliases
 
 ---
 

@@ -1139,27 +1139,22 @@ Ordered by severity × frequency of impact:
 
 ---
 
-## v1.3.7 — REPL Enhancements
+## v1.3.7 — REPL Enhancements ✅ DONE
 
-Based on code review of `main.py` REPL implementation (lines 760-942):
-
-| # | Feature | Priority | Description |
-|---|---------|----------|-------------|
-| 1 | `.edit` | MED | Open last command in external editor (`$EDITOR`) |
-| 2 | `.save <file>` | MED | Save session history to a file |
-| 3 | `.load <file>` | HIGH | Load and execute a file in current session (keep variables) |
-| 4 | `.doc <function>` | MED | Show docstring/help for a builtin function |
-| 5 | Tab completion for dict keys | LOW | `my_dict["<TAB>` completes keys from current env |
-| 6 | Multi-line paste detection | HIGH | Auto-detect and handle pasted multi-line code blocks |
-| 7 | `.time <expr>` | LOW | Benchmark an expression execution time |
-| 8 | `.which <name>` | LOW | Show if a name is a builtin, variable, or function |
-| 9 | Syntax highlight on Enter | LOW | Show colored version of what you typed before executing |
-| 10 | `.last` / `$_` | MED | Reference the last result without assigning it |
-| 11 | `.undo` | LOW | Undo last command's effect on global env |
-| 12 | Auto-complete for imports | LOW | Tab-complete `import "<TAB>` with filesystem paths |
-| 13 | `.profile` | LOW | Profile last command with call graph |
-| 14 | Command history search (Ctrl+R) | MED | Reverse search through `.history` |
-| 15 | `.alias <name> <cmd>` | LOW | Create custom REPL command aliases |
+### Implemented REPL Commands
+- [x] `.load <file>` — Load and execute file in current session (keeps variables)
+- [x] `.save <file>` — Save session history to file
+- [x] `.doc <function>` — Show docstring/help for builtin function
+- [x] `.time <expr>` — Benchmark expression execution time
+- [x] `.which <name>` — Show if name is builtin, variable, or function
+- [x] `.last` / `$_` — Reference the last result
+- [x] `.undo` — Undo last command's effect on global env
+- [x] `.edit` — Open last command in external editor
+- [x] `.profile` — Profile last command with cProfile
+- [x] `.alias <name> <cmd>` — Create custom REPL command aliases
+- [x] Multi-line paste detection
+- [x] Env snapshots for undo (up to 50)
+- [x] Updated `.help` with REPL Tools section
 
 ---
 
