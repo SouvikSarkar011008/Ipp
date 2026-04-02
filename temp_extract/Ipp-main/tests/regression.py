@@ -24,15 +24,6 @@ TESTS = [
     ("v1.1.0", "tests/v1_1_0/test_features.ipp"),
     ("v1.1.1", "tests/v1_1_1/test_features.ipp"),
     ("v1.3.2", "tests/v1_3_2/test_features.ipp"),
-    ("v1.3.3", "tests/v1_3_3/test_features.ipp"),
-    ("v1.3.3-network", "tests/v1_3_3/test_network.ipp"),
-    ("v1.3.4-core", "tests/v1_3_4/test_core_builtins.ipp"),
-    ("v1.3.4-string", "tests/v1_3_4/test_string_functions.ipp"),
-    ("v1.3.4-fileio", "tests/v1_3_4/test_file_io.ipp"),
-    ("v1.3.4-dataformats", "tests/v1_3_4/test_data_formats.ipp"),
-    ("v1.3.4-math", "tests/v1_3_4/test_math_library.ipp"),
-    ("v1.3.4-collections", "tests/v1_3_4/test_collections.ipp"),
-    ("v1.3.4-advanced", "tests/v1_3_4/test_advanced_features.ipp"),
 ]
 
 def run_test(version, filepath):

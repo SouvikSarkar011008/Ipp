@@ -295,22 +295,12 @@ def ipp_values(d):
 
 
 def ipp_items(d):
-    # FIX: Handle IppDict objects
-    if hasattr(d, 'items') and callable(d.items):
-        return d.items()
-    if hasattr(d, 'data'):
-        return list(d.data.items())
-    if isinstance(d, dict):
-        return list(d.items())
-    raise RuntimeError("items requires a dict")
+    if not isinstance(d, dict):
+        raise RuntimeError("items requires a dict")
+    return list(d.items())
 
 
 def ipp_has_key(d, key):
-    # FIX: Handle IppDict objects
-    if hasattr(d, 'has'):
-        return d.has(key)
-    if hasattr(d, 'data'):
-        return key in d.data
     return key in d
 
 
@@ -898,8 +888,7 @@ def ipp_move_towards(current, target, max_delta):
     diff = target - current
     if abs(diff) <= max_delta:
         return target
-    sign = -1 if diff < 0 else (1 if diff > 0 else 0)
-    return current + sign * max_delta
+    return current + math.sign(diff) * max_delta
 
 
 def ipp_angle(x1, y1, x2, y2):
@@ -1537,7 +1526,6 @@ def ipp_url_query_build(params):
 # HTTP utilities
 def ipp_http_get(url, headers=None):
     """Make HTTP GET request"""
-    from ipp.interpreter.interpreter import IppDict
     try:
         import urllib.request
     except ImportError:
@@ -1559,7 +1547,6 @@ def ipp_http_get(url, headers=None):
 
 def ipp_http_post(url, data=None, headers=None):
     """Make HTTP POST request"""
-    from ipp.interpreter.interpreter import IppDict
     try:
         import urllib.request
     except ImportError:
@@ -1657,7 +1644,7 @@ class Logger:
         self.logger.error(msg)
 
 
-def ipp_logger(name="ipp", level="INFO"):
+def ipp_log(name="ipp", level="INFO"):
     """Create logger"""
     return Logger(name, level)
 
@@ -1784,286 +1771,9 @@ def ipp_thread_current():
     return threading.current_thread().name
 
 
-# v1.3.3 Networking functions
-def ipp_http_put(url, data=None, headers=None):
-    """Make HTTP PUT request"""
-    from ipp.interpreter.interpreter import IppDict
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, data=data.encode('utf-8') if data else None, method='PUT')
-        if headers:
-            for k, v in headers.items() if hasattr(headers, 'items') else headers:
-                req.add_header(k, v)
-        if data:
-            req.add_header('Content-Type', 'application/x-www-form-urlencoded')
-        with urllib.request.urlopen(req) as response:
-            return IppDict({
-                "status": response.getcode(),
-                "headers": dict(response.headers),
-                "body": response.read().decode('utf-8')
-            })
-    except Exception as e:
-        raise RuntimeError(f"HTTP PUT error: {e}")
-
-
-def ipp_http_delete(url, headers=None):
-    """Make HTTP DELETE request"""
-    from ipp.interpreter.interpreter import IppDict
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, method='DELETE')
-        if headers:
-            for k, v in headers.items() if hasattr(headers, 'items') else headers:
-                req.add_header(k, v)
-        with urllib.request.urlopen(req) as response:
-            return IppDict({
-                "status": response.getcode(),
-                "headers": dict(response.headers),
-                "body": response.read().decode('utf-8')
-            })
-    except Exception as e:
-        raise RuntimeError(f"HTTP DELETE error: {e}")
-
-
-def ipp_http_request(url, method='GET', data=None, headers=None):
-    """Make generic HTTP request"""
-    method = method.upper()
-    if method == 'GET':
-        return ipp_http_get(url, headers)
-    elif method == 'POST':
-        return ipp_http_post(url, data, headers)
-    elif method == 'PUT':
-        return ipp_http_put(url, data, headers)
-    elif method == 'DELETE':
-        return ipp_http_delete(url, headers)
-    else:
-        raise RuntimeError(f"Unsupported HTTP method: {method}")
-
-
-def ipp_url_encode_builtin(data):
-    """URL encode dictionary"""
-    import urllib.parse
-    if hasattr(data, 'data'):
-        data = data.data
-    return urllib.parse.urlencode(data)
-
-
-def ipp_url_decode_builtin(query_string):
-    """URL decode query string"""
-    import urllib.parse
-    result = dict(urllib.parse.parse_qsl(query_string))
-    return IppDict(result)
-
-
-class IppSMTPClient:
-    """SMTP client wrapper for Ipp"""
-    def __init__(self, server, port=587, use_tls=True, username=None, password=None):
-        import smtplib
-        from email.mime.text import MIMEText
-        self.server = server
-        self.port = port
-        self.use_tls = use_tls
-        self.username = username
-        self.password = password
-        self._smtp = None
-        self.connected = False
-        self._MIMEText = MIMEText
-    
-    def connect(self):
-        import smtplib
-        try:
-            if self.use_tls:
-                self._smtp = smtplib.SMTP(self.server, self.port)
-                self._smtp.starttls()
-            else:
-                self._smtp = smtplib.SMTP(self.server, self.port)
-            if self.username and self.password:
-                self._smtp.login(self.username, self.password)
-            self.connected = True
-            return True
-        except Exception as e:
-            raise RuntimeError(f"SMTP connection failed: {e}")
-    
-    def disconnect(self):
-        if self._smtp and self.connected:
-            try:
-                self._smtp.quit()
-            except Exception:
-                pass
-            self.connected = False
-    
-    def send(self, from_addr, to_addrs, subject, body):
-        if not self.connected:
-            raise RuntimeError("Not connected to SMTP server")
-        try:
-            if isinstance(to_addrs, str):
-                to_addrs = [to_addrs]
-            msg = self._MIMEText(body)
-            msg['Subject'] = subject
-            msg['From'] = from_addr
-            msg['To'] = ', '.join(to_addrs)
-            self._smtp.sendmail(from_addr, to_addrs, msg.as_string())
-            return True
-        except Exception as e:
-            raise RuntimeError(f"Failed to send email: {e}")
-
-
-def ipp_smtp_connect(server, port=587, use_tls=True, username=None, password=None):
-    """Connect to SMTP server"""
-    client = IppSMTPClient(server, port, use_tls, username, password)
-    client.connect()
-    return client
-
-
-def ipp_smtp_disconnect(client):
-    """Disconnect SMTP client"""
-    if isinstance(client, IppSMTPClient):
-        client.disconnect()
-    return True
-
-
-def ipp_smtp_send(client, from_addr, to_addrs, subject, body):
-    """Send email via SMTP"""
-    if isinstance(client, IppSMTPClient):
-        return client.send(from_addr, to_addrs, subject, body)
-    raise RuntimeError("First argument must be an SMTP client")
-
-
-class IppFTPClient:
-    """FTP client wrapper for Ipp"""
-    def __init__(self, host, user, password='', port=21):
-        from ftplib import FTP
-        self.host = host
-        self.user = user
-        self.password = password
-        self.port = port
-        self._ftp = None
-        self.connected = False
-        self._FTP = FTP
-    
-    def connect(self):
-        try:
-            self._ftp = self._FTP()
-            self._ftp.connect(self.host, self.port)
-            self._ftp.login(self.user, self.password)
-            self.connected = True
-            return True
-        except Exception as e:
-            raise RuntimeError(f"FTP connection failed: {e}")
-    
-    def disconnect(self):
-        if self._ftp and self.connected:
-            try:
-                self._ftp.quit()
-            except Exception:
-                pass
-            self.connected = False
-    
-    def list_files(self, path='.'):
-        if not self.connected:
-            raise RuntimeError("Not connected to FTP server")
-        names = []
-        self._ftp.retrlines(f'NLST {path}', names.append)
-        return names
-    
-    def get_file(self, remote_path, local_path):
-        if not self.connected:
-            raise RuntimeError("Not connected to FTP server")
-        with open(local_path, 'wb') as f:
-            self._ftp.retrbinary(f'RETR {remote_path}', f.write)
-        return True
-    
-    def put_file(self, local_path, remote_path):
-        if not self.connected:
-            raise RuntimeError("Not connected to FTP server")
-        with open(local_path, 'rb') as f:
-            self._ftp.storbinary(f'STOR {remote_path}', f)
-        return True
-
-
-def ipp_ftp_connect(host, user, password='', port=21):
-    """Connect to FTP server"""
-    client = IppFTPClient(host, user, password, port)
-    client.connect()
-    return client
-
-
-def ipp_ftp_disconnect(client):
-    """Disconnect FTP client"""
-    if isinstance(client, IppFTPClient):
-        client.disconnect()
-    return True
-
-
-def ipp_ftp_list(client, path='.'):
-    """List files via FTP"""
-    if isinstance(client, IppFTPClient):
-        return client.list_files(path)
-    raise RuntimeError("First argument must be an FTP client")
-
-
-def ipp_ftp_get(client, remote_path, local_path):
-    """Download file via FTP"""
-    if isinstance(client, IppFTPClient):
-        return client.get_file(remote_path, local_path)
-    raise RuntimeError("First argument must be an FTP client")
-
-
-def ipp_ftp_put(client, local_path, remote_path):
-    """Upload file via FTP"""
-    if isinstance(client, IppFTPClient):
-        return client.put_file(local_path, remote_path)
-    raise RuntimeError("First argument must be an FTP client")
-
-
-# Printf-style formatting FIX: BUG-NEW Standard Library
-def ipp_printf(format_str, *args):
-    """Print with C-style format string"""
-    try:
-        print(format_str % args, end='')
-    except TypeError:
-        print(format_str, end='')
-    return None
-
-def ipp_sprintf(format_str, *args):
-    """Return formatted string"""
-    try:
-        return format_str % args
-    except TypeError:
-        return format_str
-
-def ipp_scanf(format_str):
-    """Read formatted input from stdin"""
-    import re
-    line = input()
-    
-    # Convert format string to regex
-    fmt_pattern = format_str
-    fmt_pattern = fmt_pattern.replace('%d', r'(-?\d+)')
-    fmt_pattern = fmt_pattern.replace('%f', r'(-?\d+\.?\d*)')
-    fmt_pattern = fmt_pattern.replace('%s', r'(\S+)')
-    fmt_pattern = fmt_pattern.replace('%%', r'%')
-    
-    match = re.match(fmt_pattern, line)
-    if not match:
-        return []
-    
-    results = []
-    for g in match.groups():
-        if re.match(r'^-?\d+$', g):
-            results.append(int(g))
-        elif re.match(r'^-?\d+\.?\d*$', g):
-            results.append(float(g))
-        else:
-            results.append(g)
-    return results
-
 
 BUILTINS = {
     "print": ipp_print,
-    "printf": ipp_printf,
-    "sprintf": ipp_sprintf,
-    "scanf": ipp_scanf,
     "len": ipp_len,
     "type": ipp_type,
     "to_number": ipp_to_number,
@@ -2112,9 +1822,7 @@ BUILTINS = {
     "items": ipp_items,
     "has_key": ipp_has_key,
     "read_file": ipp_read_file,
-    "file_read": ipp_read_file,  # Alias FIX: Standard Library
     "write_file": ipp_write_file,
-    "file_write": ipp_write_file,  # Alias FIX: Standard Library
     "append_file": ipp_append_file,
     "file_exists": ipp_file_exists,
     "delete_file": ipp_delete_file,
@@ -2223,24 +1931,11 @@ BUILTINS = {
     "url_query_build": ipp_url_query_build,
     "http_get": ipp_http_get,
     "http_post": ipp_http_post,
-    
-    # v1.3.3 Networking
-    "http_put": ipp_http_put,
-    "http_delete": ipp_http_delete,
-    "http_request": ipp_http_request,
-    "smtp_connect": ipp_smtp_connect,
-    "smtp_disconnect": ipp_smtp_disconnect,
-    "smtp_send": ipp_smtp_send,
-    "ftp_connect": ipp_ftp_connect,
-    "ftp_disconnect": ipp_ftp_disconnect,
-    "ftp_list": ipp_ftp_list,
-    "ftp_get": ipp_ftp_get,
-    "ftp_put": ipp_ftp_put,
     "gzip_compress": ipp_gzip_compress,
     "gzip_decompress": ipp_gzip_decompress,
     "zip_create": ipp_zip_create,
     "zip_extract": ipp_zip_extract,
-    "logger": ipp_logger,
+    "log": ipp_log,
     "deque": ipp_deque,
     "ordict": ipp_ordict,
     "argparse": ipp_argparse,

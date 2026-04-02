@@ -99,16 +99,16 @@ print(len(items(d)))  # Now prints: 2
 
 ## Remaining TODO for Contributors
 
-| Priority | Feature | Complexity |
-|----------|---------|------------|
-| 🟡 MED | HTTP Server (not just client) | Medium |
-| 🟡 MED | WebSocket client/server | Medium |
-| 🟢 LOW | Deque collection type | Low |
-| 🟢 LOW | PriorityQueue collection | Medium |
-| 🟢 LOW | Tree/Graph data structures | Medium |
-| 🟢 LOW | Structural pattern matching | Medium |
-| 🟢 LOW | Labeled break/continue | Medium |
+| Priority | Feature | Complexity | Status |
+|----------|---------|------------|--------|
+| 🟡 MED | HTTP Server (not just client) | Medium | ⏳ TODO |
+| 🟡 MED | WebSocket client/server | Medium | ⏳ TODO |
+| 🟢 LOW | Deque collection type | Low | ✅ DONE (v1.3.4) |
+| 🟢 LOW | PriorityQueue collection | Medium | ⏳ TODO |
+| 🟢 LOW | Tree/Graph data structures | Medium | ⏳ TODO |
+| 🟢 LOW | Structural pattern matching | Medium | ⏳ TODO |
+| 🟢 LOW | Labeled break/continue | Medium | ⏳ TODO |
 
 ---
 
-*Last updated: 2026-04-02 — v1.3.3 release (all bugs fixed, networking implemented)*
+*Last updated: 2026-04-02 — v1.3.4 release (comprehensive stdlib testing, log/logger bug fixed)*

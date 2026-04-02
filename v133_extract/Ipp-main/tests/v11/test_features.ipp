@@ -151,7 +151,7 @@ print(dq.len())
 # ====== Logging Tests ======
 print("\n--- Logging Tests ---")
 
-var log = logger("test", "INFO")
-log.info("Test log message")
+var logger = log("test", "INFO")
+logger.info("Test log message")
 
 print("\nv0.11.2 tests complete!")
