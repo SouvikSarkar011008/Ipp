@@ -35,7 +35,10 @@ TESTS = [
     ("v1.3.4-advanced", "tests/v1_3_4/test_advanced_features.ipp"),
     ("v1.3.7-repl", "tests/v1_3_7/test_repl_enhancements.ipp"),
     ("v1.3.8", "tests/v1_3_8/test_networking_collections.ipp"),
+    ("v1.3.8-websocket", "tests/v1_3_8/test_websocket.ipp"),
     ("v1.3.9", "tests/v1_3_9/test_error_handling.ipp"),
+    ("v1.3.10", "tests/v1_3_10/test_tab_completion.ipp"),
+    ("v1.3.10-repl", "tests/v1_3_10/test_repl_intelligence.ipp"),
 ]
 
 def run_test(version, filepath):

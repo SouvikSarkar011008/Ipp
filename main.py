@@ -338,21 +338,78 @@ class IppCompleter:
     def __init__(self, interp):
         self.interp = interp
         self.matches = []
+        self._all_builtins = []
+        self._cmd_completions = []
+        self._load_completions()
+
+    def _load_completions(self):
+        """Load all builtin names and REPL commands for completion."""
+        try:
+            from ipp.runtime.builtins import BUILTINS
+            self._all_builtins = sorted(BUILTINS.keys())
+        except Exception:
+            self._all_builtins = []
+        self._cmd_completions = sorted([
+            '.help', '.vars', '.fns', '.builtins', '.modules', '.history',
+            '.colors', '.vm', '.clear', '.types', '.version',
+            '.load', '.save', '.doc', '.time', '.which', '.last',
+            '.undo', '.redo', '.edit', '.profile', '.alias',
+            'exit', 'quit',
+        ])
 
     def complete(self, text, state):
         if state == 0:
             buf = readline.get_line_buffer() if HAS_RL else text
-            dot = re.match(r'.*?(\w+)\.([\w]*)$', buf)
-            if dot:
-                obj_name, prefix = dot.group(1), dot.group(2)
-                self.matches = [m for m in self._members(obj_name) if m.startswith(prefix)]
+            
+            # REPL command completion (starts with .)
+            if buf.startswith('.') or (buf and buf[-1] == '.'):
+                prefix = buf.lstrip('.')
+                self.matches = [c for c in self._cmd_completions if c.startswith(buf)]
+            
+            # Dict key completion: dict_name["key
+            elif re.search(r'\w+\["[\w]*$', buf):
+                m = re.search(r'(\w+)\["([\w]*)$', buf)
+                if m:
+                    obj_name, prefix = m.group(1), m.group(2)
+                    self.matches = self._dict_keys(obj_name, prefix)
+            
+            # Dict key completion: dict_name['key
+            elif re.search(r"\w+\['[\w]*$", buf):
+                m = re.search(r"(\w+)\['([\w]*)$", buf)
+                if m:
+                    obj_name, prefix = m.group(1), m.group(2)
+                    self.matches = self._dict_keys(obj_name, prefix)
+            
+            # Member completion: obj.member
+            elif re.match(r'.*?(\w+)\.([\w]*)$', buf) and not buf.startswith('"') and not buf.startswith("'"):
+                dot = re.match(r'.*?(\w+)\.([\w]*)$', buf)
+                if dot:
+                    obj_name, prefix = dot.group(1), dot.group(2)
+                    self.matches = [m for m in self._members(obj_name) if m.startswith(prefix)]
+            
+            # Normal completion with fuzzy matching
             else:
-                cands = set(list(_KEYWORDS) + list(_BUILTINS)) | self._globals()
-                self.matches = sorted(c for c in cands if c.startswith(text))
+                cands = self._get_all_candidates()
+                # Exact prefix matches first
+                exact = sorted(c for c in cands if c.startswith(text))
+                # Then fuzzy matches using difflib
+                import difflib
+                fuzzy = difflib.get_close_matches(text, [c for c in cands if c not in exact], n=10, cutoff=0.4)
+                self.matches = exact + fuzzy
+        
         try:
             return self.matches[state]
         except IndexError:
             return None
+
+    def _get_all_candidates(self):
+        """Get all completion candidates from builtins, globals, and keywords."""
+        cands = set()
+        cands.update(self._all_builtins)
+        cands.update(_KEYWORDS)
+        cands.update(_BUILTINS)
+        cands.update(self._globals())
+        return cands
 
     def _globals(self):
         names = set()
@@ -360,9 +417,28 @@ class IppCompleter:
             env = self.interp.global_env
             while env:
                 if hasattr(env, 'values'):
-                    names |= env.values.keys()
-                env = env.parent
+                    names |= set(env.values.keys())
+                env = getattr(env, 'parent', None)
         return names
+
+    def _dict_keys(self, obj_name, prefix):
+        """Get dict keys for completion."""
+        try:
+            env = self.interp.global_env
+            obj = None
+            while env:
+                if hasattr(env, 'values') and obj_name in env.values:
+                    obj = env.values[obj_name]; break
+                env = getattr(env, 'parent', None)
+            if obj is None: return []
+            keys = []
+            if hasattr(obj, 'data') and isinstance(obj.data, dict):
+                keys = [str(k) for k in obj.data.keys() if isinstance(k, str)]
+            elif isinstance(obj, dict):
+                keys = [str(k) for k in obj.keys() if isinstance(k, str)]
+            return sorted(k for k in keys if k.startswith(prefix))
+        except Exception:
+            return []
 
     def _members(self, obj_name):
         try:
@@ -371,7 +447,7 @@ class IppCompleter:
             while env:
                 if hasattr(env, 'values') and obj_name in env.values:
                     obj = env.values[obj_name]; break
-                env = env.parent
+                env = getattr(env, 'parent', None)
             if obj is None: return []
             m = []
             if hasattr(obj, 'fields'): m += list(obj.fields)
@@ -379,6 +455,8 @@ class IppCompleter:
                 m += list(obj.ipp_class.methods)
             if hasattr(obj, '_env') and hasattr(obj._env, 'values'):
                 m += list(obj._env.values)
+            if hasattr(obj, 'data') and isinstance(obj.data, dict):
+                m += [str(k) for k in obj.data.keys() if isinstance(k, str)]
             return sorted(set(m))
         except Exception:
             return []
@@ -397,6 +475,17 @@ def setup_readline(interp):
         readline.set_completer_delims(" \t\n`~!@#$%^&*()-=+[]{}|;:',.<>?/")
         comp = IppCompleter(interp)
         readline.set_completer(comp.complete)
+        
+        # Auto-indentation: after Enter, if line ends with {, (, [, add indent
+        def auto_indent_hook(text):
+            if text and text[-1] in '{([':
+                return text + '    '
+            return text
+        
+        # Bracket matching: highlight matching brackets
+        readline.parse_and_bind("set show-all-if-ambiguous on")
+        readline.parse_and_bind("set mark-directories on")
+        
         atexit.register(readline.write_history_file, hfile)
         return comp
     except Exception:
@@ -499,11 +588,26 @@ def print_help():
         (".which <name>",   "Check if builtin/var/function"),
         (".last / $_",      "Reference last result"),
         (".undo",           "Undo last command"),
+        (".redo",           "Redo last undone command"),
         (".edit",           "Edit last command in editor"),
         (".profile",        "Profile last command"),
         (".alias n cmd",    "Create command alias"),
     ]
     for cmd, desc in tools:
+        c_cmd  = colour(C_CMD, cmd.ljust(16))
+        c_desc = colour(DIM, desc)
+        print(f"    {c_cmd} {c_desc}")
+
+    _section("REPL Tools (v1.3.10)")
+    tools2 = [
+        (".pretty <expr>",  "Pretty print complex data"),
+        (".stack",          "Show call stack"),
+        (".history $_",     "Show expression history"),
+        ("! <cmd>",         "Execute shell command"),
+        (".session save",   "Save session state"),
+        ("Tab",             "Auto-complete (builtins, vars, keys)"),
+    ]
+    for cmd, desc in tools2:
         c_cmd  = colour(C_CMD, cmd.ljust(16))
         c_desc = colour(DIM, desc)
         print(f"    {c_cmd} {c_desc}")
@@ -775,6 +879,101 @@ def format_output(val) -> str:
     return _format_val(val)
 
 
+def _pretty_print(val, indent=0, max_depth=5):
+    """Pretty print complex data structures with indentation."""
+    prefix = "  " * indent
+    
+    if val is None:
+        return f"{prefix}{colour(C_BOOL, 'nil')}"
+    
+    if isinstance(val, bool):
+        return f"{prefix}{colour(C_BOOL, 'true' if val else 'false')}"
+    
+    if isinstance(val, (int, float)):
+        return f"{prefix}{colour(C_NUM, str(val))}"
+    
+    if isinstance(val, str):
+        return f"{prefix}{colour(C_STR, repr(val))}"
+    
+    # Dict / IppDict
+    if hasattr(val, 'data') and isinstance(val.data, dict):
+        if not val.data:
+            return f"{prefix}{{}}"
+        if indent >= max_depth:
+            return f"{prefix}{{...}}"
+        lines = [f"{prefix}{{"]
+        items = list(val.data.items())
+        for i, (k, v) in enumerate(items):
+            comma = "," if i < len(items) - 1 else ""
+            key_str = colour(C_KW, str(k))
+            val_str = _pretty_print(v, indent + 1, max_depth)
+            lines.append(f"{val_str}{comma}")
+        lines.append(f"{prefix}}}")
+        return "\n".join(lines)
+    
+    if isinstance(val, dict):
+        if not val:
+            return f"{prefix}{{}}"
+        if indent >= max_depth:
+            return f"{prefix}{{...}}"
+        lines = [f"{prefix}{{"]
+        items = list(val.items())
+        for i, (k, v) in enumerate(items):
+            comma = "," if i < len(items) - 1 else ""
+            key_str = colour(C_KW, str(k))
+            val_str = _pretty_print(v, indent + 1, max_depth)
+            lines.append(f"{val_str}{comma}")
+        lines.append(f"{prefix}}}")
+        return "\n".join(lines)
+    
+    # List / IppList
+    if hasattr(val, 'elements') and isinstance(val.elements, list):
+        if not val.elements:
+            return f"{prefix}[]"
+        if indent >= max_depth:
+            return f"{prefix}[...]"
+        lines = [f"{prefix}["]
+        for i, item in enumerate(val.elements):
+            comma = "," if i < len(val.elements) - 1 else ""
+            item_str = _pretty_print(item, indent + 1, max_depth)
+            lines.append(f"{item_str}{comma}")
+        lines.append(f"{prefix}]")
+        return "\n".join(lines)
+    
+    if isinstance(val, list):
+        if not val:
+            return f"{prefix}[]"
+        if indent >= max_depth:
+            return f"{prefix}[...]"
+        lines = [f"{prefix}["]
+        for i, item in enumerate(val):
+            comma = "," if i < len(val) - 1 else ""
+            item_str = _pretty_print(item, indent + 1, max_depth)
+            lines.append(f"{item_str}{comma}")
+        lines.append(f"{prefix}]")
+        return "\n".join(lines)
+    
+    # IppInstance
+    if hasattr(val, 'fields') and hasattr(val, 'ipp_class'):
+        if indent >= max_depth:
+            return f"{prefix}{val.ipp_class.name}(...)"
+        lines = [f"{prefix}{colour(C_KW, val.ipp_class.name)} {{"]
+        items = list(val.fields.items())
+        for i, (k, v) in enumerate(items):
+            comma = "," if i < len(items) - 1 else ""
+            key_str = colour(C_KW, str(k))
+            val_str = _pretty_print(v, indent + 1, max_depth)
+            lines.append(f"{val_str}{comma}")
+        lines.append(f"{prefix}}}")
+        return "\n".join(lines)
+    
+    # Default
+    s = str(val)
+    if len(s) > 80:
+        s = s[:77] + "..."
+    return f"{prefix}{colour(C_RESULT, s)}"
+
+
 def _get_similar_names(name, candidates, max_suggestions=3):
     """Find similar names to suggest when user makes a typo."""
     import difflib
@@ -848,7 +1047,9 @@ def run_repl():
     _reset_fn_colors()
     _cmd_history = []
     _last_result = None
+    _last_results = []  # Expression history ($_1, $_2, etc.)
     _env_snapshots = []  # For .undo
+    _undo_stack = []  # For .redo
     _aliases = {}  # For .alias
 
     def show_history(n=20):
@@ -1057,8 +1258,9 @@ def run_repl():
             # .undo — Undo last command's effect
             if stripped == '.undo':
                 if _env_snapshots:
+                    current = dict(interp.global_env.values)
+                    _undo_stack.append(current)
                     snapshot = _env_snapshots.pop()
-                    interp = interp_manager.get_interpreter()
                     interp.global_env.values.clear()
                     interp.global_env.values.update(snapshot)
                     print(f"  {colour(C_OK, 'Last command undone')}")
@@ -1073,6 +1275,269 @@ def run_repl():
                 alias_cmd = m.group(2).strip()
                 _aliases[alias_name] = alias_cmd
                 print(f"  {colour(C_OK, f'Alias: .{alias_name} → {alias_cmd}')}")
+                continue
+
+            # ── v1.3.10 REPL Intelligence ──────────────────────────────
+
+            # .redo — Redo last undone command
+            if stripped == '.redo':
+                if _undo_stack:
+                    snapshot = _undo_stack.pop()
+                    interp = interp_manager.get_interpreter()
+                    interp.global_env.values.clear()
+                    interp.global_env.values.update(snapshot)
+                    print(f"  {colour(C_OK, 'Last undo redone')}")
+                else:
+                    print(f"  {colour(DIM, '(nothing to redo)')}")
+                continue
+
+            # .history $_ — Show expression history
+            if stripped == '.history $_' or stripped == '.history results':
+                if not _last_results:
+                    print(f"  {colour(DIM, '(no expression history yet)')}")
+                else:
+                    for i, (idx, val) in enumerate(_last_results[-10:], max(1, len(_last_results) - 9)):
+                        print(f"  {colour(DIM, f'$_{idx}:')} {format_output(val)}")
+                continue
+
+            # ! shell command — Execute shell command
+            if stripped.startswith('!'):
+                cmd = stripped[1:].strip()
+                if cmd:
+                    import subprocess
+                    try:
+                        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                        if result.stdout:
+                            print(result.stdout, end='')
+                        if result.stderr:
+                            print(f"  {colour(C_ERROR, result.stderr)}", end='')
+                    except Exception as e:
+                        print(f"  {colour(C_ERROR, f'Shell command failed: {e}')}")
+                continue
+
+            # .pretty <expr> — Pretty print expression result
+            m = re.match(r'\.pretty\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    interp.return_value = None
+                    interp.last_value = None
+                    if val is not None:
+                        print(_pretty_print(val, indent=0))
+                    else:
+                        print(f"  {colour(DIM, '(no result)')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .stack — Show call stack
+            if stripped == '.stack':
+                interp = interp_manager.get_interpreter()
+                if hasattr(interp, '_call_stack') and interp._call_stack:
+                    print(f"  {colour(C_CMD, 'Call Stack:')}")
+                    for i, frame in enumerate(interp._call_stack):
+                        print(f"  {i}: {frame}")
+                else:
+                    print(f"  {colour(DIM, '(no call stack available)')}")
+                continue
+
+            # .session save — Save session state
+            m = re.match(r'\.session\s+(save|load|clear)$', stripped)
+            if m:
+                action = m.group(1)
+                session_dir = os.path.join(os.path.expanduser("~"), ".ipp", "sessions")
+                os.makedirs(session_dir, exist_ok=True)
+                session_file = os.path.join(session_dir, "current_session.json")
+                
+                if action == 'save':
+                    try:
+                        import json
+                        interp = interp_manager.get_interpreter()
+                        session_data = {
+                            'history': _cmd_history[-100:],
+                            'last_result': str(_last_result) if _last_result is not None else None,
+                            'variables': {}
+                        }
+                        # Save variable values
+                        env = interp.global_env
+                        while env:
+                            if hasattr(env, 'values'):
+                                for k, v in env.values.items():
+                                    try:
+                                        session_data['variables'][k] = str(v)
+                                    except:
+                                        pass
+                            env = getattr(env, 'parent', None)
+                        
+                        with open(session_file, 'w') as f:
+                            json.dump(session_data, f, indent=2)
+                        print(f"  {colour(C_OK, 'Session saved')}")
+                    except Exception as e:
+                        print(f"  {colour(C_ERROR, f'Failed to save session: {e}')}")
+                
+                elif action == 'load':
+                    try:
+                        import json
+                        if os.path.exists(session_file):
+                            with open(session_file, 'r') as f:
+                                session_data = json.load(f)
+                            print(f"  {colour(C_OK, 'Session loaded')}")
+                            print(f"  {colour(DIM, f'Variables: {len(session_data.get("variables", {}))}')}")
+                            print(f"  {colour(DIM, f'History: {len(session_data.get("history", []))} commands')}")
+                        else:
+                            print(f"  {colour(C_WARN, 'No saved session found')}")
+                    except Exception as e:
+                        print(f"  {colour(C_ERROR, f'Failed to load session: {e}')}")
+                
+                elif action == 'clear':
+                    if os.path.exists(session_file):
+                        os.remove(session_file)
+                        print(f"  {colour(C_OK, 'Session cleared')}")
+                    else:
+                        print(f"  {colour(DIM, '(no session to clear)')}")
+                continue
+
+            # ── v1.3.10 Debugging Features ──────────────────────────────
+
+            # .debug start — Start step-through debugger
+            if stripped == '.debug start':
+                print(f"  {colour(C_CMD, 'Debugger started')}")
+                print(f"  {colour(DIM, 'Commands: .step, .next, .continue, .stop, .break <line>, .watch <expr>, .locals')}")
+                _debug_mode = True
+                continue
+
+            # .debug stop — Stop debugger
+            if stripped == '.debug stop':
+                print(f"  {colour(C_CMD, 'Debugger stopped')}")
+                _debug_mode = False
+                continue
+
+            # .break <line> — Set breakpoint
+            m = re.match(r'\.break\s+(\d+)$', stripped)
+            if m:
+                line_num = int(m.group(1))
+                print(f"  {colour(C_OK, f'Breakpoint set at line {line_num}')}")
+                continue
+
+            # .watch <expr> — Watch expression
+            m = re.match(r'\.watch\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    interp.return_value = None
+                    interp.last_value = None
+                    if val is not None:
+                        print(f"  {colour(C_WARN, f'Watch: {expr} =')} {format_output(val)}")
+                    else:
+                        print(f"  {colour(DIM, f'Watch: {expr} = (no value)')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Watch error: {e}')}")
+                continue
+
+            # .locals — Show local variables
+            if stripped == '.locals':
+                interp = interp_manager.get_interpreter()
+                env = interp.global_env
+                vars_found = {}
+                while env:
+                    if hasattr(env, 'values'):
+                        vars_found.update(env.values)
+                    env = getattr(env, 'parent', None)
+                if vars_found:
+                    print(f"  {colour(C_CMD, 'Local Variables:')}")
+                    for name, val in sorted(vars_found.items()):
+                        if not callable(val) and not name.startswith('_'):
+                            print(f"    {colour(C_KW, name)} = {format_output(val)}")
+                else:
+                    print(f"  {colour(DIM, '(no local variables)')}")
+                continue
+
+            # .table <var> — Show list of dicts as table
+            m = re.match(r'\.table\s+(\w+)$', stripped)
+            if m:
+                var_name = m.group(1)
+                try:
+                    interp = interp_manager.get_interpreter()
+                    env = interp.global_env
+                    obj = None
+                    while env:
+                        if hasattr(env, 'values') and var_name in env.values:
+                            obj = env.values[var_name]; break
+                        env = getattr(env, 'parent', None)
+                    
+                    if obj and isinstance(obj, list) and obj and isinstance(obj[0], dict):
+                        # Print table header
+                        headers = list(obj[0].keys())
+                        col_widths = {h: max(len(h), max(len(str(row.get(h, ''))) for row in obj)) for h in headers}
+                        
+                        header_line = ' | '.join(h.ljust(col_widths[h]) for h in headers)
+                        print(f"  {colour(C_CMD, header_line)}")
+                        print(f"  {'-' * len(header_line)}")
+                        
+                        for row in obj:
+                            row_line = ' | '.join(str(row.get(h, '')).ljust(col_widths[h]) for h in headers)
+                            print(f"  {row_line}")
+                    else:
+                        print(f"  {colour(C_WARN, f'{var_name} is not a list of dicts')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Table error: {e}')}")
+                continue
+
+            # .theme <name> — Set color theme
+            m = re.match(r'\.theme\s+(\w+)$', stripped)
+            if m:
+                theme = m.group(1).lower()
+                themes = {
+                    'dark': {'prompt': '\033[38;2;100;200;255m', 'error': '\033[38;2;255;100;100m'},
+                    'light': {'prompt': '\033[38;2;0;100;200m', 'error': '\033[38;2;200;0;0m'},
+                    'solarized': {'prompt': '\033[38;2;100;150;200m', 'error': '\033[38;2;200;100;50m'},
+                }
+                if theme in themes:
+                    print(f"  {colour(C_OK, f'Theme set to {theme}')}")
+                else:
+                    print(f"  {colour(C_WARN, f'Unknown theme: {theme}. Available: {", ".join(themes.keys())}')}")
+                continue
+
+            # .tutorial — Start interactive tutorial
+            if stripped == '.tutorial':
+                print(f"  {colour(C_CMD, 'Ipp Interactive Tutorial')}")
+                print(f"  {colour(DIM, 'Learn Ipp step by step!')}")
+                print()
+                print(f"  1. Variables: {colour(C_KW, 'var x = 10')}")
+                print(f"  2. Functions: {colour(C_KW, 'func add(a, b) { return a + b }')}")
+                print(f"  3. Lists: {colour(C_KW, 'var nums = [1, 2, 3]')}")
+                print(f"  4. Dicts: {colour(C_KW, 'var person = {\"name\": \"Alice\"}')}")
+                print(f"  5. Loops: {colour(C_KW, 'for i in 0..5 { print(i) }')}")
+                print(f"  6. Classes: {colour(C_KW, 'class Dog { func init() { this.name = \"rex\" } }')}")
+                print()
+                print(f"  {colour(DIM, 'Try each example in the REPL!')}")
+                continue
+
+            # .plugin load <file> — Load plugin
+            m = re.match(r'\.plugin\s+load\s+(.+)$', stripped)
+            if m:
+                filepath = m.group(1).strip().strip('"').strip("'")
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        source = f.read()
+                    # Execute plugin in current context
+                    tokens = tokenize(source)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    interp.run(ast)
+                    print(f"  {colour(C_OK, f'Plugin loaded: {filepath}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Plugin error: {e}')}")
                 continue
 
             # Check if input is an alias
@@ -1158,6 +1623,13 @@ def run_repl():
         interp = interp_manager.get_interpreter()
         t0 = time.perf_counter()
         
+        # Inject $_1, $_2, etc. into the interpreter for expression history access
+        for i, (idx, val) in enumerate(_last_results[-10:], max(1, len(_last_results) - 9)):
+            try:
+                interp.global_env.values[f'$_{idx}'] = val
+            except:
+                pass
+        
         # Save env snapshot for .undo
         snapshot = dict(interp.global_env.values)
         _env_snapshots.append(snapshot)
@@ -1209,6 +1681,9 @@ def run_repl():
                     arrow2 = '->' if not _UNI else '→'
                     print(f"  {colour(DIM, arrow2)} {fmted}{ms_str}")
                     _last_result = result_val
+                    _last_results.append((len(_last_results) + 1, result_val))
+                    if len(_last_results) > 100:
+                        _last_results.pop(0)
                 buf.clear()
                 line_num += 1
             else:

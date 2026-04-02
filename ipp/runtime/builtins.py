@@ -2294,6 +2294,121 @@ def ipp_graph(directed=False):
     return IppGraph(directed)
 
 
+# v1.3.8 WebSocket Support
+class IppWebSocket:
+    """WebSocket client for Ipp language"""
+    def __init__(self, url):
+        self.url = url
+        self._ws = None
+        self._connected = False
+        self._error = None
+        try:
+            import websocket
+            self._has_websocket = True
+            self._websocket = websocket
+        except ImportError:
+            try:
+                import websockets
+                self._has_websocket = True
+                self._websockets = websockets
+                self._use_async = True
+            except ImportError:
+                self._has_websocket = False
+    
+    def connect(self):
+        if not self._has_websocket:
+            raise RuntimeError("WebSocket library not installed. Install with: pip install websocket-client")
+        
+        try:
+            import websocket
+            self._ws = websocket.create_connection(self.url)
+            self._connected = True
+            return True
+        except Exception as e:
+            self._error = str(e)
+            raise RuntimeError(f"WebSocket connection failed: {e}")
+    
+    def send(self, message):
+        if not self._connected:
+            raise RuntimeError("WebSocket not connected")
+        try:
+            import websocket
+            if isinstance(message, dict):
+                import json
+                message = json.dumps(message)
+            self._ws.send(str(message))
+            return True
+        except Exception as e:
+            self._error = str(e)
+            raise RuntimeError(f"WebSocket send failed: {e}")
+    
+    def receive(self, timeout=None):
+        if not self._connected:
+            raise RuntimeError("WebSocket not connected")
+        try:
+            import websocket
+            if timeout is not None:
+                self._ws.settimeout(float(timeout))
+            data = self._ws.recv()
+            return data
+        except Exception as e:
+            self._error = str(e)
+            return None
+    
+    def receive_json(self, timeout=None):
+        data = self.receive(timeout)
+        if data is None:
+            return None
+        try:
+            import json
+            return json.loads(data)
+        except Exception:
+            return data
+    
+    def is_connected(self):
+        return self._connected
+    
+    def close(self):
+        if self._connected and self._ws:
+            try:
+                self._ws.close()
+            except Exception:
+                pass
+            self._connected = False
+    
+    def __repr__(self):
+        return f"<WebSocket url={self.url} connected={self._connected}>"
+
+
+def ipp_websocket_connect(url):
+    """Create and connect a WebSocket client"""
+    ws = IppWebSocket(str(url))
+    ws.connect()
+    return ws
+
+
+def ipp_websocket_send(ws, message):
+    """Send a message via WebSocket"""
+    if isinstance(ws, IppWebSocket):
+        return ws.send(message)
+    raise RuntimeError("First argument must be a WebSocket")
+
+
+def ipp_websocket_receive(ws, timeout=None):
+    """Receive a message via WebSocket"""
+    if isinstance(ws, IppWebSocket):
+        return ws.receive(timeout)
+    raise RuntimeError("First argument must be a WebSocket")
+
+
+def ipp_websocket_close(ws):
+    """Close a WebSocket connection"""
+    if isinstance(ws, IppWebSocket):
+        ws.close()
+        return True
+    raise RuntimeError("First argument must be a WebSocket")
+
+
 # Printf-style formatting FIX: BUG-NEW Standard Library
 def ipp_printf(format_str, *args):
     """Print with C-style format string"""
@@ -2530,6 +2645,10 @@ BUILTINS = {
     
     # v1.3.8 Networking + Collections
     "http_serve": ipp_http_serve,
+    "websocket_connect": ipp_websocket_connect,
+    "websocket_send": ipp_websocket_send,
+    "websocket_receive": ipp_websocket_receive,
+    "websocket_close": ipp_websocket_close,
     "PriorityQueue": ipp_priority_queue,
     "Tree": ipp_tree,
     "Graph": ipp_graph,

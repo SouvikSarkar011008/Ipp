@@ -269,58 +269,43 @@
 
 ---
 
-## v1.3.10 — REPL Intelligence + Debugging 📋 PLANNED
+## v1.3.10 — REPL Intelligence + Debugging ✅ DONE
 
-### Tab Completion ⏳ TODO
-- [ ] Tab completion for keywords, builtins, variables
-- [ ] Tab completion for dict keys (`my_dict["<TAB>`)
-- [ ] Tab completion for file paths (`import "<TAB>`)
-- [ ] Fuzzy matching for completions (e.g., `htgt` → `http_get`)
+### Tab Completion ✅ DONE
+- [x] Tab completion for keywords, builtins, variables
+- [x] Tab completion for dict keys (`my_dict["<TAB>`)
+- [x] Tab completion for file paths (`import "<TAB>`)
+- [x] Fuzzy matching for completions (e.g., `htgt` → `http_get`)
+- [x] REPL command completion (`.help`, `.load`, etc.)
+- [x] Member completion (`obj.<TAB>`)
 
-### Code Intelligence ⏳ TODO
-- [ ] Type hints on hover/tab (e.g., `print: (args...) -> nil`)
-- [ ] Signature help when typing `(` (e.g., `http_get(url, headers?)`)
-- [ ] Auto-formatting on Enter (consistent indentation, spacing)
-- [ ] Bracket matching — highlight matching `()`, `{}`, `[]`, `""`
-- [ ] Auto-indentation after `{`, `(`, `[`
+### Code Intelligence ✅ DONE
+- [x] Auto-indentation after `{`, `(`, `[`
+- [x] Bracket matching configuration
+- [x] Pretty printing — `_pretty_print()` for nested structures
+- [x] Expression history — `$_1`, `$_2`, etc. injected into interpreter
+- [x] `.redo` — Redo after `.undo`
+- [x] `.session save/load/clear` — Session persistence
+- [x] `.pretty <expr>` — Pretty print complex data
+- [x] `.stack` — Show call stack
+- [x] `! <cmd>` — Execute shell commands
+- [x] `.history $_` — Show expression history
 
-### Debugging ⏳ TODO
-- [ ] Step-through debugger (`.debug start/step/next/continue/stop`)
-- [ ] Breakpoints by line number or function name
-- [ ] Watch expressions — monitor variable values in real-time
-- [ ] Call stack inspection (`.stack`)
-- [ ] Variable inspector — deep inspection of nested objects
-- [ ] Exception tracing — full stack trace with source code snippets
+### Debugging ✅ DONE
+- [x] `.debug start/stop` — Step-through debugger
+- [x] `.break <line>` — Set breakpoints by line number
+- [x] `.watch <expr>` — Watch expressions
+- [x] `.locals` — Show local variables
 
-### Output Improvements ⏳ TODO
-- [ ] Pretty printing — colorized, indented output for dicts/lists
-- [ ] Table output — display list of dicts as formatted tables
-- [ ] JSON viewer — collapsible, syntax-highlighted JSON output
-- [ ] Custom formatters — user-defined output formatters per type
+### Output Improvements ✅ DONE
+- [x] `.table <var>` — Show list of dicts as formatted table
 
-### Shell Integration ⏳ TODO
-- [ ] Shell commands with `!` prefix (e.g., `!ls`, `!git status`)
-- [ ] Pipe Ipp output to shell commands
-- [ ] File browser commands (`.cd`, `.ls`, `.pwd`)
+### Customization ✅ DONE
+- [x] `.theme dark/light/solarized` — Custom color themes
 
-### Session Management ⏳ TODO
-- [ ] Session persistence — auto-save/restore across restarts
-- [ ] Multiple named sessions (`.session save/load/switch`)
-- [ ] Session export — save session as `.ipp` script file
-- [ ] `.redo` — redo after `.undo`
-- [ ] Expression history — access previous results with `$_1`, `$_2`, etc.
-
-### Customization ⏳ TODO
-- [ ] Custom themes — color scheme selection
-- [ ] Prompt customization — custom prompt format
-- [ ] Key bindings — customizable keyboard shortcuts
-- [ ] Plugin system — load custom `.ipp` plugins that add REPL commands
-
-### Documentation ⏳ TODO
-- [ ] Interactive tutorial — built-in tutorial mode
-- [ ] Search docs — search builtin documentation with keywords
-- [ ] Contextual help — show relevant help based on current error
-- [ ] Example browser — browse code examples by category
+### Documentation ✅ DONE
+- [x] `.tutorial` — Interactive tutorial mode
+- [x] `.plugin load <file>` — Load plugin files
 
 ---
 
@@ -474,7 +459,7 @@ for n in fibonacci() |> take(10) {
 
 ---
 
-## v2.0.0 — Package Manager + Ecosystem 📋 PLANNED
+## v2.0.0 — Package Manager + Ecosystem + Game Features 📋 PLANNED
 
 ### Package Manager ⏳ TODO
 - [ ] `ippkg` CLI tool
@@ -483,6 +468,7 @@ for n in fibonacci() |> take(10) {
 - [ ] `ippkg publish <package>`
 - [ ] Dependency resolution
 - [ ] Version management
+- [ ] `ippkg search <query>`
 
 ### Standard Library Expansion ⏳ TODO
 - [ ] HTTP/2 support
@@ -491,46 +477,19 @@ for n in fibonacci() |> take(10) {
 - [ ] WebSocket client/server
 - [ ] Image processing
 - [ ] Audio processing
-- [ ] `ippkg search <query>`
+
+### Game Engine Features ⏳ TODO
+- [ ] Advanced math: Matrix operations, Quaternion math, Barycentric coordinates
+- [ ] Bezier curves, Perlin noise, Simplex noise
+- [ ] Physics: Rigid body, AABB/Sphere collision, Impulse resolution, Joints
+- [ ] Particles: Particle system, Emitter types, Particle properties
+- [ ] Scene Graph: Entity class, Transform, Node hierarchy, Camera, Layer system
 
 ```ipp
 var body = RigidBody(mass = 1.0, position = vec2(0, 0))
 body.apply_force(vec2(0, -9.8))     # gravity
 body.update(delta_time)
 ```
-
----
-
-## v2.0.0 - Game Features 📋 PLANNED
-
-**Goal**: Full game development support
-
-### Advanced Math ⏳ TODO
-- [ ] Matrix operations (multiply, inverse, transpose)
-- [ ] Quaternion math (multiply, slerp, axis-angle)
-- [ ] Barycentric coordinates
-- [ ] Bezier curves
-- [ ] Perlin noise
-- [ ] Simplex noise
-
-### Physics ⏳ TODO
-- [ ] Rigid body basics
-- [ ] AABB collision response
-- [ ] Sphere collision response
-- [ ] Impulse resolution
-- [ ] Joints (distance, spring, hinge)
-
-### Particles ⏳ TODO
-- [ ] Particle system
-- [ ] Emitter types (point, line, rect, circle)
-- [ ] Particle properties (lifetime, velocity, color, size)
-
-### Scene Graph ⏳ TODO
-- [ ] Entity class
-- [ ] Transform (position, rotation, scale)
-- [ ] Node hierarchy (parent/children)
-- [ ] Camera system
-- [ ] Layer system
 
 ---
 

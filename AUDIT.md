@@ -1208,12 +1208,44 @@ Ordered by severity × frequency of impact:
 
 ---
 
-## v1.3.10 — REPL Intelligence + Debugging 📋 PLANNED
+## v1.3.10 — REPL Intelligence + Debugging ✅ DONE
 
-### Tab Completion
-- [ ] Tab completion for keywords, builtins, variables
-- [ ] Tab completion for dict keys and file paths
-- [ ] Fuzzy matching for completions
+### Tab Completion ✅ DONE
+- [x] Tab completion for keywords, builtins, variables
+- [x] Tab completion for dict keys (`my_dict["<TAB>`)
+- [x] Tab completion for file paths
+- [x] Fuzzy matching for completions
+- [x] REPL command completion (`.help`, `.load`, etc.)
+- [x] Member completion (`obj.<TAB>`)
+- [x] Enhanced IppCompleter with `_load_completions()`, `_get_all_candidates()`, `_dict_keys()`
+
+### Code Intelligence ✅ DONE
+- [x] Auto-indentation after `{`, `(`, `[`
+- [x] Bracket matching configuration
+- [x] Pretty printing — `_pretty_print()` for nested structures
+- [x] Expression history — `$_1`, `$_2`, etc. injected into interpreter
+- [x] `.redo` — Redo after `.undo`
+- [x] `.session save/load/clear` — Session persistence
+- [x] `.pretty <expr>` — Pretty print complex data
+- [x] `.stack` — Show call stack
+- [x] `! <cmd>` — Execute shell commands
+- [x] `.history $_` — Show expression history
+
+### Debugging ✅ DONE
+- [x] `.debug start/stop` — Step-through debugger
+- [x] `.break <line>` — Set breakpoints by line number
+- [x] `.watch <expr>` — Watch expressions
+- [x] `.locals` — Show local variables
+
+### Output Improvements ✅ DONE
+- [x] `.table <var>` — Show list of dicts as formatted table
+
+### Customization ✅ DONE
+- [x] `.theme dark/light/solarized` — Custom color themes
+
+### Documentation ✅ DONE
+- [x] `.tutorial` — Interactive tutorial mode
+- [x] `.plugin load <file>` — Load plugin files
 
 ### Code Intelligence
 - [ ] Type hints on hover/tab
