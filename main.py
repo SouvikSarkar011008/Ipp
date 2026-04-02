@@ -110,6 +110,15 @@ def _check_ansi_support():
     try:
         import os
         if hasattr(os, 'getenv') and os.getenv('IPP_COLORS', '').lower() in ('1', 'true', 'yes'):
+            # Force enable with virtual terminal processing on Windows
+            if sys.platform.startswith('win'):
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                h = kernel32.GetStdHandle(-11)
+                mode = ctypes.c_ulong()
+                kernel32.GetConsoleMode(h, ctypes.byref(mode))
+                mode.value |= 4  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+                kernel32.SetConsoleMode(h, mode)
             return True
         return _ANSI_OK and not sys.platform.startswith('win')
     except:

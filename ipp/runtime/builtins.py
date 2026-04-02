@@ -501,12 +501,12 @@ def ipp_json_stringify(obj, indent=None):
         raise RuntimeError(f"JSON stringify error: {e}")
 
 
-def ipp_regex_match(pattern, text):
+def ipp_regex_match(text, pattern):
     import re
     return bool(re.match(pattern, text))
 
 
-def ipp_regex_search(pattern, text):
+def ipp_regex_search(text, pattern):
     import re
     match = re.search(pattern, text)
     if match:
@@ -514,7 +514,7 @@ def ipp_regex_search(pattern, text):
     return ""
 
 
-def ipp_regex_replace(pattern, text, replacement):
+def ipp_regex_replace(text, pattern, replacement):
     import re
     return re.sub(pattern, replacement, text)
 

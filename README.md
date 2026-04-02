@@ -2,11 +2,12 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.3.2-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.3.4-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
-<img src="https://img.shields.io/badge/bugs_fixed-57+-brightgreen.svg" alt="Bugs Fixed">
-<img src="https://img.shields.io/badge/status-class_fix_in_progress-yellow.svg" alt="Status">
+<img src="https://img.shields.io/badge/builtins-130+-brightgreen.svg" alt="Builtins">
+<img src="https://img.shields.io/badge/tests-22%20passing-brightgreen.svg" alt="Tests">
+<img src="https://img.shields.io/badge/status-stable-green.svg" alt="Status">
 
 **A beginner-friendly scripting language for game development.**  
 Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Bytecode VM
@@ -19,7 +20,7 @@ Python-like syntax · Closures · Classes with Inheritance · Pattern Matching �
 
 Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
 
-**v1.2.4** includes a full bug-fix pass — 57 bugs resolved — and a redesigned Gemini-CLI-inspired REPL with true-colour syntax highlighting.
+**v1.3.4** includes 130+ built-in functions across 10 categories, comprehensive test coverage (22 test suites), networking support (HTTP/FTP/SMTP), and full standard library coverage.
 
 ---
 
@@ -339,51 +340,122 @@ print(PI)
 
 ## Built-in Functions
 
+### Core (20 functions)
 | Function | Description |
 |---|---|
 | `print(...)` | Print to console |
 | `len(obj)` | Get length |
 | `type(obj)` | Get type name |
 | `range(start, end, step?)` | Create range list |
-| `abs(n)` | Absolute value |
-| `min(...)` `max(...)` | Min / max |
-| `sum(...)` | Sum values |
+| `abs(n)` `min(...)` `max(...)` `sum(...)` | Math helpers |
 | `round(n)` `floor(n)` `ceil(n)` | Rounding |
 | `sqrt(n)` `pow(a,b)` | Power/roots |
-| `sin(n)` `cos(n)` `tan(n)` | Trigonometry |
 | `str(v)` `int(v)` `float(v)` `bool(v)` | Type conversion |
+| `to_number(v)` `to_int(v)` `to_float(v)` `to_bool(v)` `to_string(v)` | Safe conversions |
 | `input(prompt?)` | Read user input |
-| `keys(d)` `values(d)` | Dict iteration |
-| `randint(a,b)` `random()` | Random numbers |
-| `json_parse(s)` `json_stringify(v)` | JSON |
-| `md5(s)` `sha256(s)` | Hashing |
-| `base64_encode(s)` `base64_decode(s)` | Base64 |
-| `upper(s)` `lower(s)` `split(s,sep)` | Strings |
+| `exit(code?)` | Exit program |
 | `assert(cond, msg?)` | Assertions |
+
+### Math & Trigonometry (22 functions)
+| Function | Description |
+|---|---|
+| `sin(n)` `cos(n)` `tan(n)` | Trigonometry |
+| `asin(n)` `acos(n)` `atan(n)` `atan2(y,x)` | Inverse trig |
+| `log(n, base?)` `log10(n)` | Logarithms |
+| `degrees(n)` `radians(n)` | Angle conversion |
+| `pi()` `e()` | Math constants |
+| `lerp(a,b,t)` `clamp(v,min,max)` `map_range(v,a,b,c,d)` | Game math |
+| `distance(x1,y1,x2,y2)` `distance_3d(...)` | Distance |
+| `normalize(x,y)` `dot(x1,y1,x2,y2)` `cross(x1,y1,x2,y2)` | Vector math |
+| `sign(n)` `smoothstep(e0,e1,x)` `move_towards(cur,target,max)` | Utilities |
+| `angle(x1,y1,x2,y2)` `deg_to_rad(n)` `rad_to_deg(n)` | Angle helpers |
+| `factorial(n)` `gcd(a,b)` `lcm(a,b)` `hypot(a,b)` `floor_div(a,b)` | Advanced math |
+
+### String Functions (18 functions)
+| Function | Description |
+|---|---|
+| `upper(s)` `lower(s)` `strip(s)` | Case/whitespace |
+| `split(s,sep)` `join(arr,sep)` `split_lines(s)` | Split/join |
+| `replace(s,old,new)` `replace_all(s,old,new)` | Replace |
+| `starts_with(s,prefix)` `ends_with(s,suffix)` | Prefix/suffix |
+| `find(s,sub)` `index_of(s,sub)` `char_at(s,i)` `substring(s,start,len)` | Search/extract |
+| `count(s,sub)` `contains(s,sub)` | Count/contains |
+| `ascii(c)` `from_ascii(n)` | ASCII conversion |
+
+### File I/O (7 functions)
+| Function | Description |
+|---|---|
+| `read_file(path)` `write_file(path,data)` `append_file(path,data)` | Read/write |
+| `file_exists(path)` `delete_file(path)` | Exists/delete |
+| `list_dir(path)` `mkdir(path)` | Directory ops |
+
+### Data Formats (15 functions)
+| Function | Description |
+|---|---|
+| `json_parse(s)` `json_stringify(v)` | JSON |
+| `xml_parse(s)` `xml_to_string(v)` | XML |
+| `yaml_parse(s)` `yaml_to_string(v)` | YAML |
+| `toml_parse(s)` `toml_to_string(v)` | TOML |
+| `csv_parse(s)` `csv_parse_dict(s)` `csv_to_string(v)` | CSV |
+| `regex_match(text,pattern)` `regex_search(text,pattern)` `regex_replace(text,pattern,repl)` | Regex |
+| `md5(s)` `sha256(s)` `sha1(s)` `sha512(s)` `hash(s)` | Hashing |
+| `base64_encode(s)` `base64_decode(s)` | Base64 |
+| `gzip_compress(s)` `gzip_decompress(s)` | GZIP |
+| `zip_create(dict)` `zip_extract(data)` | ZIP |
+
+### Collections (12 functions)
+| Function | Description |
+|---|---|
+| `keys(d)` `values(d)` `items(d)` `has_key(d,k)` | Dict ops |
+| `set(arr)` | Set type |
+| `deque(arr)` | Deque (double-ended queue) |
+| `ordict()` | Ordered dict |
+| `uuid4()` `uuid1()` `uuid_nil()` | UUID generation |
+| `datetime()` `datetime_create(...)` | DateTime |
+| `time()` `sleep(s)` `clock()` | Time |
+
+### Networking (12 functions)
+| Function | Description |
+|---|---|
+| `http_get(url,headers?)` `http_post(url,data?,headers?)` | HTTP GET/POST |
+| `http_put(url,data?,headers?)` `http_delete(url,headers?)` | HTTP PUT/DELETE |
+| `http_request(url,method,data?,headers?)` | Generic HTTP |
+| `ftp_connect(host,user,pass?,port?)` `ftp_disconnect(client)` | FTP |
+| `ftp_list(client,path?)` `ftp_get(client,remote,local)` `ftp_put(client,local,remote)` | FTP ops |
+| `smtp_connect(server,port,tls?,user?,pass?)` `smtp_disconnect(client)` | SMTP |
+| `smtp_send(client,from,to,subject,body)` | Send email |
+
+### URL Utilities (6 functions)
+| Function | Description |
+|---|---|
+| `url_parse(url)` `url_build(dict)` | Parse/build URLs |
+| `url_encode(s)` `url_decode(s)` | Encode/decode |
+| `url_query_parse(s)` `url_query_build(dict)` | Query strings |
+
+### Game Types (4 constructors)
+| Function | Description |
+|---|---|
+| `vec2(x,y)` `vec3(x,y,z)` | Vectors |
+| `color(r,g,b,a)` | Color |
+| `rect(x,y,w,h)` | Rectangle |
+| `complex(real,imag)` | Complex numbers |
+
+### Advanced (8 functions)
+| Function | Description |
+|---|---|
+| `printf(fmt,...)` `sprintf(fmt,...)` `scanf(fmt)` | C-style formatting |
+| `logger(name,level)` | Logging |
+| `thread(fn,...)` `thread_sleep(s)` `thread_current()` | Threading |
+| `argparse()` `args_add(parser,...)` `args_parse(parser)` | Argument parsing |
 
 ---
 
-## v1.2.0 Bug Fixes
+## v1.3.4 Bug Fixes
 
-57 bugs were identified and fixed in this release. Key highlights:
-
-- **VM loops**: `for` and `while` loops were jumping to wrong addresses — fixed
-- **VM locals**: local variables inside functions were reading from wrong stack positions — fixed
-- **VM exception handlers**: nested `try/catch` was silently discarding outer handlers — fixed
-- **`finally` blocks**: were parsed but never actually executed — fixed
-- **`**` power operator**: was silently emitting no bytecode — fixed
-- **`^` XOR operator**: was incorrectly mapped to power — fixed
-- **`&&`/`||` precedence**: bitwise ops had wrong precedence relative to comparisons — fixed
-- **`+=` compound assignment**: not supported — added
-- **Hex/octal/binary literals**: not lexed — added
-- **Escape sequences**: `\n \t \\` in strings were not processed — fixed
-- **Class inheritance**: `class Dog : Animal {}` was not parsed — fixed
-- **Lambda expressions**: `func(x) => x*2` was not parsed — added
-- **`finally` blocks**: never executed in VM — fixed
-- **`with` statement**: resource cleanup was a stub — implemented
-- **`self` in methods**: was broken in certain call paths — fixed
-
-See [AUDIT.md](AUDIT.md) for the complete list of all bugs and roadmap.
+- **regex argument order**: `regex_match(text, pattern)` now uses intuitive text-first order
+- **log/logger conflict**: Renamed logging builtin from `log` to `logger` to preserve math `log()` function
+- **and/or precedence**: `1 == 1 and 2 == 2` now correctly returns `true`
+- **Nested `len(items(d))`**: Now works without storing intermediate result
 
 ---
 
@@ -391,11 +463,11 @@ See [AUDIT.md](AUDIT.md) for the complete list of all bugs and roadmap.
 
 | Version | Focus |
 |---|---|
-| v1.3.0 | String interpolation `f"Hello {name}"` |
-| v1.4.0 | Named parameters `func(x, y=0)` |
+| v1.3.0-v1.3.4 | ✅ DONE — REPL, VM, bug fixes, standard library, networking |
+| v1.4.0 | HTTP Server, WebSocket support |
 | v1.5.0 | Generator functions `yield` |
 | v1.6.0 | Async/await |
-| v2.0.0 | Game engine integration (Vector2, Physics, Graphics) |
+| v2.0.0 | Game engine integration (Physics, Graphics) |
 | v3.0.0 | C API for embedding |
 
 ---
