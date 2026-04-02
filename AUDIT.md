@@ -1132,4 +1132,82 @@ Ordered by severity × frequency of impact:
 *v1.3.1 completed: 2026-03-29 - Critical bugs fixed*
 *v1.3.2 completed: 2026-03-30 - VM upvalues + Set type*
 *v1.3.3 completed: 2026-04-02 - Bug fixes + Networking + Standard Library*
+*v1.3.4 completed: 2026-04-02 - Comprehensive stdlib testing + log/logger fix*
+*v1.3.5 completed: 2026-04-02 - Regex fix + REPL color fix + README update*
+*v1.3.6 completed: 2026-04-02 - VM compatibility tests + REPL warning*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
+
+---
+
+## v1.3.x — VM Implementation Plan
+
+### Current VM Status (v1.3.6)
+
+The VM works outside REPL for basic features but has significant gaps. Tested 18 features:
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Basic math (`2 ** 10`) | ✅ OK | |
+| Variables | ✅ OK | |
+| Lists | ✅ OK | |
+| Strings | ✅ OK | |
+| Builtins (no args) | ✅ OK | `upper()` works |
+| Builtins (with args) | ❌ FAIL | `upper("hello")` → undefined |
+| Functions (no args) | ✅ OK | |
+| Functions (with args) | ❌ FAIL | "Cannot call int" |
+| While loops | ✅ OK | |
+| If/else | ✅ OK | |
+| Dict access | ❌ FAIL | `d["a"]` → list index out of range |
+| Classes | ❌ FAIL | Property not found on NoneType |
+| For loops | ❌ FAIL | Missing `emit_get_global` |
+| Ternary | ✅ OK | |
+| Try/catch | ❌ FAIL | "Undefined variable" |
+| Match | ✅ OK | |
+| and/or precedence | ✅ OK | |
+| Named args | ❌ FAIL | NoneType arithmetic |
+| Recursion | ❌ FAIL | "Cannot call int" |
+| Closures | ✅ OK | |
+
+### VM Implementation Plan (v1.3.7 - v1.3.9)
+
+#### v1.3.7 — VM Builtin Functions + Dict Access
+- [ ] Fix builtin function calls with arguments in VM (`upper("hello")`, `print(x)`)
+- [ ] Fix dict indexing (`d["key"]`) — currently uses list index path
+- [ ] Fix try/catch in VM — `undef` variable not caught properly
+- [ ] Add VM test suite for all builtins
+
+#### v1.3.8 — VM Functions + Recursion
+- [ ] Fix function calls with arguments in VM ("Cannot call int" error)
+- [ ] Fix named arguments in VM
+- [ ] Fix recursion in VM (function call chain broken)
+- [ ] Fix class instantiation and property access
+
+#### v1.3.9 — VM For Loops + CLI Flag
+- [ ] Fix `for` loop compilation (missing `emit_get_global`)
+- [ ] Add `--vm` CLI flag: `python main.py run --vm file.ipp`
+- [ ] Add `--vm` to regression test runner
+- [ ] Full VM regression test pass (all 23 tests on VM path)
+
+---
+
+## v1.3.x — REPL Improvement Suggestions
+
+Based on code review of `main.py` REPL implementation (lines 760-942):
+
+| # | Feature | Priority | Description |
+|---|---------|----------|-------------|
+| 1 | `.edit` | MED | Open last command in external editor (`$EDITOR`) |
+| 2 | `.save <file>` | MED | Save session history to a file |
+| 3 | `.load <file>` | HIGH | Load and execute a file in current session (keep variables) |
+| 4 | `.doc <function>` | MED | Show docstring/help for a builtin function |
+| 5 | Tab completion for dict keys | LOW | `my_dict["<TAB>` completes keys from current env |
+| 6 | Multi-line paste detection | HIGH | Auto-detect and handle pasted multi-line code blocks |
+| 7 | `.time <expr>` | LOW | Benchmark an expression execution time |
+| 8 | `.which <name>` | LOW | Show if a name is a builtin, variable, or function |
+| 9 | Syntax highlight on Enter | LOW | Show colored version of what you typed before executing |
+| 10 | `.last` / `$_` | MED | Reference the last result without assigning it |
+| 11 | `.undo` | LOW | Undo last command's effect on global env |
+| 12 | Auto-complete for imports | LOW | Tab-complete `import "<TAB>` with filesystem paths |
+| 13 | `.profile` | LOW | Profile last command with call graph |
+| 14 | Command history search | MED | Ctrl+R reverse search through history |
+| 15 | `.alias <name> <cmd>` | LOW | Create custom REPL command aliases |
