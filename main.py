@@ -778,7 +778,8 @@ def format_output(val) -> str:
 def _get_similar_names(name, candidates, max_suggestions=3):
     """Find similar names to suggest when user makes a typo."""
     import difflib
-    matches = difflib.get_close_matches(name, candidates, n=max_suggestions, cutoff=0.6)
+    unique = list(dict.fromkeys(candidates))  # Preserve order, remove duplicates
+    matches = difflib.get_close_matches(name, unique, n=max_suggestions, cutoff=0.6)
     return matches
 
 
@@ -786,13 +787,17 @@ def _suggest_fix(error_msg, interp_manager):
     """Generate helpful suggestions based on error message."""
     suggestions = []
     
-    # Undefined variable suggestions - match both "Undefined variable 'x'" and "Undefined variable: x"
     m = re.search(r"Undefined variable[': ]+['\"]?(\w+)['\"]?", error_msg)
     if m:
         name = m.group(1)
         try:
             from ipp.runtime.builtins import BUILTINS
-            all_names = list(BUILTINS.keys()) + list(interp_manager.global_env.keys())
+            all_names = list(BUILTINS.keys())
+            env = interp_manager.global_env
+            while env:
+                if hasattr(env, 'values'):
+                    all_names.extend(env.values.keys())
+                env = getattr(env, 'parent', None)
             similar = _get_similar_names(name, all_names)
             if similar:
                 suggestions.append(f"  {colour(C_WARN, 'Did you mean:')} {colour(C_OK, ', '.join(similar))}")
