@@ -487,6 +487,11 @@ def print_help():
         c_desc = colour(DIM, desc)
         print(f"    {c_cmd} {c_desc}")
 
+    # Windows color warning
+    if sys.platform.startswith('win') and _USE_ANSI:
+        print()
+        print("  " + colour(C_WARN, "Note: If you see garbage numbers/escape codes, run .colors off"))
+
     _section("Quick Reference")
     snippets = [
         ("var x = 10",                   "mutable variable"),
