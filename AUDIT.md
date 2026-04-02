@@ -1246,6 +1246,9 @@ Ordered by severity × frequency of impact:
 ### Documentation ✅ DONE
 - [x] `.tutorial` — Interactive tutorial mode
 - [x] `.plugin load <file>` — Load plugin files
+- [x] `.search <keyword>` — Search builtin documentation with keywords
+- [x] `.examples` — Show interactive code examples
+- [x] Contextual help — show relevant help based on current error
 
 ### Code Intelligence
 - [ ] Type hints on hover/tab

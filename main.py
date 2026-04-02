@@ -125,9 +125,8 @@ def _check_ansi_support():
         return False
 
 # ─── ANSI colour helpers ──────────────────────────────────────────────────────
-# Only enable colors if we're in a TTY AND ANSI is supported
-# On Windows, disable by default unless FORCE_ANSI is set
-_USE_ANSI = _check_ansi_support() if not _FORCE_ANSI else True
+# Enable colors by default on all platforms
+_USE_ANSI = True
 
 def _fg(n, t):
     if not _USE_ANSI or not IS_TTY:
@@ -1538,6 +1537,52 @@ def run_repl():
                     print(f"  {colour(C_OK, f'Plugin loaded: {filepath}')}")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, f'Plugin error: {e}')}")
+                continue
+
+            # .search <keyword> — Search builtin documentation
+            m = re.match(r'\.search\s+(.+)$', stripped)
+            if m:
+                keyword = m.group(1).lower()
+                try:
+                    from ipp.runtime.builtins import BUILTINS
+                    matches = []
+                    for name, fn in BUILTINS.items():
+                        if keyword in name.lower() or (fn.__doc__ and keyword in fn.__doc__.lower()):
+                            matches.append((name, fn.__doc__ or "No docs"))
+                    if matches:
+                        print(f"  {colour(C_CMD, f'Found {len(matches)} matches for \"{keyword}\":')}")
+                        for name, doc in sorted(matches)[:20]:
+                            doc_preview = doc[:60] + "..." if len(doc) > 60 else doc
+                            print(f"    {colour(C_KW, name)}: {colour(DIM, doc_preview)}")
+                        if len(matches) > 20:
+                            print(f"  {colour(DIM, f'... and {len(matches) - 20} more')}")
+                    else:
+                        print(f"  {colour(C_WARN, f'No matches found for \"{keyword}\"')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .examples — Show code examples
+            if stripped == '.examples':
+                print(f"  {colour(C_CMD, 'Ipp Code Examples')}")
+                print()
+                examples = [
+                    ("Variables", "var x = 10\nvar name = \"Alice\""),
+                    ("Functions", "func greet(name) {\n    return \"Hello \" + name\n}"),
+                    ("Lists", "var nums = [1, 2, 3, 4, 5]\nvar doubled = [x*2 for x in nums]"),
+                    ("Dicts", "var person = {\"name\": \"Alice\", \"age\": 30}"),
+                    ("Loops", "for i in 0..5 {\n    print(i)\n}"),
+                    ("Classes", "class Dog {\n    func init(name) {\n        this.name = name\n    }\n    func bark() {\n        print(this.name + \" says woof!\")\n    }\n}"),
+                    ("HTTP", "var res = http_get(\"https://httpbin.org/get\")\nprint(res[\"status\"])"),
+                    ("WebSocket", "var ws = websocket_connect(\"ws://echo.websocket.org\")\nwebsocket_send(ws, \"hello\")\nvar msg = websocket_receive(ws)"),
+                    ("Math", "var dist = distance(0, 0, 3, 4)\nvar angle = atan2(1, 1)"),
+                    ("Error Handling", "try {\n    var result = risky_operation()\n} catch e {\n    print(\"Error: \" + e)\n}"),
+                ]
+                for i, (title, code) in enumerate(examples, 1):
+                    print(f"  {colour(C_KW, f'{i}. {title}:')}")
+                    for line in code.split('\n'):
+                        print(f"    {colour(DIM, line)}")
+                    print()
                 continue
 
             # Check if input is an alias

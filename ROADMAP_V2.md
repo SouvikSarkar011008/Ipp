@@ -320,10 +320,11 @@
 - [x] Key bindings — customizable keyboard shortcuts
 - [x] Plugin system — load custom `.ipp` plugins that add REPL commands
 
-### Documentation (Additional Features) ⏳ TODO
-- [ ] Search docs — search builtin documentation with keywords
-- [ ] Contextual help — show relevant help based on current error
-- [ ] Example browser — browse code examples by category
+### Documentation (Additional Features) ✅ DONE
+- [x] `.search <keyword>` — Search builtin documentation with keywords
+- [x] `.examples` — Show interactive code examples
+- [x] `.tutorial` — Interactive tutorial mode
+- [x] Contextual help — show relevant help based on current error
 
 ---
 
