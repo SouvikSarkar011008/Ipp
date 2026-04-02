@@ -728,9 +728,68 @@ def show_builtins():
         print()
         return
     
-    for name in sorted(BUILTINS.keys()):
-        fn_display = _format_builtin_display(name)
-        print(f"    {colour(C_STR, name.ljust(16))} {fn_display}")
+    # Group builtins by category for better display
+    categories = {
+        "I/O": ["print", "input", "exit"],
+        "Type": ["type", "str", "int", "float", "bool", "to_number", "to_string", "to_int", "to_float", "to_bool"],
+        "Math": ["abs", "min", "max", "sum", "round", "floor", "ceil", "sqrt", "pow", "pi", "e",
+                 "sin", "cos", "tan", "log", "log10", "degrees", "radians", "asin", "acos", "atan", "atan2",
+                 "lerp", "clamp", "map_range", "distance", "distance_3d", "normalize", "dot", "cross",
+                 "sign", "smoothstep", "move_towards", "angle", "deg_to_rad", "rad_to_deg",
+                 "factorial", "gcd", "lcm", "hypot", "floor_div"],
+        "Random": ["random", "randint", "randfloat", "choice", "shuffle"],
+        "Collections": ["len", "range", "keys", "values", "items", "contains", "set", "deque", "ordict", "has_key"],
+        "String": ["upper", "lower", "strip", "replace", "replace_all", "find", "starts_with", "ends_with",
+                   "startswith", "endswith", "split", "join", "count", "contains", "split_lines", "ascii", "from_ascii",
+                   "char_at", "substring", "index_of"],
+        "File": ["read_file", "write_file", "append_file", "file_exists", "delete_file", "list_dir", "mkdir",
+                 "file_read", "file_write"],
+        "JSON": ["json_parse", "json_stringify"],
+        "XML": ["xml_parse", "xml_to_string"],
+        "YAML": ["yaml_parse", "yaml_to_string"],
+        "TOML": ["toml_parse", "toml_to_string"],
+        "CSV": ["csv_parse", "csv_parse_dict", "csv_to_string"],
+        "Regex": ["regex_match", "regex_search", "regex_replace"],
+        "Hash": ["md5", "sha256", "sha1", "sha512", "hash"],
+        "Base64": ["base64_encode", "base64_decode"],
+        "GZIP": ["gzip_compress", "gzip_decompress"],
+        "ZIP": ["zip_create", "zip_extract"],
+        "HTTP": ["http_get", "http_post", "http_put", "http_delete", "http_request", "http_serve"],
+        "FTP": ["ftp_connect", "ftp_disconnect", "ftp_list", "ftp_get", "ftp_put"],
+        "SMTP": ["smtp_connect", "smtp_disconnect", "smtp_send"],
+        "WebSocket": ["websocket_connect", "websocket_send", "websocket_receive", "websocket_close"],
+        "URL": ["url_parse", "url_build", "url_encode", "url_decode", "url_query_parse", "url_query_build"],
+        "UUID": ["uuid4", "uuid1", "uuid_nil"],
+        "DateTime": ["datetime", "datetime_create"],
+        "Time": ["time", "sleep", "clock"],
+        "Path": ["path_dirname", "path_basename", "path_join", "path_exists"],
+        "OS": ["os_platform", "os_cwd", "os_chdir", "env_get", "env_set", "list_env"],
+        "Complex": ["complex"],
+        "Logging": ["logger"],
+        "Threading": ["thread", "thread_sleep", "thread_current"],
+        "Argparse": ["argparse", "args_add", "args_parse"],
+        "Printf": ["printf", "sprintf", "scanf"],
+        "Game": ["vec2", "vec3", "color", "rect"],
+        "DataStructures": ["PriorityQueue", "Tree", "Graph"],
+        "Control": ["assert"],
+    }
+    
+    for group, names in categories.items():
+        available = [n for n in names if n in BUILTINS]
+        if available:
+            print(f"  {colour(C_HEADER, group + ':')}")
+            for name in sorted(available):
+                fn = BUILTINS[name]
+                fn_type = type(fn).__name__
+                # Color code by type
+                if 'builtin' in fn_type:
+                    type_color = C_OK
+                elif 'Ipp' in fn_type:
+                    type_color = C_FN
+                else:
+                    type_color = C_STR
+                print(f"    {colour(C_KW, name.ljust(20))} {colour(type_color, fn_type)}")
+            print()
     print()
 
 def show_modules():
