@@ -128,6 +128,19 @@ def _check_ansi_support():
 # Enable colors by default on all platforms
 _USE_ANSI = True
 
+# Enable virtual terminal processing on Windows at startup
+if sys.platform.startswith('win'):
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        h = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_ulong()
+        kernel32.GetConsoleMode(h, ctypes.byref(mode))
+        mode.value |= 4  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        kernel32.SetConsoleMode(h, mode)
+    except Exception:
+        pass
+
 def _fg(n, t):
     if not _USE_ANSI or not IS_TTY:
         return t
@@ -353,11 +366,6 @@ class IppCompleter:
             '.colors', '.vm', '.clear', '.types', '.version',
             '.load', '.save', '.doc', '.time', '.which', '.last',
             '.undo', '.redo', '.edit', '.profile', '.alias',
-            '.pretty', '.stack', '.session', '.export', '.prompt',
-            '.json', '.format', '.cd', '.ls', '.pwd', '.pipe', '.bind',
-            '.search', '.examples', '.tutorial', '.plugin',
-            '.debug', '.break', '.watch', '.locals',
-            '.typehints', '.sighelp', '.theme',
             'exit', 'quit',
         ])
 
@@ -474,20 +482,28 @@ def setup_readline(interp):
         try: readline.read_history_file(hfile)
         except FileNotFoundError: pass
         readline.set_history_length(2000)
-        
-        # Create completer instance
+        readline.parse_and_bind("tab: complete")
+        readline.parse_and_bind("set completion-ignore-case on")
+        readline.set_completer_delims(" \t\n`~!@#$%^&*()-=+[]{}|;:',.<>?/")
         comp = IppCompleter(interp)
         readline.set_completer(comp.complete)
         
-        # Bind Tab to completion
-        readline.parse_and_bind("tab: complete")
-        readline.parse_and_bind("set completion-ignore-case on")
-        readline.parse_and_bind("set show-all-if-ambiguous on")
-        readline.parse_and_bind("set show-all-if-unmodified on")
+        # Auto-indentation: after Enter, if line ends with {, (, [, add indent
+        def auto_indent_hook(text):
+            if text and text[-1] in '{([':
+                return text + '    '
+            return text
         
-        # Set delimiters - only space and tab should break completion
-        # This allows completion of words with dots, brackets, etc.
-        readline.set_completer_delims(" \t")
+        # Bracket matching: highlight matching brackets
+        readline.parse_and_bind("set show-all-if-ambiguous on")
+        readline.parse_and_bind("set mark-directories on")
+        
+        # Windows-specific: use libedit-style binding if needed
+        if sys.platform.startswith('win'):
+            try:
+                readline.parse_and_bind("bind ^I rl_complete")
+            except:
+                pass
         
         atexit.register(readline.write_history_file, hfile)
         return comp
@@ -1127,9 +1143,6 @@ def run_repl():
     print_banner()
     _enable_interrupt_handling()
 
-    # Declare globals that will be modified
-    global _USE_ANSI, _PROMPT_FORMAT
-    
     buf = []
     line_num = 0
     _reset_fn_colors()
@@ -1177,19 +1190,14 @@ def run_repl():
 
             raw = input(prompt_txt)
 
-            # Show syntax-highlighted version of what was typed
-            if raw.strip() and _USE_ANSI:
-                highlighted = highlight(raw.strip())
-                if highlighted != raw.strip():
-                    print(f"  {highlighted}")
-
         except KeyboardInterrupt:
             print()
             if buf:
                 buf.clear()
                 print(f"  {colour(C_WARN, '<< Buffer cleared')}")
             else:
-                print(f"  {colour(DIM, 'Ctrl+C — type exit to quit')}")
+                print(f"  {colour(C_OK, 'Goodbye!')}")
+                break
             continue
         except EOFError:
             print()
@@ -1242,6 +1250,7 @@ def run_repl():
             # .colors on/off command
             m = re.match(r'\.colors\s+(on|off)$', stripped)
             if m:
+                global _USE_ANSI
                 if m.group(1) == 'on':
                     _USE_ANSI = True
                     # Enable virtual terminal processing on Windows
@@ -2059,15 +2068,15 @@ def run_repl():
         thread.start()
         
         while thread.is_alive():
-            thread.join(timeout=0.1)  # Check every 100ms
+            thread.join(timeout=0.05)  # Check every 50ms for faster Ctrl+C response
             if _check_interrupt():
                 print(f"\n  {colour(C_WARN, '<< Interrupted!')}")
                 buf.clear()
-                thread.join(timeout=0.1)  # Let it finish
+                thread.join(timeout=0.1)
                 interp_manager.reset()
                 interp = interp_manager.get_interpreter()
                 setup_readline(interp)
-                exec_done.set()  # Ensure we exit the loop
+                exec_done.set()
                 break
         
         if not _INTERRUPT_FLAG.is_set() and exec_result[0]:
