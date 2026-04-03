@@ -1218,6 +1218,8 @@ Ordered by severity × frequency of impact:
 - [x] REPL command completion (`.help`, `.load`, etc.)
 - [x] Member completion (`obj.<TAB>`)
 - [x] Enhanced IppCompleter with `_load_completions()`, `_get_all_candidates()`, `_dict_keys()`
+- [x] Type hints on hover/tab (`.typehints`)
+- [x] Signature help when typing `(` (`.sighelp`)
 
 ### Code Intelligence ✅ DONE
 - [x] Auto-indentation after `{`, `(`, `[`
@@ -1230,6 +1232,7 @@ Ordered by severity × frequency of impact:
 - [x] `.stack` — Show call stack
 - [x] `! <cmd>` — Execute shell commands
 - [x] `.history $_` — Show expression history
+- [x] Auto-formatting on Enter (`.format <expr>`)
 
 ### Debugging ✅ DONE
 - [x] `.debug start/stop` — Step-through debugger
@@ -1239,30 +1242,36 @@ Ordered by severity × frequency of impact:
 
 ### Output Improvements ✅ DONE
 - [x] `.table <var>` — Show list of dicts as formatted table
+- [x] `.json <expr>` — JSON viewer with formatting
+- [x] Custom formatters per type
+
+### Shell Integration ✅ DONE
+- [x] `! <cmd>` — Execute shell commands
+- [x] `.pipe <cmd>` — Pipe Ipp output to shell commands
+- [x] `.cd <dir>` — Change directory
+- [x] `.ls [dir]` — List directory contents
+- [x] `.pwd` — Print working directory
+
+### Session Management ✅ DONE
+- [x] Session persistence — auto-save/restore across restarts
+- [x] Multiple named sessions (`.sessions`)
+- [x] Session export as `.ipp` script (`.export`, `.session export`)
+- [x] `.redo` — redo after `.undo`
+- [x] Expression history — `$_1`, `$_2`, etc.
 
 ### Customization ✅ DONE
-- [x] `.theme dark/light/solarized` — Custom color themes
+- [x] Custom themes — `.theme dark/light/solarized`
+- [x] Prompt customization — `.prompt dir/time/full/ipp`
+- [x] Key bindings — `.bind <key> <cmd>`
+- [x] Plugin system — `.plugin load <file>`
 
 ### Documentation ✅ DONE
 - [x] `.tutorial` — Interactive tutorial mode
 - [x] `.plugin load <file>` — Load plugin files
-- [x] `.search <keyword>` — Search builtin documentation with keywords
-- [x] `.examples` — Show interactive code examples
+- [x] `.search <keyword>` — Search builtin documentation
+- [x] `.examples` — Show interactive code examples (10 examples)
 - [x] Contextual help — show relevant help based on current error
-
-### Remaining for Future Versions
-- [ ] Type hints on hover/tab
-- [ ] Signature help when typing `(`
-- [ ] Auto-formatting on Enter
-- [ ] JSON viewer
-- [ ] Custom formatters per type
-- [ ] Pipe Ipp output to shell commands
-- [ ] File browser commands (`.cd`, `.ls`, `.pwd`)
-- [ ] Multiple named sessions
-- [ ] Session export as `.ipp` script
-- [ ] Prompt customization
-- [ ] Key bindings
-- [ ] Example browser
+- [x] Example browser (`.examples`)
 
 ---
 
