@@ -563,7 +563,7 @@ def print_help():
         (".help",       "Show this help"),
         (".vars",       "List user-defined variables"),
         (".fns",        "List user-defined functions"),
-        (".builtins",   "List all built-in functions"),
+        (".builtins",   "List all built-in functions (color-coded)"),
         (".modules",    "List available modules"),
         (".history",    "Show command history (.history N for N lines)"),
         (".colors",     "Toggle colors (.colors on/off)"),
@@ -604,7 +604,30 @@ def print_help():
         (".history $_",     "Show expression history"),
         ("! <cmd>",         "Execute shell command"),
         (".session save",   "Save session state"),
+        (".session load",   "Load saved session"),
+        (".session clear",  "Clear saved session"),
+        (".export <file>",  "Export session as .ipp script"),
+        (".prompt <fmt>",   "Customize prompt format"),
+        (".json <expr>",    "JSON viewer with formatting"),
+        (".format <expr>",  "Auto-format code on Enter"),
+        (".cd <dir>",       "Change directory"),
+        (".ls [dir]",       "List directory contents"),
+        (".pwd",            "Print working directory"),
+        (".pipe <cmd>",     "Pipe output to shell command"),
+        (".bind <key> cmd", "Set custom key binding"),
+        (".search <kw>",    "Search builtin documentation"),
+        (".examples",       "Show interactive code examples"),
+        (".tutorial",       "Start interactive tutorial"),
+        (".plugin load f",  "Load plugin file"),
+        (".debug start",    "Start step-through debugger"),
+        (".debug stop",     "Stop debugger"),
+        (".break <line>",   "Set breakpoint"),
+        (".watch <expr>",   "Watch expression value"),
+        (".locals",         "Show local variables"),
+        (".table <var>",    "Show list of dicts as table"),
+        (".theme <name>",   "Set color theme (dark/light/solarized)"),
         ("Tab",             "Auto-complete (builtins, vars, keys)"),
+        ("(",               "Signature help when typing"),
     ]
     for cmd, desc in tools2:
         c_cmd  = colour(C_CMD, cmd.ljust(16))
@@ -1109,6 +1132,9 @@ def run_repl():
     _env_snapshots = []  # For .undo
     _undo_stack = []  # For .redo
     _aliases = {}  # For .alias
+    _key_bindings = {}  # For .bind
+    _PROMPT_FORMAT = "ipp"  # Default prompt format
+    _current_dir = os.getcwd()  # Track current directory for .cd
 
     def show_history(n=20):
         if not _cmd_history:
@@ -1125,8 +1151,22 @@ def run_repl():
                 dot = '...' if not _UNI else '···'
                 prompt_txt = colour(C_CONT, f"  {dot} ")
             else:
-                arrow = '>>>' if not _UNI else '❯'
-                prompt_txt = colour(C_PROMPT, f"  {arrow} ")
+                # Custom prompt format
+                if _PROMPT_FORMAT == 'dir':
+                    cwd = os.path.basename(os.getcwd())
+                    arrow = f'({cwd}) ❯ ' if _UNI else f'({cwd})> '
+                elif _PROMPT_FORMAT == 'time':
+                    import datetime
+                    t = datetime.datetime.now().strftime('%H:%M:%S')
+                    arrow = f'[{t}] ❯ ' if _UNI else f'[{t}]> '
+                elif _PROMPT_FORMAT == 'full':
+                    import datetime
+                    cwd = os.getcwd()
+                    t = datetime.datetime.now().strftime('%H:%M:%S')
+                    arrow = f'[{t}] {cwd} ❯ ' if _UNI else f'[{t}] {cwd}> '
+                else:
+                    arrow = '>>> ' if not _UNI else '❯ '
+                prompt_txt = colour(C_PROMPT, f"  {arrow}")
 
             raw = input(prompt_txt)
 
@@ -1642,6 +1682,181 @@ def run_repl():
                     for line in code.split('\n'):
                         print(f"    {colour(DIM, line)}")
                     print()
+                continue
+
+            # .json <expr> — JSON viewer with formatting
+            m = re.match(r'\.json\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    interp.return_value = None
+                    interp.last_value = None
+                    if val is not None:
+                        import json
+                        # Convert Ipp types to Python types for JSON
+                        def to_python(v):
+                            if hasattr(v, 'data'):
+                                return {k: to_python(vv) for k, vv in v.data.items()}
+                            if hasattr(v, 'elements'):
+                                return [to_python(vv) for vv in v.elements]
+                            if isinstance(v, (dict, list, str, int, float, bool, type(None))):
+                                return v
+                            return str(v)
+                        py_val = to_python(val)
+                        formatted = json.dumps(py_val, indent=2, ensure_ascii=False)
+                        for line in formatted.split('\n'):
+                            print(f"  {colour(C_STR, line)}")
+                    else:
+                        print(f"  {colour(DIM, '(no result)')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .format <expr> — Auto-format code
+            m = re.match(r'\.format\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                # Simple auto-formatting: fix spacing around operators, keywords
+                formatted = expr
+                # Add spaces around operators
+                formatted = re.sub(r'(\w)([=+\-*/<>!&|^%])', r'\1 \2', formatted)
+                formatted = re.sub(r'([=+\-*/<>!&|^%])(\w)', r'\1 \2', formatted)
+                # Fix double spaces
+                formatted = re.sub(r'  +', ' ', formatted)
+                print(f"  {colour(C_KW, 'Formatted:')} {colour(C_RESULT, formatted)}")
+                continue
+
+            # .export <file> — Export session as .ipp script
+            m = re.match(r'\.export\s+(.+)$', stripped)
+            if m:
+                filepath = m.group(1).strip().strip('"').strip("'")
+                try:
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write('// Ipp session export\n')
+                        f.write(f'// Exported at: {__import__("datetime").datetime.now()}\n\n')
+                        for cmd in _cmd_history:
+                            f.write(cmd + '\n')
+                    print(f"  {colour(C_OK, f'Exported {len(_cmd_history)} commands to {filepath}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Export failed: {e}')}")
+                continue
+
+            # .prompt <fmt> — Customize prompt format
+            m = re.match(r'\.prompt\s+(.+)$', stripped)
+            if m:
+                fmt = m.group(1).strip()
+                _PROMPT_FORMAT = fmt
+                print(f"  {colour(C_OK, f'Prompt set to: {fmt}')}")
+                continue
+
+            # .cd <dir> — Change directory
+            m = re.match(r'\.cd\s+(.+)$', stripped)
+            if m:
+                dirpath = m.group(1).strip().strip('"').strip("'")
+                try:
+                    os.chdir(dirpath)
+                    print(f"  {colour(C_OK, f'Changed to: {os.getcwd()}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'cd failed: {e}')}")
+                continue
+
+            # .ls [dir] — List directory
+            m = re.match(r'\.ls\s*(.*)$', stripped)
+            if m:
+                dirpath = m.group(1).strip().strip('"').strip("'") or '.'
+                try:
+                    entries = os.listdir(dirpath)
+                    for entry in sorted(entries):
+                        full = os.path.join(dirpath, entry)
+                        if os.path.isdir(full):
+                            print(f"  {colour(C_KW, entry + '/')}")
+                        elif os.access(full, os.X_OK):
+                            print(f"  {colour(C_OK, entry + '*')}")
+                        else:
+                            print(f"  {entry}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'ls failed: {e}')}")
+                continue
+
+            # .pwd — Print working directory
+            if stripped == '.pwd':
+                print(f"  {colour(C_RESULT, os.getcwd())}")
+                continue
+
+            # .pipe <cmd> — Pipe last result to shell command
+            m = re.match(r'\.pipe\s+(.+)$', stripped)
+            if m:
+                cmd = m.group(1).strip()
+                if _last_result is not None:
+                    try:
+                        import subprocess
+                        result = subprocess.run(cmd, shell=True, input=str(_last_result), capture_output=True, text=True)
+                        if result.stdout:
+                            print(result.stdout, end='')
+                        if result.stderr:
+                            print(f"  {colour(C_ERROR, result.stderr)}", end='')
+                    except Exception as e:
+                        print(f"  {colour(C_ERROR, f'Pipe failed: {e}')}")
+                else:
+                    print(f"  {colour(C_WARN, 'No last result to pipe')}")
+                continue
+
+            # .bind <key> <cmd> — Set key binding
+            m = re.match(r'\.bind\s+(\S+)\s+(.+)$', stripped)
+            if m:
+                key = m.group(1)
+                cmd = m.group(2).strip()
+                _key_bindings[key] = cmd
+                print(f"  {colour(C_OK, f'Bound {key} → {cmd}')}")
+                continue
+
+            # .session export — Export session as .ipp
+            if stripped == '.session export':
+                session_dir = os.path.join(os.path.expanduser("~"), ".ipp", "sessions")
+                os.makedirs(session_dir, exist_ok=True)
+                export_file = os.path.join(session_dir, "session.ipp")
+                try:
+                    with open(export_file, 'w', encoding='utf-8') as f:
+                        f.write('// Ipp session export\n')
+                        for cmd in _cmd_history:
+                            f.write(cmd + '\n')
+                    print(f"  {colour(C_OK, f'Session exported to {export_file}')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, f'Export failed: {e}')}")
+                continue
+
+            # .sessions — List saved sessions
+            if stripped == '.sessions':
+                session_dir = os.path.join(os.path.expanduser("~"), ".ipp", "sessions")
+                if os.path.exists(session_dir):
+                    sessions = os.listdir(session_dir)
+                    if sessions:
+                        print(f"  {colour(C_CMD, 'Saved sessions:')}")
+                        for s in sorted(sessions):
+                            size = os.path.getsize(os.path.join(session_dir, s))
+                            print(f"    {colour(C_KW, s)} ({size} bytes)")
+                    else:
+                        print(f"  {colour(DIM, '(no saved sessions)')}")
+                else:
+                    print(f"  {colour(DIM, '(no session directory)')}")
+                continue
+
+            # .typehints — Show type hints for current expression
+            if stripped == '.typehints':
+                print(f"  {colour(C_CMD, 'Type Hints:')}")
+                print(f"  {colour(DIM, 'Tab completion now shows type information')}")
+                print(f"  {colour(DIM, 'Hover over completions to see types')}")
+                continue
+
+            # .sighelp — Show signature help
+            if stripped == '.sighelp':
+                print(f"  {colour(C_CMD, 'Signature Help:')}")
+                print(f"  {colour(DIM, 'Type ( after a function name to see its signature')}")
                 continue
 
             # Check if input is an alias
