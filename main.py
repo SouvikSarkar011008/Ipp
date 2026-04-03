@@ -128,7 +128,7 @@ def _check_ansi_support():
 # Enable colors by default on all platforms
 _USE_ANSI = True
 
-# Enable virtual terminal processing on Windows at startup
+    # Enable virtual terminal processing on Windows at startup
 if sys.platform.startswith('win'):
     try:
         import ctypes
@@ -138,6 +138,11 @@ if sys.platform.startswith('win'):
         kernel32.GetConsoleMode(h, ctypes.byref(mode))
         mode.value |= 4  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
         kernel32.SetConsoleMode(h, mode)
+        # Also enable Ctrl+C processing
+        h_in = kernel32.GetStdHandle(-10)
+        kernel32.GetConsoleMode(h_in, ctypes.byref(mode))
+        mode.value |= 0x0001  # ENABLE_PROCESSED_INPUT
+        kernel32.SetConsoleMode(h_in, mode)
     except Exception:
         pass
 
@@ -345,6 +350,16 @@ try:
     HAS_RL = True
 except ImportError:
     HAS_RL = False
+
+# On Windows, pyreadline intercepts Ctrl+C. Use msvcrt to detect it.
+if sys.platform.startswith('win'):
+    try:
+        import msvcrt
+        HAS_MSCVRT = True
+    except ImportError:
+        HAS_MSCVRT = False
+else:
+    HAS_MSCVRT = False
 
 class IppCompleter:
     def __init__(self, interp):
@@ -1191,14 +1206,9 @@ def run_repl():
             raw = input(prompt_txt)
 
         except KeyboardInterrupt:
-            print()
-            if buf:
-                buf.clear()
-                print(f"  {colour(C_WARN, '<< Buffer cleared')}")
-            else:
-                print(f"  {colour(C_OK, 'Goodbye!')}")
-                break
-            continue
+            # Ctrl+C always exits the REPL immediately
+            print(f"\n  {colour(C_OK, 'Goodbye!')}")
+            break
         except EOFError:
             print()
             print(f"  {colour(C_OK, 'Goodbye!')}")
@@ -2024,12 +2034,6 @@ def run_repl():
             continue
 
         # ── Execute ───────────────────────────────────────────────────
-        # Check for pending interrupts before execution
-        if _check_interrupt():
-            print(f"  {colour(C_WARN, '<< Interrupted - command cancelled')}")
-            buf.clear()
-            continue
-
         interp = interp_manager.get_interpreter()
         t0 = time.perf_counter()
         
@@ -2046,60 +2050,35 @@ def run_repl():
         if len(_env_snapshots) > 50:
             _env_snapshots.pop(0)
         
-        exec_result = [None]  # Container for result and exception
-        exec_done = threading.Event()
-        
-        def run_in_thread():
-            try:
-                tokens = tokenize(source)
-                ast    = parse(tokens)
-                interp.run(ast)
-                val = interp.return_value if interp.return_value is not None else interp.last_value
-                interp.return_value = None
-                interp.last_value   = None
-                exec_result[0] = ('ok', val)
-            except Exception as e:
-                exec_result[0] = ('error', e)
-            finally:
-                exec_done.set()
-        
-        thread = threading.Thread(target=run_in_thread)
-        thread.daemon = True
-        thread.start()
-        
-        while thread.is_alive():
-            thread.join(timeout=0.05)  # Check every 50ms for faster Ctrl+C response
-            if _check_interrupt():
-                print(f"\n  {colour(C_WARN, '<< Interrupted!')}")
-                buf.clear()
-                thread.join(timeout=0.1)
-                interp_manager.reset()
-                interp = interp_manager.get_interpreter()
-                setup_readline(interp)
-                exec_done.set()
-                break
-        
-        if not _INTERRUPT_FLAG.is_set() and exec_result[0]:
-            result_type, result_val = exec_result[0]
+        try:
+            tokens = tokenize(source)
+            ast = parse(tokens)
+            interp.run(ast)
+            result_val = interp.return_value if interp.return_value is not None else interp.last_value
+            interp.return_value = None
+            interp.last_value = None
             elapsed = time.perf_counter() - t0
             
-            if result_type == 'ok':
-                _cmd_history.append(source)
-                if result_val is not None:
-                    fmted = format_output(result_val)
-                    ms_str = colour(DIM, f"  {elapsed*1000:.1f}ms")
-                    arrow2 = '->' if not _UNI else '→'
-                    print(f"  {colour(DIM, arrow2)} {fmted}{ms_str}")
-                    _last_result = result_val
-                    _last_results.append((len(_last_results) + 1, result_val))
-                    if len(_last_results) > 100:
-                        _last_results.pop(0)
-                buf.clear()
-                line_num += 1
-            else:
-                buf.clear()
-                e = result_val
-                print(_format_error_with_suggestions(e, interp_manager))
+            _cmd_history.append(source)
+            if result_val is not None:
+                fmted = format_output(result_val)
+                ms_str = colour(DIM, f"  {elapsed*1000:.1f}ms")
+                arrow2 = '->' if not _UNI else '→'
+                print(f"  {colour(DIM, arrow2)} {fmted}{ms_str}")
+                _last_result = result_val
+                _last_results.append((len(_last_results) + 1, result_val))
+                if len(_last_results) > 100:
+                    _last_results.pop(0)
+        except KeyboardInterrupt:
+            # Ctrl+C during execution - exit immediately
+            print(f"\n  {colour(C_OK, 'Goodbye!')}")
+            break
+        except Exception as e:
+            elapsed = time.perf_counter() - t0
+            print(_format_error_with_suggestions(e, interp_manager))
+        
+        buf.clear()
+        line_num += 1
 
 # ─── File runner ──────────────────────────────────────────────────────────────
 def run_file(path: str) -> int:
