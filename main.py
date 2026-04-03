@@ -128,7 +128,7 @@ def _check_ansi_support():
 # Enable colors by default on all platforms
 _USE_ANSI = True
 
-    # Enable virtual terminal processing on Windows at startup
+# Enable virtual terminal processing on Windows at startup
 if sys.platform.startswith('win'):
     try:
         import ctypes
@@ -1169,6 +1169,7 @@ def run_repl():
     _aliases = {}  # For .alias
     _key_bindings = {}  # For .bind
     _PROMPT_FORMAT = "ipp"  # Default prompt format
+    _PROMPT_ARROW = "❯" if _UNI else ">>>"  # Default prompt arrow
     _current_dir = os.getcwd()  # Track current directory for .cd
 
     def show_history(n=20):
@@ -1201,6 +1202,11 @@ def run_repl():
                     arrow = f'[{t}] {cwd} ❯ ' if _UNI else f'[{t}] {cwd}> '
                 else:
                     arrow = '>>> ' if not _UNI else '❯ '
+                prompt_txt = colour(C_PROMPT, f"  {arrow}")
+
+            # Allow custom arrow symbol
+            if _PROMPT_FORMAT == 'arrow':
+                arrow = _PROMPT_ARROW + ' '
                 prompt_txt = colour(C_PROMPT, f"  {arrow}")
 
             raw = input(prompt_txt)
@@ -1816,8 +1822,15 @@ def run_repl():
             m = re.match(r'\.prompt\s+(.+)$', stripped)
             if m:
                 fmt = m.group(1).strip()
-                _PROMPT_FORMAT = fmt
-                print(f"  {colour(C_OK, f'Prompt set to: {fmt}')}")
+                # Check if it's a custom arrow
+                if fmt in ('ipp', 'dir', 'time', 'full'):
+                    _PROMPT_FORMAT = fmt
+                    print(f"  {colour(C_OK, f'Prompt set to: {fmt}')}")
+                else:
+                    # Custom arrow symbol
+                    _PROMPT_FORMAT = 'arrow'
+                    _PROMPT_ARROW = fmt
+                    print(f"  {colour(C_OK, f'Custom prompt arrow: {fmt}')}")
                 continue
 
             # .cd <dir> — Change directory
