@@ -353,6 +353,11 @@ class IppCompleter:
             '.colors', '.vm', '.clear', '.types', '.version',
             '.load', '.save', '.doc', '.time', '.which', '.last',
             '.undo', '.redo', '.edit', '.profile', '.alias',
+            '.pretty', '.stack', '.session', '.export', '.prompt',
+            '.json', '.format', '.cd', '.ls', '.pwd', '.pipe', '.bind',
+            '.search', '.examples', '.tutorial', '.plugin',
+            '.debug', '.break', '.watch', '.locals',
+            '.typehints', '.sighelp', '.theme',
             'exit', 'quit',
         ])
 
@@ -469,21 +474,20 @@ def setup_readline(interp):
         try: readline.read_history_file(hfile)
         except FileNotFoundError: pass
         readline.set_history_length(2000)
-        readline.parse_and_bind("tab: complete")
-        readline.parse_and_bind("set completion-ignore-case on")
-        readline.set_completer_delims(" \t\n`~!@#$%^&*()-=+[]{}|;:',.<>?/")
+        
+        # Create completer instance
         comp = IppCompleter(interp)
         readline.set_completer(comp.complete)
         
-        # Auto-indentation: after Enter, if line ends with {, (, [, add indent
-        def auto_indent_hook(text):
-            if text and text[-1] in '{([':
-                return text + '    '
-            return text
-        
-        # Bracket matching: highlight matching brackets
+        # Bind Tab to completion
+        readline.parse_and_bind("tab: complete")
+        readline.parse_and_bind("set completion-ignore-case on")
         readline.parse_and_bind("set show-all-if-ambiguous on")
-        readline.parse_and_bind("set mark-directories on")
+        readline.parse_and_bind("set show-all-if-unmodified on")
+        
+        # Set delimiters - only space and tab should break completion
+        # This allows completion of words with dots, brackets, etc.
+        readline.set_completer_delims(" \t")
         
         atexit.register(readline.write_history_file, hfile)
         return comp
@@ -1123,6 +1127,9 @@ def run_repl():
     print_banner()
     _enable_interrupt_handling()
 
+    # Declare globals that will be modified
+    global _USE_ANSI, _PROMPT_FORMAT
+    
     buf = []
     line_num = 0
     _reset_fn_colors()
@@ -1169,6 +1176,12 @@ def run_repl():
                 prompt_txt = colour(C_PROMPT, f"  {arrow}")
 
             raw = input(prompt_txt)
+
+            # Show syntax-highlighted version of what was typed
+            if raw.strip() and _USE_ANSI:
+                highlighted = highlight(raw.strip())
+                if highlighted != raw.strip():
+                    print(f"  {highlighted}")
 
         except KeyboardInterrupt:
             print()
@@ -1229,7 +1242,6 @@ def run_repl():
             # .colors on/off command
             m = re.match(r'\.colors\s+(on|off)$', stripped)
             if m:
-                global _USE_ANSI
                 if m.group(1) == 'on':
                     _USE_ANSI = True
                     # Enable virtual terminal processing on Windows
