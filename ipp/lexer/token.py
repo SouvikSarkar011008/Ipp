@@ -47,6 +47,9 @@ class TokenType(Enum):
     THROW = auto()
     WITH = auto()
     STATIC = auto()
+    YIELD = auto()
+    ASYNC = auto()
+    AWAIT = auto()
 
     # Operators
     PLUS = auto()
@@ -155,4 +158,7 @@ KEYWORDS = {
     "and": TokenType.AND,          # 'and' keyword → dedicated AND token
     "or": TokenType.OR,            # 'or' keyword  → dedicated OR token
     "not": TokenType.BANG,         # 'not' keyword maps to logical NOT
+    "yield": TokenType.YIELD,      # 'yield' keyword for generators
+    "async": TokenType.ASYNC,      # 'async' keyword for async functions
+    "await": TokenType.AWAIT,      # 'await' keyword for async/await
 }

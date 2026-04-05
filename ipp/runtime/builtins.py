@@ -519,6 +519,29 @@ def ipp_regex_replace(text, pattern, replacement):
     return re.sub(pattern, replacement, text)
 
 
+def ipp_next(generator):
+    """Get next value from a generator"""
+    from ipp.interpreter.interpreter import IppGenerator
+    if isinstance(generator, IppGenerator):
+        try:
+            return next(generator)
+        except StopIteration:
+            return None
+    elif hasattr(generator, '__next__'):
+        try:
+            return generator.__next__()
+        except StopIteration:
+            return None
+    else:
+        raise RuntimeError(f"Cannot call next() on {type(generator).__name__}")
+
+
+def ipp_is_generator(obj):
+    """Check if an object is a generator"""
+    from ipp.interpreter.interpreter import IppGenerator
+    return isinstance(obj, IppGenerator)
+
+
 class Vector2:
     def __init__(self, x=0, y=0):
         self.x = x
@@ -2652,4 +2675,8 @@ BUILTINS = {
     "PriorityQueue": ipp_priority_queue,
     "Tree": ipp_tree,
     "Graph": ipp_graph,
+    
+    # v1.4.0 Generators
+    "next": ipp_next,
+    "is_generator": ipp_is_generator,
 }

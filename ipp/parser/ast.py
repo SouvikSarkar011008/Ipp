@@ -201,6 +201,18 @@ class UnpackExpr(ASTNode):
     iterable: ASTNode
     def accept(self, visitor): return visitor.visit_unpack_expr(self)
 
+@dataclass
+class YieldExpr(ASTNode):
+    """Yield expression for generators"""
+    value: Optional[ASTNode] = None
+    def accept(self, visitor): return visitor.visit_yield_expr(self)
+
+@dataclass
+class AwaitExpr(ASTNode):
+    """Await expression for async/await"""
+    expression: ASTNode
+    def accept(self, visitor): return visitor.visit_await_expr(self)
+
 
 # ─── Statement nodes ──────────────────────────────────────────────────────────
 

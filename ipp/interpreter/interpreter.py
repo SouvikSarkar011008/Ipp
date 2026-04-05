@@ -3,332 +3,6 @@ from ..parser.ast import *
 from ..runtime.builtins import BUILTINS
 
 
-class IppFunction:
-    def __init__(self, parameters: List[str], body: List[ASTNode], closure: 'Environment', defaults: Optional[List[ASTNode]] = None):
-        self.parameters = parameters
-        self.body = body
-        self.closure = closure
-        self.defaults = defaults or []
-        self.is_init = False
-    
-    def __repr__(self):
-        return f"<function({self.parameters})>"
-
-
-class IppClass:
-    def __init__(self, name: str, methods: Dict[str, IppFunction], superclass=None):
-        self.name = name
-        self.methods = methods
-        self.superclass = superclass  # FIX: BUG-M6
-
-    def __repr__(self):
-        return f"<class {self.name}>"
-
-    def get_method(self, name: str):
-        if name in self.methods:
-            return self.methods[name]
-        # FIX: BUG-M6 — walk superclass chain
-        if self.superclass:
-            return self.superclass.get_method(name)
-        return None
-
-
-class IppInstance:
-    def __init__(self, ipp_class: IppClass):
-        self.ipp_class = ipp_class
-        self.fields = {}
-    
-    def __repr__(self):
-        return f"<{self.ipp_class.name} instance>"
-    
-    def __str__(self):
-        str_method = self.ipp_class.get_method('__str__')
-        if str_method:
-            new_env = Environment(str_method.closure)
-            new_env.define("self", self, constant=False)
-            interp = _ipp_get_interpreter()
-            if interp:
-                old_env = interp.environment
-                old_return = interp.return_value
-                interp.environment = new_env
-                interp.return_value = None
-                result = None
-                for stmt in str_method.body:
-                    stmt.accept(interp)
-                    if interp.return_value is not None:
-                        result = interp.return_value
-                        break
-                interp.environment = old_env
-                interp.return_value = old_return
-                if result is not None:
-                    # FIX BUG-N6: return the actual string result
-                    return str(result)
-        return f"<{self.ipp_class.name} instance>"
-    
-    def _is_private(self, name: str) -> bool:
-        return name.startswith('__')
-    
-    def _is_internal_access(self) -> bool:
-        interp = _ipp_get_interpreter()
-        if interp and hasattr(interp, 'current_class'):
-            return interp.current_class == self.ipp_class
-        return False
-    
-    def get(self, name: str):
-        if name in self.fields:
-            if self._is_private(name) and not self._is_internal_access():
-                raise RuntimeError(f"Cannot access private field '{name}' from outside class '{self.ipp_class.name}'")
-            return self.fields[name]
-        method = self.ipp_class.get_method(name)
-        if method:
-            return BoundMethod(self, method)
-        raise RuntimeError(f"Undefined property: {name}")
-    
-    def set(self, name: str, value: Any):
-        if self._is_private(name) and not self._is_internal_access():
-            raise RuntimeError(f"Cannot modify private field '{name}' from outside class '{self.ipp_class.name}'")
-        self.fields[name] = value
-
-
-class IppModule:
-    def __init__(self, env: 'Environment', name: str = "module"):
-        self._env = env
-        self._name = name
-    
-    def __repr__(self):
-        return f"<module '{self._name}'>"
-    
-    def __str__(self):
-        return f"<module '{self._name}'>"
-    
-    def get(self, name: str):
-        if self._env.has(name):
-            return self._env.get(name)
-        raise RuntimeError(f"Module '{self._name}' has no attribute '{name}'")
-    
-    def __getattr__(self, name: str):
-        if name.startswith('_'):
-            raise AttributeError(f"Module '{self._name}' has no attribute '{name}'")
-        return self.get(name)
-
-
-class IppEnum:
-    def __init__(self, name: str, values: List[str]):
-        self.name = name
-        self.values = {}
-        for i, v in enumerate(values):
-            self.values[v] = IppEnumValue(name, v, i)
-    
-    def __repr__(self):
-        return f"<enum {self.name}>"
-    
-    def get(self, name: str):
-        if name in self.values:
-            return self.values[name]
-        raise RuntimeError(f"Enum {self.name} has no value {name}")
-
-
-class IppEnumValue:
-    def __init__(self, enum_name: str, name: str, index: int):
-        self.enum_name = enum_name
-        self.name = name
-        self.index = index
-    
-    def __repr__(self):
-        return f"{self.enum_name}.{self.name}"
-    
-    def __eq__(self, other):
-        if isinstance(other, IppEnumValue):
-            return self.enum_name == other.enum_name and self.name == other.name
-        return False
-
-
-class BoundMethod:
-    def __init__(self, instance: 'IppInstance', method: IppFunction):
-        self.instance = instance
-        self.method = method
-
-
-class IppList:
-    def __init__(self, elements: List[Any]):
-        self.elements = elements
-    
-    def __iter__(self):
-        return iter(self.elements)
-    
-    def __len__(self):
-        return len(self.elements)
-    
-    def __getitem__(self, index):
-        if isinstance(index, float) and index.is_integer():
-            index = int(index)
-        return self.elements[index]
-    
-    def __setitem__(self, index, value):
-        if isinstance(index, float) and index.is_integer():
-            index = int(index)
-        self.elements[index] = value
-    
-    def __repr__(self):
-        return f"[{', '.join(repr(e) for e in self.elements)}]"
-    
-    def append(self, item):
-        self.elements.append(item)
-    
-    def pop(self, index=-1):
-        if not self.elements:
-            raise RuntimeError("Cannot pop from empty list")
-        return self.elements.pop(index)
-    
-    def push(self, item):
-        self.elements.append(item)
-    
-    def shift(self):
-        if not self.elements:
-            raise RuntimeError("Cannot shift from empty list")
-        return self.elements.pop(0)
-    
-    def unshift(self, item):
-        self.elements.insert(0, item)
-    
-    def len(self):
-        return len(self.elements)
-    
-    def contains(self, item):
-        return item in self.elements
-    
-    def index_of(self, item):
-        try:
-            return self.elements.index(item)
-        except ValueError:
-            return -1
-    
-    def slice(self, start=0, end=None):
-        return self.elements[start:end]
-    
-    def reverse(self):
-        return list(reversed(self.elements))
-    
-    def join(self, separator=""):
-        return separator.join(str(e) for e in self.elements)
-    
-    def clear(self):
-        self.elements = []
-
-
-class IppDict:
-    def __init__(self, data: Dict[Any, Any]):
-        self.data = data
-    
-    def __repr__(self):
-        return f"{{{', '.join(f'{k}: {v}' for k, v in self.data.items())}}}"
-    
-    def get(self, key):
-        return self.data.get(key)
-    
-    def set(self, key, value):
-        self.data[key] = value
-    
-    def len(self):
-        return len(self.data)
-    
-    def keys(self):
-        return list(self.data.keys())
-    
-    def values(self):
-        return list(self.data.values())
-    
-    def items(self):
-        return list(self.data.items())
-    
-    def has(self, key):
-        return key in self.data
-    
-    def delete(self, key):
-        if key in self.data:
-            del self.data[key]
-    
-    def clear(self):
-        self.data = {}
-
-
-class IppSet:
-    def __init__(self, items: Optional[List[Any]] = None):
-        self._items = set()
-        if items:
-            for item in items:
-                self._items.add(self._hashable(item))
-    
-    def _hashable(self, item):
-        if isinstance(item, IppList):
-            return tuple(self._hashable(e) for e in item.elements)
-        if isinstance(item, IppDict):
-            return tuple(sorted((self._hashable(k), self._hashable(v)) for k, v in item.data.items()))
-        if isinstance(item, IppSet):
-            return frozenset(self._hashable(e) for e in item._items)
-        return item
-    
-    def _unhashable(self, item):
-        if isinstance(item, tuple):
-            return IppList(list(item))
-        if isinstance(item, frozenset):
-            return IppSet(list(item))
-        return item
-    
-    def __repr__(self):
-        return "{" + ", ".join(str(self._unhashable(e)) for e in self._items) + "}"
-    
-    def __len__(self):
-        return len(self._items)
-    
-    def add(self, item):
-        self._items.add(self._hashable(item))
-    
-    def remove(self, item):
-        h = self._hashable(item)
-        if h in self._items:
-            self._items.remove(h)
-    
-    def contains(self, item):
-        return self._hashable(item) in self._items
-    
-    def len(self):
-        return len(self._items)
-    
-    def clear(self):
-        self._items = set()
-    
-    def union(self, other):
-        result = IppSet()
-        result._items = self._items.copy()
-        if isinstance(other, IppSet):
-            result._items |= other._items
-        elif isinstance(other, list):
-            for item in other:
-                result._items.add(self._hashable(item))
-        return result
-    
-    def intersection(self, other):
-        result = IppSet()
-        if isinstance(other, IppSet):
-            result._items = self._items & other._items
-        return result
-    
-    def difference(self, other):
-        result = IppSet()
-        if isinstance(other, IppSet):
-            result._items = self._items - other._items
-        return result
-    
-    def is_subset(self, other):
-        other_items = other._items if isinstance(other, IppSet) else set(other)
-        return self._items <= other_items
-    
-    def is_superset(self, other):
-        other_items = other._items if isinstance(other, IppSet) else set(other)
-        return self._items >= other_items
-
-
 class Environment:
     def __init__(self, parent: Optional['Environment'] = None):
         self.values: Dict[str, Any] = {}
@@ -361,6 +35,183 @@ class Environment:
         return name in self.values or (self.parent and self.parent.has(name))
 
 
+class IppFunction:
+    def __init__(self, parameters, body, closure, defaults=None):
+        self.parameters = parameters
+        self.body = body
+        self.closure = closure
+        self.defaults = defaults or []
+        self.is_init = False
+    
+    def __repr__(self):
+        return f"<function({self.parameters})>"
+
+
+class IppClass:
+    def __init__(self, name, methods, superclass=None):
+        self.name = name
+        self.methods = methods
+        self.superclass = superclass
+    
+    def __repr__(self):
+        return f"<class {self.name}>"
+    
+    def get_method(self, name):
+        if name in self.methods:
+            return self.methods[name]
+        if self.superclass:
+            return self.superclass.get_method(name)
+        return None
+
+
+class IppInstance:
+    def __init__(self, ipp_class):
+        self.ipp_class = ipp_class
+        self.fields = {}
+    
+    def __repr__(self):
+        return f"<{self.ipp_class.name} instance>"
+    
+    def __str__(self):
+        str_method = self.ipp_class.get_method('__str__')
+        if str_method:
+            new_env = Environment(str_method.closure)
+            new_env.define("self", self, constant=False)
+            interp = _ipp_get_interpreter()
+            if interp:
+                saved = interp.environment
+                interp.environment = new_env
+                try:
+                    for stmt in str_method.body:
+                        stmt.accept(interp)
+                        if interp.return_value is not None:
+                            return str(interp.return_value)
+                finally:
+                    interp.environment = saved
+        return self.__repr__()
+    
+    def get(self, name):
+        if name in self.fields:
+            return self.fields[name]
+        method = self.ipp_class.get_method(name)
+        if method:
+            return BoundMethod(self, method)
+        raise AttributeError(f"'{self.ipp_class.name}' object has no attribute '{name}'")
+    
+    def set(self, name, value):
+        self.fields[name] = value
+    
+    def get_method(self, name):
+        return self.ipp_class.get_method(name)
+
+
+class IppEnum:
+    def __init__(self, name, values):
+        self.name = name
+        # Convert list to dict if needed
+        if isinstance(values, list):
+            self.values = {v: v for v in values}
+        else:
+            self.values = values
+    
+    def __repr__(self):
+        return f"<enum {self.name}>"
+    
+    def get(self, name):
+        if name in self.values:
+            return self.values[name]
+        raise RuntimeError(f"Enum {self.name} has no value '{name}'")
+
+
+class IppModule:
+    def __init__(self, env, name):
+        self.env = env
+        self.name = name
+    
+    def __repr__(self):
+        return f"<module {self.name}>"
+    
+    def get(self, name):
+        if self.env.has(name):
+            return self.env.get(name)
+        raise AttributeError(f"module '{self.name}' has no attribute '{name}'")
+
+
+class IppSet:
+    def __init__(self, items=None):
+        self._items = set(items) if items else set()
+    
+    def add(self, item):
+        self._items.add(item)
+    
+    def remove(self, item):
+        self._items.discard(item)
+    
+    def contains(self, item):
+        return item in self._items
+    
+    def len(self):
+        return len(self._items)
+    
+    def clear(self):
+        self._items.clear()
+    
+    def __repr__(self):
+        return f"{{{', '.join(repr(i) for i in self._items)}}}"
+
+
+class BoundMethod:
+    def __init__(self, instance, method):
+        self.instance = instance
+        self.method = method
+    
+    def __repr__(self):
+        return f"<bound method {self.method}>"
+
+
+class IppList:
+    def __init__(self, elements=None):
+        self.elements = elements or []
+    
+    def __repr__(self):
+        return f"[{', '.join(repr(e) for e in self.elements)}]"
+    
+    def __iter__(self):
+        return iter(self.elements)
+    
+    def __len__(self):
+        return len(self.elements)
+    
+    def __getitem__(self, key):
+        return self.elements[key]
+    
+    def append(self, item):
+        self.elements.append(item)
+    
+    def pop(self, index=-1):
+        return self.elements.pop(index)
+    
+    def insert(self, index, item):
+        self.elements.insert(index, item)
+    
+    def remove(self, item):
+        self.elements.remove(item)
+
+
+class IppDict:
+    def __init__(self, data=None):
+        self.data = data or {}
+    
+    def __repr__(self):
+        return f"{{{', '.join(f'{repr(k)}: {repr(v)}' for k, v in self.data.items())}}}"
+    
+    def get(self, key, default=None):
+        return self.data.get(key, default)
+    
+    def set(self, key, value):
+        self.data[key] = value
+
+
 _ipp_current_interpreter = None
 
 
@@ -388,6 +239,9 @@ class Interpreter:
         self.call_depth = 0
         self.max_depth = max_depth
         self.current_class = None
+        self.yield_flag = False
+        self._gen_yield_count = 0
+        self._gen_target_yield = 0
         
         for name, func in BUILTINS.items():
             self.global_env.define(name, func, constant=False)
@@ -597,6 +451,14 @@ class Interpreter:
             merged_args = self._merge_named_args(callee, args, named_args)
             return self.call_function(callee, merged_args)
         
+        if isinstance(callee, IppGenerator):
+            # Calling a generator function returns a new generator instance
+            # with the provided arguments bound
+            new_gen = IppGenerator(callee.parameters, callee.body, callee.closure, callee.func_name)
+            # Store arguments for later binding when __next__ is called
+            new_gen._pending_args = args
+            return new_gen
+        
         if isinstance(callee, BoundMethod):
             # Match named arguments to method parameters
             merged_args = self._merge_named_args(callee.method, [callee.instance] + args, named_args)
@@ -735,6 +597,8 @@ class Interpreter:
         if isinstance(obj, IppInstance):
             return obj.get(node.name)
         if isinstance(obj, IppEnum):
+            return obj.get(node.name)
+        if isinstance(obj, IppModule):
             return obj.get(node.name)
         if isinstance(obj, IppList):
             return getattr(obj, node.name)
@@ -969,8 +833,51 @@ class Interpreter:
     def visit_function_decl(self, node: FunctionDecl):
         closure = Environment(self.environment)
         defaults = getattr(node, 'defaults', None) or []
-        func = IppFunction(node.parameters, node.body, closure, defaults)
+        
+        # Check if function body contains yield - if so, it's a generator
+        has_yield = self._check_for_yield(node.body)
+        if has_yield:
+            func = IppGenerator(node.parameters, node.body, closure, node.name)
+        else:
+            func = IppFunction(node.parameters, node.body, closure, defaults)
+        
         self.environment.define(node.name, func, constant=False)
+    
+    def _check_for_yield(self, body):
+        """Check if a body contains yield expressions"""
+        for stmt in body:
+            if self._stmt_has_yield(stmt):
+                return True
+        return False
+    
+    def _stmt_has_yield(self, stmt):
+        """Check if a statement contains yield"""
+        if isinstance(stmt, ExprStmt):
+            return self._expr_has_yield(stmt.expression)
+        if isinstance(stmt, IfStmt):
+            if self._stmt_has_yield(stmt.then_branch[0]) if stmt.then_branch else False:
+                return True
+            for _, branch in stmt.elif_branches:
+                if self._stmt_has_yield(branch[0]) if branch else False:
+                    return True
+            if stmt.else_branch and self._stmt_has_yield(stmt.else_branch[0]):
+                return True
+        if isinstance(stmt, (ForStmt, WhileStmt)):
+            if stmt.body and self._stmt_has_yield(stmt.body[0]):
+                return True
+        return False
+    
+    def _expr_has_yield(self, expr):
+        """Check if an expression contains yield"""
+        if isinstance(expr, YieldExpr):
+            return True
+        if isinstance(expr, CallExpr):
+            return self._expr_has_yield(expr.callee) or any(self._expr_has_yield(a) for a in expr.arguments)
+        if isinstance(expr, BinaryExpr):
+            return self._expr_has_yield(expr.left) or self._expr_has_yield(expr.right)
+        if isinstance(expr, UnaryExpr):
+            return self._expr_has_yield(expr.right)
+        return False
 
     def visit_class_decl(self, node: ClassDecl):
         superclass = None
@@ -1168,6 +1075,9 @@ class Interpreter:
             items = list(iterable)
         elif isinstance(iterable, list):
             items = iterable
+        elif hasattr(iterable, '__iter__') and hasattr(iterable, '__next__'):
+            # Generator support
+            items = list(iterable)
         else:
             raise RuntimeError(f"Cannot iterate over {type(iterable)}")
         
@@ -1212,6 +1122,9 @@ class Interpreter:
                 if self.return_value is not None:
                     self.environment = saved_env
                     return
+                # Check for yield in generator context - DON'T restore env
+                if self.yield_flag:
+                    return  # Keep current environment for generator resume
         
         self.environment = saved_env
 
@@ -1271,6 +1184,119 @@ class Interpreter:
         result = node.expression.accept(self)
         self.last_value = result
         return result
+
+    def visit_yield_expr(self, node: YieldExpr):
+        """Yield expression - pauses execution and returns value"""
+        value = node.value.accept(self) if node.value else None
+        self.return_value = value
+        self.yield_flag = True
+        
+        # Track yield count for generator resumption
+        current_count = getattr(self, '_gen_yield_count', 0)
+        self._gen_yield_count = current_count + 1
+        target = getattr(self, '_gen_target_yield', 0)
+        
+        if current_count < target:
+            # Not the target yield yet - continue execution
+            self.yield_flag = False
+            self.return_value = None
+            return value
+        else:
+            # This is the target yield - stop execution
+            return value
+
+    def _make_python_generator(self, generator):
+        """Legacy - not used anymore"""
+        pass
+    
+    def _execute_gen_body(self, body):
+        """Execute generator body, stopping at the target yield count"""
+        for stmt in body:
+            self.yield_flag = False
+            self.return_value = None
+            
+            try:
+                stmt.accept(self)
+            except:
+                if self.yield_flag:
+                    return  # Yield was hit
+                raise
+            
+            if self.yield_flag:
+                return  # Yield was hit
+
+
+class IppGenerator:
+    """Generator object for yield-based generators"""
+    def __init__(self, parameters, body, closure, func_name="<generator>"):
+        self.parameters = parameters
+        self.body = body
+        self.closure = closure
+        self.func_name = func_name
+        self._done = False
+        self._yield_count = 0  # Number of yields already consumed
+        self._env = None
+        self._pending_args = []  # Arguments passed when generator was called
+    
+    def __repr__(self):
+        return f"<generator {self.func_name}>"
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self._done:
+            raise StopIteration
+        
+        interp = _ipp_get_interpreter()
+        if interp is None:
+            raise RuntimeError("No interpreter available for generator")
+        
+        if self._env is None:
+            # First call - set up environment with arguments
+            self._env = Environment(self.closure)
+            for i, param in enumerate(self.parameters):
+                if i < len(self._pending_args):
+                    self._env.define(param, self._pending_args[i], constant=False)
+                else:
+                    self._env.define(param, None, constant=False)
+            self._pending_args = []  # Clear pending args after first use
+        
+        # Execute generator body, tracking yields
+        saved_env = interp.environment
+        saved_return = interp.return_value
+        saved_yield = getattr(interp, 'yield_flag', False)
+        
+        interp.environment = self._env
+        interp.return_value = None
+        interp.yield_flag = False
+        interp._gen_yield_count = 0
+        interp._gen_target_yield = self._yield_count
+        
+        try:
+            interp._execute_gen_body(self.body)
+            
+            if interp.yield_flag:
+                # A yield was hit at the right count
+                self._yield_count += 1
+                result = interp.return_value
+                interp.return_value = saved_return
+                interp.yield_flag = saved_yield
+                interp.environment = saved_env
+                return result
+            else:
+                # No yield at target count - generator is done
+                self._done = True
+                interp.return_value = saved_return
+                interp.yield_flag = saved_yield
+                interp.environment = saved_env
+                raise StopIteration
+        except StopIteration:
+            self._done = True
+            interp.return_value = saved_return
+            interp.yield_flag = saved_yield
+            interp.environment = saved_env
+            raise
 
 
 def interpret(program: Program, current_file: str = None) -> Any:

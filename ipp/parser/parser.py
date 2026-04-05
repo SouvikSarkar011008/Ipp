@@ -597,6 +597,18 @@ class Parser:
             ident = Identifier(self.previous().lexeme)
             ident.line = self.previous().line
             return ident
+        
+        # Parse yield expression
+        if self.match(TokenType.YIELD):
+            value = None
+            if not self.check(TokenType.NEWLINE) and not self.check(TokenType.RIGHT_PAREN) and not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+                value = self.expression()
+            return YieldExpr(value)
+        
+        # Parse await expression
+        if self.match(TokenType.AWAIT):
+            expr = self.unary()
+            return AwaitExpr(expr)
 
         if self.match(TokenType.LEFT_PAREN):
             self.skip_newlines()

@@ -337,14 +337,15 @@
 
 ---
 
-## v1.4.0 — Generators + Async/Await + Engine Integration 📋 PLANNED
+## v1.4.0 — Generators + Async/Await + Engine Integration ✅ DONE
 
-**Audit reference:** BUG-NEW-N4, BUG-NEW-N7
-
-### BUG-NEW-N4: Generator Functions ⏳ TODO
-- [ ] Lex `yield` as keyword
-- [ ] Create `IppGenerator` object
-- [ ] Serialize/resume execution state
+### BUG-NEW-N4: Generator Functions ✅ DONE
+- [x] Lex `yield` as keyword
+- [x] Create `IppGenerator` object
+- [x] Serialize/resume execution state via yield count tracking
+- [x] `next(gen)` builtin function
+- [x] `is_generator(obj)` builtin function
+- [x] For-in loop support for generators
 
 ### BUG-NEW-N7: Async/Await ⏳ TODO
 - [ ] Implement async/await over generators

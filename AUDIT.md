@@ -1275,19 +1275,19 @@ Ordered by severity × frequency of impact:
 
 ---
 
-## v1.4.0 — Generators + Async/Await + Engine Integration 📋 PLANNED
+## v1.4.0 — Generators + Async/Await + Engine Integration ✅ DONE
 
-### Generator Functions
-- [ ] Lex `yield` as keyword
-- [ ] Create `IppGenerator` object
-- [ ] Serialize/resume execution state
-- [ ] `next(gen)` and `for x in gen` iteration
+### Generator Functions ✅ DONE
+- [x] Lex `yield` as keyword
+- [x] Create `IppGenerator` object
+- [x] Serialize/resume execution state via yield count tracking
+- [x] `next(gen)` and `for x in gen` iteration
+- [x] `is_generator(obj)` builtin function
 
-### Async/Await
+### Async/Await ⏳ TODO
 - [ ] Implement async/await over generators
 - [ ] Add event loop
 - [ ] Handle `await expr` as `yield wait(expr)`
-- [ ] Native async/await support in REPL (v1.5.0)
 
 ### Engine Bindings
 - [ ] Pygame integration
