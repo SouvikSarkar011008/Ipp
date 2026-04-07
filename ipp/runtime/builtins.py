@@ -542,6 +542,298 @@ def ipp_is_generator(obj):
     return isinstance(obj, IppGenerator)
 
 
+# Async/Await
+def ipp_async_run(coro):
+    """Run an async coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine, IppEventLoop, _ipp_get_interpreter
+    if isinstance(coro, IppCoroutine):
+        interp = _ipp_get_interpreter()
+        loop = IppEventLoop(interp)
+        return loop.run_until_complete(coro)
+    raise RuntimeError("async_run() expects a coroutine")
+
+def ipp_create_task(coro):
+    """Create a task from coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine, IppEventLoop, _ipp_get_interpreter
+    if isinstance(coro, IppCoroutine):
+        interp = _ipp_get_interpreter()
+        loop = IppEventLoop(interp)
+        loop.create_task(coro)
+        return loop.run_until_complete(coro)
+    raise RuntimeError("create_task() expects a coroutine")
+
+def ipp_is_coroutine(obj):
+    """Check if object is a coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine
+    return isinstance(obj, IppCoroutine)
+
+
+# v1.5.0 - Additional Builtins
+
+# Random
+def ipp_seed(n):
+    import random
+    random.seed(int(n))
+    return True
+
+def ipp_normal(mu=0.0, sigma=1.0):
+    import random
+    return random.gauss(float(mu), float(sigma))
+
+# Time
+def ipp_now():
+    import datetime
+    return datetime.datetime.now().isoformat()
+
+def ipp_delta():
+    import time
+    if not hasattr(ipp_delta, '_last'):
+        ipp_delta._last = time.perf_counter()
+    now = time.perf_counter()
+    delta = now - ipp_delta._last
+    ipp_delta._last = now
+    return delta
+
+def ipp_format_duration(seconds):
+    seconds = float(seconds)
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    elif seconds < 3600:
+        m = int(seconds // 60)
+        s = int(seconds % 60)
+        return f"{m}m {s}s"
+    else:
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = int(seconds % 60)
+        return f"{h}h {m}m {s}s"
+
+# Color
+def ipp_from_hex(hex_str):
+    hex_str = str(hex_str).lstrip('#')
+    if len(hex_str) == 6:
+        r = int(hex_str[0:2], 16)
+        g = int(hex_str[2:4], 16)
+        b = int(hex_str[4:6], 16)
+        return {"r": r, "g": g, "b": b, "a": 255}
+    elif len(hex_str) == 8:
+        r = int(hex_str[0:2], 16)
+        g = int(hex_str[2:4], 16)
+        b = int(hex_str[4:6], 16)
+        a = int(hex_str[6:8], 16)
+        return {"r": r, "g": g, "b": b, "a": a}
+    raise RuntimeError(f"Invalid hex color: {hex_str}")
+
+def ipp_to_hex(r, g, b, a=255):
+    r, g, b, a = int(r), int(g), int(b), int(a)
+    return f"#{r:02X}{g:02X}{b:02X}{a:02X}"
+
+def ipp_blend(c1, c2, t):
+    t = float(t)
+    if isinstance(c1, dict) and isinstance(c2, dict):
+        return {
+            "r": int(c1.get("r", 0) * (1-t) + c2.get("r", 0) * t),
+            "g": int(c1.get("g", 0) * (1-t) + c2.get("g", 0) * t),
+            "b": int(c1.get("b", 0) * (1-t) + c2.get("b", 0) * t),
+            "a": int(c1.get("a", 255) * (1-t) + c2.get("a", 255) * t),
+        }
+    raise RuntimeError("blend() expects color dicts")
+
+def ipp_hsl(h, s, l):
+    h, s, l = float(h), float(s), float(l)
+    h = h % 360
+    s = min(1.0, max(0.0, s))
+    l = min(1.0, max(0.0, l))
+    c = (1 - abs(2*l - 1)) * s
+    x = c * (1 - abs((h / 60) % 2 - 1))
+    m = l - c/2
+    if h < 60: r, g, b = c, x, 0
+    elif h < 120: r, g, b = x, c, 0
+    elif h < 180: r, g, b = 0, c, x
+    elif h < 240: r, g, b = 0, x, c
+    elif h < 300: r, g, b = x, 0, c
+    else: r, g, b = c, 0, x
+    return {"r": int((r+m)*255), "g": int((g+m)*255), "b": int((b+m)*255), "a": 255}
+
+# Easing
+def ipp_ease_in(t):
+    t = float(t)
+    return t * t * (3 - 2 * t)
+
+def ipp_ease_out(t):
+    t = float(t)
+    return t * t * (3 - 2 * t)
+
+def ipp_bounce(t):
+    t = float(t)
+    if t < 4/11: return (121*t*t)/16
+    elif t < 8/11: return (363/40.0*t*t) - (99/10.0*t) + 17/5.0
+    elif t < 9/10: return (4356/361.0*t*t) - (35442/1805.0*t) + 16061/1805.0
+    else: return (54/5.0*t*t) - (513/25.0*t) + 268/25.0
+
+def ipp_spring(t, damping=0.5):
+    import math
+    t = float(t)
+    return 1 - math.exp(-damping * t) * math.cos(t * 10)
+
+# String
+def ipp_read_lines(path):
+    with open(str(path), 'r', encoding='utf-8') as f:
+        return f.readlines()
+
+def ipp_words(text):
+    return str(text).split()
+
+def ipp_truncate(text, max_len=50, suffix="..."):
+    text = str(text)
+    max_len = int(max_len)
+    suffix = str(suffix)
+    if len(text) <= max_len:
+        return text
+    return text[:max_len - len(suffix)] + suffix
+
+def ipp_pad_left(text, width, char=" "):
+    return str(text).rjust(int(width), str(char))
+
+def ipp_pad_right(text, width, char=" "):
+    return str(text).ljust(int(width), str(char))
+
+# List
+def ipp_reverse(lst):
+    if hasattr(lst, 'elements'):
+        lst.elements.reverse()
+        return lst
+    if isinstance(lst, list):
+        lst.reverse()
+        return lst
+    raise RuntimeError("reverse() expects a list")
+
+def ipp_binary_search(lst, target):
+    items = lst.elements if hasattr(lst, 'elements') else lst
+    left, right = 0, len(items) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if items[mid] == target:
+            return mid
+        elif items[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+def ipp_group_by(lst, key_fn_name):
+    items = lst.elements if hasattr(lst, 'elements') else lst
+    result = {}
+    for item in items:
+        key = str(item)
+        if key not in result:
+            result[key] = []
+        result[key].append(item)
+    return result
+
+def ipp_zip_with(lst1, lst2):
+    l1 = lst1.elements if hasattr(lst1, 'elements') else lst1
+    l2 = lst2.elements if hasattr(lst2, 'elements') else lst2
+    return [[a, b] for a, b in zip(l1, l2)]
+
+# Regex
+def ipp_find_all(text, pattern):
+    import re
+    return re.findall(str(pattern), str(text))
+
+def ipp_sub(text, pattern, replacement):
+    import re
+    return re.sub(str(pattern), str(replacement), str(text))
+
+def ipp_escape(text):
+    import re
+    return re.escape(str(text))
+
+# Path
+def ipp_glob(pattern):
+    import glob
+    return glob.glob(str(pattern))
+
+# Grid
+def ipp_pathfind(grid, start, end):
+    """A* pathfinding on a 2D grid (list of lists)"""
+    if hasattr(grid, 'elements'):
+        grid = grid.elements
+    start, end = tuple(start), tuple(end)
+    rows, cols = len(grid), len(grid[0])
+    open_set = [start]
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: abs(start[0]-end[0]) + abs(start[1]-end[1])}
+    
+    import heapq
+    while open_set:
+        current = heapq.heappop([(f_score.get(n, float('inf')), n) for n in open_set])[1]
+        open_set.remove(current)
+        if current == end:
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            path.reverse()
+            return path
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr, nc = current[0]+dr, current[1]+dc
+            if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != 1:
+                neighbor = (nr, nc)
+                tentative = g_score[current] + 1
+                if tentative < g_score.get(neighbor, float('inf')):
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative
+                    f_score[neighbor] = tentative + abs(nr-end[0]) + abs(nc-end[1])
+                    if neighbor not in open_set:
+                        open_set.append(neighbor)
+    return []
+
+def ipp_neighbors(grid, row, col):
+    if hasattr(grid, 'elements'):
+        grid = grid.elements
+    rows, cols = len(grid), len(grid[0])
+    result = []
+    for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+        nr, nc = row+dr, col+dc
+        if 0 <= nr < rows and 0 <= nc < cols:
+            result.append((nr, nc))
+    return result
+
+def ipp_flood_fill(grid, row, col, target=None):
+    if hasattr(grid, 'elements'):
+        grid = grid.elements
+    rows, cols = len(grid), len(grid[0])
+    if target is None:
+        target = grid[row][col]
+    visited = set()
+    stack = [(row, col)]
+    while stack:
+        r, c = stack.pop()
+        if (r, c) in visited:
+            continue
+        if 0 <= r < rows and 0 <= c < cols and grid[r][c] == target:
+            visited.add((r, c))
+            stack.extend([(r-1,c),(r+1,c),(r,c-1),(r,c+1)])
+    return list(visited)
+
+# Debug
+def ipp_assert_eq(a, b, msg=""):
+    if a != b:
+        raise AssertionError(f"assert_eq failed: {a!r} != {b!r}" + (f" - {msg}" if msg else ""))
+
+def ipp_inspect(obj):
+    if hasattr(obj, '__dict__'):
+        return {k: str(v) for k, v in obj.__dict__.items()}
+    if hasattr(obj, 'data'):
+        return obj.data
+    if hasattr(obj, 'elements'):
+        return obj.elements
+    return str(obj)
+
+
 class Vector2:
     def __init__(self, x=0, y=0):
         self.x = x
@@ -2679,4 +2971,45 @@ BUILTINS = {
     # v1.4.0 Generators
     "next": ipp_next,
     "is_generator": ipp_is_generator,
+    
+    # v1.4.0 Generators
+    "next": ipp_next,
+    "is_generator": ipp_is_generator,
+    
+    # v1.5.0 - Async/Await + Additional Builtins
+    "async_run": ipp_async_run,
+    "create_task": ipp_create_task,
+    "is_coroutine": ipp_is_coroutine,
+    "sleep": ipp_sleep,
+    "seed": ipp_seed,
+    "reverse": ipp_reverse,
+    "now": ipp_now,
+    "delta": ipp_delta,
+    "format_duration": ipp_format_duration,
+    "from_hex": ipp_from_hex,
+    "to_hex": ipp_to_hex,
+    "blend": ipp_blend,
+    "hsl": ipp_hsl,
+    "ease_in": ipp_ease_in,
+    "ease_out": ipp_ease_out,
+    "bounce": ipp_bounce,
+    "spring": ipp_spring,
+    "normal": ipp_normal,
+    "read_lines": ipp_read_lines,
+    "words": ipp_words,
+    "truncate": ipp_truncate,
+    "pad_left": ipp_pad_left,
+    "pad_right": ipp_pad_right,
+    "binary_search": ipp_binary_search,
+    "group_by": ipp_group_by,
+    "zip_with": ipp_zip_with,
+    "find_all": ipp_find_all,
+    "sub": ipp_sub,
+    "escape": ipp_escape,
+    "glob": ipp_glob,
+    "pathfind": ipp_pathfind,
+    "neighbors": ipp_neighbors,
+    "flood_fill": ipp_flood_fill,
+    "assert_eq": ipp_assert_eq,
+    "inspect": ipp_inspect,
 }

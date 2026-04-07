@@ -213,6 +213,15 @@ class AwaitExpr(ASTNode):
     expression: ASTNode
     def accept(self, visitor): return visitor.visit_await_expr(self)
 
+@dataclass
+class AsyncFuncDecl(ASTNode):
+    """Async function declaration"""
+    name: str
+    parameters: List[str]
+    body: List[ASTNode]
+    defaults: List[ASTNode] = field(default_factory=list)
+    def accept(self, visitor): return visitor.visit_async_func_decl(self)
+
 
 # ─── Statement nodes ──────────────────────────────────────────────────────────
 

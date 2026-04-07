@@ -436,7 +436,7 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.4.1 | Error Documentation + Error Reference Guide (ERRORS.md) |
 | v1.4.2 | Tutorial Documentation + Getting Started Guide (TUTORIAL.md) |
 | v1.4.3 | PyPI Publishing + `pip install ipp-lang` |
-| v1.5.0 | Async/Await + Coroutines + Event Loop |
+| v1.5.0 | Async/Await + Coroutines + Event Loop + Additional Builtins (31 new builtins) |
 | v1.5.1 | WASM Compilation + Web Playground |
 | v1.5.2 | WebGL Integration + 2D Canvas Rendering |
 | v1.5.3 | 3D Rendering + Scene Graph |

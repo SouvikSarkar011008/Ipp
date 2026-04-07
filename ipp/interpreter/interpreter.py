@@ -1183,6 +1183,10 @@ class Interpreter:
             self.return_value = node.value.accept(self)
         else:
             self.return_value = None
+        # Signal that execution should stop
+        self._return_flag = True
+        # Signal that execution should stop
+        self._return_flag = True
 
     def visit_break_stmt(self, node: BreakStmt):
         self.break_flag = True
@@ -1214,6 +1218,22 @@ class Interpreter:
         else:
             # This is the target yield - stop execution
             return value
+
+    def visit_await_expr(self, node: AwaitExpr):
+        """Await expression - yields control to event loop"""
+        value = node.expression.accept(self)
+        # If it's a sleep call, actually sleep
+        if isinstance(value, bool) and value is True:
+            pass  # sleep already happened
+        self.return_value = value
+        self.yield_flag = True
+        return value
+
+    def visit_async_func_decl(self, node: AsyncFuncDecl):
+        """Async function declaration"""
+        closure = Environment(self.environment)
+        func = IppCoroutine(node.parameters, node.body, closure, node.name)
+        self.environment.define(node.name, func, constant=False)
 
     def _make_python_generator(self, generator):
         """Legacy - not used anymore"""
@@ -1307,6 +1327,155 @@ class IppGenerator:
             interp.yield_flag = saved_yield
             interp.environment = saved_env
             raise
+
+
+class IppCoroutine:
+    """Coroutine object for async/await"""
+    def __init__(self, parameters, body, closure, func_name="<coroutine>"):
+        self.parameters = parameters
+        self.body = body
+        self.closure = closure
+        self.func_name = func_name
+        self._done = False
+        self._result = None
+        self._env = None
+        self._pending_args = []
+        self._stmt_idx = 0  # Track execution position
+    
+    def __repr__(self):
+        return f"<coroutine {self.func_name}>"
+    
+    def __call__(self, *args):
+        """Calling a coroutine function creates a new coroutine instance"""
+        new_coro = IppCoroutine(self.parameters, self.body, self.closure, self.func_name)
+        new_coro._pending_args = list(args)
+        return new_coro
+    
+    def __await__(self):
+        return self
+    
+    def result(self):
+        return self._result
+
+
+class IppEventLoop:
+    """Simple event loop for async/await"""
+    def __init__(self, interp):
+        self.interp = interp
+        self._tasks = []
+        self._time = 0
+    
+    def create_task(self, coro):
+        self._tasks.append(coro)
+        return coro
+    
+    def run_until_complete(self, coro):
+        self._tasks.append(coro)
+        max_iterations = 10000  # Prevent infinite loops
+        iteration = 0
+        while self._tasks and iteration < max_iterations:
+            iteration += 1
+            task = self._tasks.pop(0)
+            if task._done:
+                continue
+            try:
+                result = self._run_coro_step(task)
+                if result is not None:
+                    # Re-add task - it yielded
+                    self._tasks.append(task)
+            except StopIteration:
+                pass
+        return coro._result
+    
+    def _run_coro_step(self, coro):
+        if coro._env is None:
+            coro._env = Environment(coro.closure)
+            for i, param in enumerate(coro.parameters):
+                if i < len(coro._pending_args):
+                    coro._env.define(param, coro._pending_args[i], constant=False)
+                else:
+                    coro._env.define(param, None, constant=False)
+            coro._pending_args = []
+        
+        interp = self.interp
+        saved_env = interp.environment
+        interp.environment = coro._env
+        
+        # Execute from current statement index
+        body = coro.body
+        idx = coro._stmt_idx
+        
+        while idx < len(body):
+            stmt = body[idx]
+            coro._stmt_idx = idx + 1
+            
+            # Don't reset return_value if _return_flag is set
+            if not getattr(interp, '_return_flag', False):
+                interp.yield_flag = False
+                interp.return_value = None
+            
+            try:
+                stmt.accept(interp)
+            except Exception as e:
+                if interp.yield_flag:
+                    result = interp.return_value
+                    interp.yield_flag = False
+                    interp.environment = saved_env
+                    return result
+                raise
+            
+            if interp.yield_flag:
+                result = interp.return_value
+                interp.yield_flag = False
+                interp.environment = saved_env
+                return result
+            
+            # Check if return was set (function/coroutine completed)
+            if getattr(interp, '_return_flag', False):
+                coro._done = True
+                coro._result = interp.return_value
+                interp._return_flag = False
+                interp.environment = saved_env
+                return None
+            
+            idx = coro._stmt_idx
+        
+        # Coroutine completed
+        coro._done = True
+        coro._result = interp.return_value
+        interp.environment = saved_env
+        return None
+
+
+def ipp_sleep(seconds):
+    """Sleep for given seconds (awaitable)"""
+    import time
+    time.sleep(float(seconds))
+    return True
+
+def ipp_async_run(coro):
+    """Run an async coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine, IppEventLoop, _ipp_get_interpreter
+    if isinstance(coro, IppCoroutine):
+        interp = _ipp_get_interpreter()
+        loop = IppEventLoop(interp)
+        return loop.run_until_complete(coro)
+    raise RuntimeError("async_run() expects a coroutine")
+
+def ipp_create_task(coro):
+    """Create a task from coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine, IppEventLoop, _ipp_get_interpreter
+    if isinstance(coro, IppCoroutine):
+        interp = _ipp_get_interpreter()
+        loop = IppEventLoop(interp)
+        loop.create_task(coro)
+        return loop.run_until_complete(coro)
+    raise RuntimeError("create_task() expects a coroutine")
+
+def ipp_is_coroutine(obj):
+    """Check if object is a coroutine"""
+    from ipp.interpreter.interpreter import IppCoroutine
+    return isinstance(obj, IppCoroutine)
 
 
 def interpret(program: Program, current_file: str = None) -> Any:

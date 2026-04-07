@@ -44,7 +44,7 @@
 | **v1.4.1** | ✅ DONE | Error Documentation + Error Reference Guide |
 | **v1.4.2** | ✅ DONE | Tutorial Documentation + Getting Started Guide |
 | **v1.4.3** | ✅ DONE | PyPI Publishing + `pip install ipp-lang` |
-| **v1.5.0** | 📋 PLANNED | Async/Await + Coroutines + Event Loop |
+| **v1.5.0** | ✅ DONE | Async/Await + Coroutines + Event Loop + Additional Builtins |
 | **v1.5.1** | 📋 PLANNED | WASM Compilation + Web Playground |
 | **v1.5.2** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
 | **v1.5.3** | 📋 PLANNED | 3D Rendering + Scene Graph |

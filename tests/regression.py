@@ -44,6 +44,8 @@ TESTS = [
     ("v1.3.10-slow", "tests/v1_3_10/test_repl_slow.py"),
     ("v1.3.10-practical", "tests/v1_3_10/test_repl_practical.py"),
     ("v1.4.0", "tests/v1_4_0/test_generators.ipp"),
+    ("v1.5.0", "tests/v1_5_0/test_additional_builtins.ipp"),
+    ("v1.5.0-async", "tests/v1_5_0/test_async_await.ipp"),
 ]
 
 def run_test(version, filepath):

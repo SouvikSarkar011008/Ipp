@@ -148,7 +148,7 @@ class Parser:
             initializer = self.expression()
         return LetDecl(name.lexeme, initializer, type_hint)
 
-    def function_declaration(self, is_static=False):
+    def function_declaration(self, is_static=False, is_async=False):
         # FIX: BUG-P1 — single canonical statement() method
         if self.check(TokenType.INIT):
             name = "init"
@@ -192,6 +192,8 @@ class Parser:
         self.consume(TokenType.LEFT_BRACE, "Expect '{' before function body")
         body = self.block()
 
+        if is_async:
+            return AsyncFuncDecl(name, parameters, body, defaults)
         return FunctionDecl(name, parameters, body, param_types, defaults, return_type, is_static)
 
     # ─── Statements ──────────────────────────────────────────────────────────
@@ -199,6 +201,12 @@ class Parser:
     # FIX: BUG-P1 — removed the duplicate statement() definition; only one exists now
     def statement(self):
         self.skip_newlines()
+        # async func declaration
+        if self.match(TokenType.ASYNC):
+            if self.match(TokenType.FUNC):
+                return self.function_declaration(is_async=True)
+            # async without func — treat as expression
+            self.previous()  # put ASYNC back
         if self.match(TokenType.IF):
             return self.if_statement()
         if self.match(TokenType.FOR):

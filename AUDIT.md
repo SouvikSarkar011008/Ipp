@@ -923,7 +923,7 @@ Ordered by severity × frequency of impact:
 *v1.4.1 completed: 2026-04-07 - Error Documentation + Error Reference Guide (ERRORS.md, 20 error codes)*
 *v1.4.2 completed: 2026-04-07 - Tutorial Documentation + Getting Started Guide (TUTORIAL.md, 25 verified examples)*
 *v1.4.3 completed: 2026-04-07 - PyPI Publishing (pyproject.toml, GitHub Actions, ipp-lang package)*
-*v1.5.0 planned: Async/Await + Coroutines + Event Loop*
+*v1.5.0 completed: 2026-04-07 - Async/Await + Coroutines + Event Loop + Additional Builtins (31 new builtins)*
 *v1.5.1 planned: WASM Compilation + Web Playground*
 *v1.5.2 planned: WebGL Integration + 2D Canvas Rendering*
 *v1.5.3 planned: 3D Rendering + Scene Graph*
