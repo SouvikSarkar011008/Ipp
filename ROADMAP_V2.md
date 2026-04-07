@@ -1,5 +1,5 @@
-# Ipp Language — Detailed Roadmap v3
-> Last Updated: 2026-03-29 | Reflects audit findings through v1.3.2
+# Ipp Language — Detailed Roadmap v5
+> Last Updated: 2026-04-07 | Reflects audit findings through v1.4.0
 
 ---
 
@@ -29,21 +29,30 @@
 | **v1.1.1** | ✅ DONE | Bug Fixes (Dict/Index Assignment) |
 | **v1.2.0** | ✅ DONE | Benchmark Suite vs Other Languages |
 | **v1.2.4** | ✅ DONE | Full VM Class Support |
-| **v1.3.0** | ✅ DONE | REPL Enhancements (`.vars`, `.fns`, `.history`, `.vm`, `\`, Ctrl+C, colors) |
-| **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed (for-loop, line 0, overload, defaults, int/float, closures) |
-| **v1.3.2** | ✅ DONE | VM Stabilization (upvalues) + Set type + Class Fix |
-| **v1.3.3** | ✅ DONE | Bug Fixes + Standard Library + Math + Collections + Networking |
-| **v1.3.4** | ✅ DONE | Comprehensive stdlib testing (130+ builtins verified) |
+| **v1.3.0** | ✅ DONE | REPL Enhancements |
+| **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed |
+| **v1.3.2** | ✅ DONE | VM Stabilization (upvalues) + Set type |
+| **v1.3.3** | ✅ DONE | Bug Fixes + Standard Library + Networking |
+| **v1.3.4** | ✅ DONE | Comprehensive stdlib testing (130+ builtins) |
 | **v1.3.5** | ✅ DONE | Regex fix + REPL color fix |
 | **v1.3.6** | ✅ DONE | VM compatibility tests + REPL warning |
-| **v1.3.7** | ✅ DONE | REPL enhancements (.load, .save, .doc, .time, .which, .undo, .profile, .alias, .edit, .last) |
+| **v1.3.7** | ✅ DONE | REPL enhancements (10 new commands) |
 | **v1.3.8** | ✅ DONE | HTTP Server, WebSocket, PriorityQueue, Tree, Graph |
-| **v1.3.9** | ✅ DONE | REPL error handling (smart suggestions, highlight fix, .colors fix) |
-| **v1.3.10** | ✅ DONE | REPL Intelligence (tab completion, debugger, pretty printing, shell integration, themes, search, examples) |
-| **v1.4.0** | ✅ DONE | Generator functions (`yield`) + VM Bug Fixes (all 7 VM bugs fixed by contributor) |
-| **v1.5.0** | 📋 PLANNED | REPL Performance + Advanced Features (hot reload, async REPL, multi-line editor) |
-| **v1.6.0** | 📋 PLANNED | Language Server + IDE Integration (LSP, VSCode, Vim extensions) |
-| **v2.0.0** | 📋 PLANNED | Package Manager + Ecosystem (`ippkg`, registry, database drivers) |
+| **v1.3.9** | ✅ DONE | REPL error handling (smart suggestions) |
+| **v1.3.10** | ✅ DONE | REPL Intelligence (tab completion, debugger, themes) |
+| **v1.4.0** | ✅ DONE | Generator functions + all 7 VM bugs fixed |
+| **v1.4.1** | 📋 PLANNED | Error Documentation + Error Reference Guide |
+| **v1.4.2** | 📋 PLANNED | Tutorial Documentation + Getting Started Guide |
+| **v1.4.3** | 📋 PLANNED | PyPI Publishing + `pip install ipp-lang` |
+| **v1.5.0** | 📋 PLANNED | Async/Await + Coroutines + Event Loop |
+| **v1.5.1** | 📋 PLANNED | WASM Compilation + Web Playground |
+| **v1.5.2** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
+| **v1.5.3** | 📋 PLANNED | 3D Rendering + Scene Graph |
+| **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
+| **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
+| **v1.6.2** | 📋 PLANNED | Language Server Protocol (LSP) |
+| **v1.6.3** | 📋 PLANNED | VSCode Extension + IDE Integration |
+| **v2.0.0** | 📋 PLANNED | Package Manager + Full Ecosystem + Game Engine |
 
 ---
 
@@ -346,20 +355,15 @@
 
 ---
 
-## v1.4.0 — Generators + Async/Await + Engine Integration ✅ DONE
+## v1.4.0 — Generators + VM Bug Fixes ✅ DONE
 
-### BUG-NEW-N4: Generator Functions ✅ DONE
+### Generator Functions ✅ DONE
 - [x] Lex `yield` as keyword
 - [x] Create `IppGenerator` object
 - [x] Serialize/resume execution state via yield count tracking
 - [x] `next(gen)` builtin function
 - [x] `is_generator(obj)` builtin function
 - [x] For-in loop support for generators
-
-### BUG-NEW-N7: Async/Await ⏳ TODO
-- [ ] Implement async/await over generators
-- [ ] Add event loop
-- [ ] Handle `await expr` as `yield wait(expr)`
 
 ### VM Bug Fixes ✅ DONE (by contributor)
 - [x] VM-BUG-1: Function calls with arguments — `add(3, 4)` returns 7
@@ -370,67 +374,219 @@
 - [x] VM-BUG-6: Recursion — `fib(10)` returns 55
 - [x] VM-BUG-7: For loops — `for i in 0..5` works
 
-### Engine Bindings (FREE Options) ⏳ TODO
-- [ ] Pygame integration (free, Python)
-- [ ] Godot GDScript alternative (free, open source)
-- [ ] Raylib binding (free, C library)
-- [ ] SFML binding (free, C++ library)
-- [ ] Love2D integration (free, Lua-based)
-
-### Editor Integration ⏳ TODO
-- [ ] VSCode extension (free)
-- [ ] Vim/Neovim plugin (free)
-- [ ] Emacs major mode (free)
-- [ ] LSP server (free)
+### Async/Await ⏳ TODO (moved to v1.5.0)
+- [ ] Implement async/await over generators
+- [ ] Add event loop
+- [ ] Handle `await expr` as `yield wait(expr)`
 
 ---
 
-## v1.5.0 — REPL Performance + Advanced Features 📋 PLANNED
+## v1.4.1 — Error Documentation 📋 PLANNED
 
-### Performance & Monitoring ⏳ TODO
-- [ ] Real-time profiling — CPU/memory stats per command
-- [ ] Benchmark mode — run command N times, show avg/min/max
-- [ ] Hot reload — auto-reload imported modules when files change
-- [ ] Async REPL — handle `async/await` natively in REPL
-- [ ] Background tasks — run long tasks in background, check status later
+### Error Reference Guide
+- [ ] Create `ERRORS.md` with all error types and messages
+- [ ] Document every runtime error with causes and fixes
+- [ ] Document every parse error with examples
+- [ ] Document every VM error with bytecode context
+- [ ] Add "Did you mean?" suggestions for common errors
+- [ ] Link errors to relevant documentation sections
 
-### Advanced REPL Features ⏳ TODO
-- [ ] Multi-line editor — full editor for multi-line input (like IPython's `%edit`)
-- [ ] Code snippets — predefined templates (e.g., `func` → `func name() { }`)
-- [ ] Memory profiler — show memory usage per variable/object
-- [ ] REPL server — connect to REPL remotely via network
-- [ ] Code review mode — compare two expressions side-by-side
-- [ ] Macro system — define REPL macros that expand to code
-- [ ] Checkpoint/rollback — save checkpoint, rollback to any point
-
-### Data Visualization ⏳ TODO
-- [ ] Plot graphs/charts from data (matplotlib integration)
-- [ ] HTML preview — render HTML strings in browser
+### Error Codes System
+- [ ] Assign unique codes to each error (e.g., `E001`, `E002`)
+- [ ] Add error code to error messages: `Error E003: Undefined variable 'x'`
+- [ ] Create error code index in documentation
 
 ---
 
-## v1.6.0 — Language Server + IDE Integration 📋 PLANNED
+## v1.4.2 — Tutorial Documentation 📋 PLANNED
 
-### Language Server Protocol ⏳ TODO
-- [ ] LSP server for Ipp language
+### Getting Started Guide
+- [ ] Installation guide (pip, source, binary)
+- [ ] "Hello World" tutorial
+- [ ] Variables, types, and operators tutorial
+- [ ] Control flow tutorial (if/for/while/match)
+- [ ] Functions and closures tutorial
+- [ ] Classes and OOP tutorial
+- [ ] Modules and imports tutorial
+
+### Advanced Tutorials
+- [ ] Generators and lazy evaluation
+- [ ] Error handling best practices
+- [ ] REPL power user guide
+- [ ] Building a game with Ipp
+- [ ] Networking with HTTP/WebSocket
+- [ ] Data processing with collections
+
+### Reference Documentation
+- [ ] Complete builtin function reference (132+ functions)
+- [ ] Syntax reference with examples
+- [ ] Standard library documentation
+- [ ] VM bytecode reference
+
+---
+
+## v1.4.3 — PyPI Publishing 📋 PLANNED
+
+### Package Setup
+- [ ] Create `setup.py` / `pyproject.toml`
+- [ ] Add package metadata (name, version, description, license)
+- [ ] Define entry points: `ipp run`, `ipp check`, `ipp repl`
+- [ ] Add requirements.txt (no dependencies for core)
+- [ ] Create MANIFEST.in for including examples
+
+### Publishing
+- [ ] Test on TestPyPI first
+- [ ] Publish to PyPI as `ipp-lang`
+- [ ] Add install instructions: `pip install ipp-lang`
+- [ ] Add PyPI badge to README
+- [ ] Create GitHub Actions workflow for auto-publish on release
+
+---
+
+## v1.5.0 — Async/Await + Coroutines 📋 PLANNED
+
+### Async/Await Implementation
+- [ ] Add event loop to interpreter
+- [ ] Compile `await expr` as `yield wait(expr)`
+- [ ] Mark functions with `await` as async automatically
+- [ ] Add `async` keyword for explicit async functions
+- [ ] Implement `sleep()` as awaitable
+- [ ] Implement `wait()` builtin for awaiting multiple futures
+
+### Coroutines
+- [ ] `coroutine(func)` — create coroutine from generator
+- [ ] `coro.send(value)` — send value to coroutine
+- [ ] `coro.close()` — close coroutine
+- [ ] `coro.throw(exc)` — throw exception into coroutine
+
+---
+
+## v1.5.1 — WASM Compilation 📋 PLANNED
+
+### WASM Backend
+- [ ] Compile Ipp bytecode to WebAssembly
+- [ ] Use Emscripten or wasm-bindgen for compilation
+- [ ] Create `ipp wasm <file>` CLI command
+- [ ] Generate `.wasm` file from Ipp source
+- [ ] JavaScript bridge for calling Ipp functions from browser
+
+### Web Playground
+- [ ] Create web-based Ipp playground (like Rust Playground)
+- [ ] Monaco Editor for syntax highlighting
+- [ ] Run Ipp code in browser via WASM
+- [ ] Share code via URL
+- [ ] Save/load code snippets
+
+---
+
+## v1.5.2 — WebGL Integration + 2D Rendering 📋 PLANNED
+
+### 2D Canvas API
+- [ ] `canvas(width, height)` — create canvas
+- [ ] `canvas.draw_rect(x, y, w, h, color)`
+- [ ] `canvas.draw_circle(x, y, r, color)`
+- [ ] `canvas.draw_line(x1, y1, x2, y2, color)`
+- [ ] `canvas.draw_text(x, y, text, font, size, color)`
+- [ ] `canvas.clear(color)`
+- [ ] `canvas.render()` — display canvas
+
+### WebGL Bindings
+- [ ] `webgl.init(canvas)` — initialize WebGL context
+- [ ] `webgl.create_shader(source, type)` — create shader
+- [ ] `webgl.create_program(vertex, fragment)` — create program
+- [ ] `webgl.draw_triangles(vertices, colors)` — render triangles
+- [ ] `webgl.set_uniform(name, value)` — set uniform values
+
+---
+
+## v1.5.3 — 3D Rendering + Scene Graph 📋 PLANNED
+
+### 3D Math
+- [ ] `mat4()` — 4x4 matrix operations
+- [ ] `vec4()` — 4D vector
+- [ ] `quat()` — quaternion operations (slerp, rotate)
+- [ ] `perspective(fov, aspect, near, far)` — perspective matrix
+- [ ] `look_at(eye, target, up)` — view matrix
+
+### Scene Graph
+- [ ] `Scene()` — scene container
+- [ ] `Node()` — scene node with transform
+- [ ] `Camera(fov, aspect)` — camera node
+- [ ] `Mesh(vertices, indices)` — mesh node
+- [ ] `Light(type, color, intensity)` — light node
+- [ ] `scene.render()` — render scene
+
+---
+
+## v1.6.0 — C++ Integration 📋 PLANNED
+
+### C++ API
+- [ ] `#include "ipp.hpp"` — C++ header for embedding
+- [ ] `ipp::Interpreter` — C++ interpreter class
+- [ ] `ipp::VM` — C++ VM class
+- [ ] `ipp::register_function(name, func)` — register C++ functions
+- [ ] `ipp::register_class(name, methods)` — register C++ classes
+- [ ] `ipp::call(function, args)` — call Ipp functions from C++
+
+### Native Extensions
+- [ ] Extension loading: `import "myext.so"`
+- [ ] Extension API for C/C++ modules
+- [ ] Build system for extensions (CMake)
+
+---
+
+## v1.6.1 — Cross-Platform 📋 PLANNED
+
+### Platform Support
+- [ ] macOS: Homebrew formula (`brew install ipp`)
+- [ ] Linux: APT/DEB package, Snap/Flatpak
+- [ ] Windows: MSI installer, Scoop/Chocolatey
+- [ ] iOS: Ipp runtime for iOS apps
+- [ ] Android: Ipp runtime for Android apps
+
+### CI/CD
+- [ ] GitHub Actions for all platforms
+- [ ] Auto-build on release
+- [ ] Cross-compilation pipeline
+
+---
+
+## v1.6.2 — Language Server Protocol 📋 PLANNED
+
+### LSP Server
+- [ ] `ipp lsp` — start LSP server
 - [ ] Go-to-definition
 - [ ] Find all references
+- [ ] Symbol search
+- [ ] Hover information (type, docstring)
+- [ ] Diagnostics (linting, type hints)
+- [ ] Auto-completion
 - [ ] Rename symbol
 - [ ] Code actions / quick fixes
-- [ ] Diagnostics (linting)
-- [ ] Hover information
+- [ ] Document symbols (outline)
 
-### Editor Extensions ⏳ TODO
-- [ ] VSCode extension
+---
+
+## v1.6.3 — VSCode Extension 📋 PLANNED
+
+### VSCode Features
+- [ ] Syntax highlighting (TMGrammar)
+- [ ] Snippets (func, class, for, while, etc.)
+- [ ] LSP integration (diagnostics, completion, hover)
+- [ ] Run/Debug Ipp code from VSCode
+- [ ] Integrated REPL panel
+- [ ] Task runner for `ipp run`, `ipp check`
+
+### Other IDEs
 - [ ] Vim/Neovim plugin
 - [ ] Emacs major mode
 - [ ] Sublime Text package
 
 ---
 
-## v2.0.0 — Package Manager + Ecosystem + Game Features 📋 PLANNED
+## v2.0.0 — Package Manager + Full Ecosystem 📋 PLANNED
 
-### Package Manager ⏳ TODO
+### Package Manager
 - [ ] `ippkg` CLI tool
 - [ ] Package registry
 - [ ] `ippkg install <package>`
@@ -439,7 +595,7 @@
 - [ ] Version management
 - [ ] `ippkg search <query>`
 
-### Standard Library Expansion ⏳ TODO
+### Standard Library Expansion
 - [ ] HTTP/2 support
 - [ ] GraphQL client
 - [ ] Database drivers (SQLite, PostgreSQL)
@@ -447,18 +603,12 @@
 - [ ] Image processing
 - [ ] Audio processing
 
-### Game Engine Features ⏳ TODO
+### Game Engine Features
 - [ ] Advanced math: Matrix operations, Quaternion math, Barycentric coordinates
 - [ ] Bezier curves, Perlin noise, Simplex noise
 - [ ] Physics: Rigid body, AABB/Sphere collision, Impulse resolution, Joints
 - [ ] Particles: Particle system, Emitter types, Particle properties
 - [ ] Scene Graph: Entity class, Transform, Node hierarchy, Camera, Layer system
-
-```ipp
-var body = RigidBody(mass = 1.0, position = vec2(0, 0))
-body.apply_force(vec2(0, -9.8))     # gravity
-body.update(delta_time)
-```
 
 ---
 
@@ -534,46 +684,25 @@ body.update(delta_time)
 
 ## Implementation Priorities (Manual Work Required)
 
-### Phase 1: Production Ready (v1.3.0)
-1. **VM Test Suite** - Write comprehensive VM tests
-2. **Memory Safety** - Add bounds checking, overflow protection
-3. **Bytecode Serialization** - Compile to .ipbc files
-4. **CLI Flags** - --vm, --no-color, etc.
+### Phase 1: Documentation (v1.4.1 - v1.4.3)
+1. **Error Documentation** - ERROR.md with all error types
+2. **Tutorial Documentation** - Getting started + advanced guides
+3. **PyPI Publishing** - pip install ipp-lang
 
-### Phase 2: Critical Bugs Fixed (v1.3.1) ✅ DONE
-1. **BUG-NEW-C1** - VM for loop fixed ✅
-2. **BUG-NEW-C2** - Runtime error line numbers fixed ✅
-3. **BUG-NEW-C3** - Operator overloading fixed ✅
+### Phase 2: Async + Web (v1.5.0 - v1.5.3)
+1. **Async/Await** - Event loop + coroutines
+2. **WASM** - Web compilation + playground
+3. **WebGL** - 2D/3D rendering
 
-### Phase 3: Documentation (v1.3.2)
-1. **Language Tutorial** - Getting started guide
-2. **API Reference** - Auto-generate from docstrings
-3. **Examples Repository** - github.com/ipp-lang/examples
-4. **Website** - MkDocs + GitHub Pages (FREE)
+### Phase 3: Integration (v1.6.0 - v1.6.3)
+1. **C++ API** - Native embedding
+2. **Cross-Platform** - iOS, macOS, Linux, Windows
+3. **LSP** - Language server protocol
+4. **VSCode** - IDE extension
 
-### Phase 3: Standard Library (v1.3.2+) ✅ DONE (Set type)
-- [x] `Set` type - Unordered unique elements (BUG-NEW-M6) ✅
-- [ ] Missing Builtins - File I/O, regex, networking
-- [ ] Collection Types - Deque, priority queue, tree, graph
-- [ ] Data Formats - JSON, XML, YAML, TOML parsers
-
-### Notable Bug Fixes (Standard Library)
-- [ ] BUG-NEW-N1: **No access control enforcement** (`__field` name mangling)
-- [ ] BUG-NEW-N2: **No Ipp-level recursion limit** (add `max_depth` config)
-- [ ] BUG-NEW-N5: **Runtime errors lack column info** (add column tracking)
-- [ ] BUG-NEW-N8: **IppList/native list inconsistency** (wrap all list returns)
-
-### Phase 4: Game SDK (v1.3.3)
-1. **Math Library** - vec2, vec3, mat4, quat
-2. **Collision** - AABB, circle, raycast
-3. **Easing** - Animation curves
-4. **Particles** - Basic particle system
-
-### Phase 5: Ecosystem (v1.4.0)
-1. **Package Manager** - ippkg with GitHub Packages
-2. **Editor Extensions** - VS Code, Neovim LSP
-3. **Engine Bindings** - Raylib, Pygame, Godot
-4. **CI/CD Pipeline** - GitHub Actions automated tests
+### Phase 4: Ecosystem (v2.0.0)
+1. **Package Manager** - ippkg + registry
+2. **Game Engine** - Full game development toolkit
 
 ---
 
@@ -598,4 +727,4 @@ body.update(delta_time)
 
 ---
 
-*Last Updated: 2026-03-29 (v1.3.2 DONE - VM upvalues fixed, Set type added! Roadmap cleaned up and merged.)*
+*Last Updated: 2026-04-07 (v1.4.0 DONE - Generators + VM bugs fixed. Roadmap restructured with one feature per version for session-completable releases.)*

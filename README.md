@@ -432,13 +432,19 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.3.8 | HTTP Server, WebSocket, PriorityQueue, Tree, Graph |
 | v1.3.9 | REPL error handling (smart suggestions, highlight fix, .colors fix) |
 | v1.3.10 | REPL Intelligence (tab completion, debugger, pretty printing, shell integration, themes) |
-| v1.4.0 | Generator functions (`yield`) |
-| v1.4.1 | VM Builtin Functions + Dict Access |
-| v1.4.2 | VM Functions + Recursion + Classes |
-| v1.4.3 | VM For Loops + `--vm` CLI Flag |
-| v1.5.0 | REPL Performance + Advanced Features |
-| v1.6.0 | Language Server + IDE Integration |
-| v2.0.0 | Package Manager + Ecosystem |
+| v1.4.0 | Generator functions (`yield`) + VM Bug Fixes (all 7 VM bugs fixed) |
+| v1.4.1 | Error Documentation + Error Reference Guide |
+| v1.4.2 | Tutorial Documentation + Getting Started Guide |
+| v1.4.3 | PyPI Publishing + `pip install ipp-lang` |
+| v1.5.0 | Async/Await + Coroutines + Event Loop |
+| v1.5.1 | WASM Compilation + Web Playground |
+| v1.5.2 | WebGL Integration + 2D Canvas Rendering |
+| v1.5.3 | 3D Rendering + Scene Graph |
+| v1.6.0 | C++ Integration + Native Extensions |
+| v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
+| v1.6.2 | Language Server Protocol (LSP) |
+| v1.6.3 | VSCode Extension + IDE Integration |
+| v2.0.0 | Package Manager + Full Ecosystem + Game Engine |
 
 ---
 

@@ -919,7 +919,19 @@ Ordered by severity × frequency of impact:
 *v1.3.8 completed: 2026-04-02 - HTTP Server, WebSocket, PriorityQueue, Tree, Graph*
 *v1.3.9 completed: 2026-04-02 - REPL error handling (smart suggestions)*
 *v1.3.10 completed: 2026-04-02 - REPL Intelligence (tab completion, debugger, themes)*
-*v1.4.0 completed: 2026-04-02 - Generators + all 7 VM bugs fixed (contributor)*
+*v1.4.0 completed: 2026-04-07 - Generators + all 7 VM bugs fixed (contributor)*
+*v1.4.1 planned: Error Documentation + Error Reference Guide*
+*v1.4.2 planned: Tutorial Documentation + Getting Started Guide*
+*v1.4.3 planned: PyPI Publishing + pip install ipp-lang*
+*v1.5.0 planned: Async/Await + Coroutines + Event Loop*
+*v1.5.1 planned: WASM Compilation + Web Playground*
+*v1.5.2 planned: WebGL Integration + 2D Canvas Rendering*
+*v1.5.3 planned: 3D Rendering + Scene Graph*
+*v1.6.0 planned: C++ Integration + Native Extensions*
+*v1.6.1 planned: Cross-Platform (iOS, macOS, Linux, Windows)*
+*v1.6.2 planned: Language Server Protocol (LSP)*
+*v1.6.3 planned: VSCode Extension + IDE Integration*
+*v2.0.0 planned: Package Manager + Full Ecosystem + Game Engine*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
 
 ---
