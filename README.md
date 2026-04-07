@@ -5,12 +5,12 @@
 <img src="https://img.shields.io/badge/version-1.5.0-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
-<img src="https://img.shields.io/badge/builtins-132+-brightgreen.svg" alt="Builtins">
-<img src="https://img.shields.io/badge/tests-46%20passing-brightgreen.svg" alt="Tests">
+<img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
+<img src="https://img.shields.io/badge/tests-37%20passing-brightgreen.svg" alt="Tests">
 <img src="https://img.shields.io/badge/status-stable-green.svg" alt="Status">
 
 **A beginner-friendly scripting language for game development.**  
-Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Bytecode VM · World-Class REPL
+Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Bytecode VM · Async/Await · World-Class REPL
 
 </div>
 
@@ -20,7 +20,7 @@ Python-like syntax · Closures · Classes with Inheritance · Pattern Matching �
 
 Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
 
-**v1.4.0** includes 132+ built-in functions, 46 passing regression tests, generator functions (`yield`), a world-class REPL with tab completion, debugging, session management, and comprehensive standard library coverage including HTTP/FTP/SMTP networking, data formats, math, collections, and game primitives.
+**v1.5.0** includes 163+ built-in functions, 37 passing regression tests, generator functions (`yield`), async/await with coroutines and event loop, a world-class REPL with tab completion, debugging, session management, and comprehensive standard library coverage including HTTP/FTP/SMTP networking, data formats, math, collections, game primitives, and 31 additional utility builtins.
 
 ---
 
@@ -40,6 +40,13 @@ python main.py
 
 No dependencies required. Python 3.8+ only.
 
+### Install via PyPI (Coming Soon)
+```bash
+pip install ipp-lang
+ipp repl
+ipp run hello.ipp
+```
+
 ---
 
 ## REPL Features
@@ -54,7 +61,7 @@ Ipp has a world-class REPL with 30+ built-in commands:
   ██║██║     ██║
   ╚═╝╚═╝     ╚═╝
 
-  Ipp  v1.3.10
+  Ipp  v1.5.0
   A scripting language for game development
 ──────────────────────────────────────────
   ❯ var x = 2 ** 10
@@ -301,6 +308,52 @@ print(p)  # (3, 4)
 ### Generators (2)
 `next`, `is_generator`
 
+### Async/Await (4)
+`async_run`, `create_task`, `is_coroutine`, `sleep`
+
+### Additional Builtins (31)
+`seed`, `normal`, `now`, `delta`, `format_duration`, `from_hex`, `to_hex`, `blend`, `hsl`, `ease_in`, `ease_out`, `bounce`, `spring`, `read_lines`, `words`, `truncate`, `pad_left`, `pad_right`, `reverse`, `binary_search`, `group_by`, `zip_with`, `find_all`, `sub`, `escape`, `glob`, `pathfind`, `neighbors`, `flood_fill`, `assert_eq`, `inspect`
+
+---
+
+## Async/Await + Coroutines
+
+Ipp supports async/await with a built-in event loop:
+
+```ipp
+async func fetch_data(url) {
+    print("Fetching:", url)
+    sleep(0.1)
+    return "data from " + url
+}
+
+var coro = fetch_data("https://example.com")
+var result = async_run(coro)
+print(result)  # data from https://example.com
+```
+
+### Multiple Workers
+
+```ipp
+async func worker(name, delay) {
+    print(name, "started")
+    sleep(delay)
+    print(name, "finished")
+    return name + " done"
+}
+
+var r1 = async_run(worker("Worker1", 0.01))
+var r2 = async_run(worker("Worker2", 0.02))
+```
+
+### Built-in Async Functions
+| Function | Description |
+|----------|-------------|
+| `async_run(coro)` | Run a coroutine and wait for result |
+| `create_task(coro)` | Create and run a coroutine task |
+| `is_coroutine(obj)` | Check if object is a coroutine |
+| `sleep(seconds)` | Sleep for given seconds (awaitable) |
+
 ---
 
 ## Generators
@@ -458,7 +511,7 @@ python tests/regression.py
 python main.py run tests/v1_3_10/test_repl_intelligence.ipp
 ```
 
-All 29 test suites pass with zero failures.
+All 37 test suites pass with zero failures.
 
 ---
 
