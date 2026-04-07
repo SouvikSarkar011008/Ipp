@@ -924,13 +924,11 @@ Ordered by severity × frequency of impact:
 *v1.4.2 completed: 2026-04-07 - Tutorial Documentation + Getting Started Guide (TUTORIAL.md, 25 verified examples)*
 *v1.4.3 completed: 2026-04-07 - PyPI Publishing (pyproject.toml, GitHub Actions, ipp-lang package)*
 *v1.5.0 completed: 2026-04-07 - Async/Await + Coroutines + Event Loop + Additional Builtins (31 new builtins)*
-*v1.5.1 planned: WASM Compilation + Web Playground*
-*v1.5.2 planned: WebGL Integration + 2D Canvas Rendering*
-*v1.5.3 planned: 3D Rendering + Scene Graph*
+*v1.5.1 planned: VSCode Extension + LSP + Other IDE Extensions*
+*v1.5.2 planned: WASM Compilation + Web Playground*
+*v1.5.3 planned: WebGL Integration + 2D Canvas Rendering*
 *v1.6.0 planned: C++ Integration + Native Extensions*
 *v1.6.1 planned: Cross-Platform (iOS, macOS, Linux, Windows)*
-*v1.6.2 planned: Language Server Protocol (LSP)*
-*v1.6.3 planned: VSCode Extension + IDE Integration*
 *v2.0.0 planned: Package Manager + Full Ecosystem + Game Engine*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
 
@@ -1161,31 +1159,7 @@ Ordered by severity × frequency of impact:
 
 ---
 
-## v1.5.0 — REPL Performance + Advanced Features 📋 PLANNED
-
-### Performance & Monitoring
-- [ ] Real-time profiling — CPU/memory stats per command
-- [ ] Benchmark mode — run command N times, show avg/min/max
-- [ ] Hot reload — auto-reload imported modules when files change
-- [ ] Async REPL — handle `async/await` natively in REPL
-- [ ] Background tasks — run long tasks in background
-
-### Advanced REPL Features
-- [ ] Multi-line editor — full editor for multi-line input
-- [ ] Code snippets — predefined templates
-- [ ] Memory profiler — show memory usage per variable/object
-- [ ] REPL server — connect to REPL remotely via network
-- [ ] Code review mode — compare two expressions side-by-side
-- [ ] Macro system — define REPL macros that expand to code
-- [ ] Checkpoint/rollback — save checkpoint, rollback to any point
-
-### Data Visualization
-- [ ] Plot graphs/charts from data (matplotlib integration)
-- [ ] HTML preview — render HTML strings in browser
-
----
-
-## v1.6.0 — Language Server + IDE Integration 📋 PLANNED
+## v1.5.1 — VSCode Extension + LSP 📋 PLANNED
 
 ### Language Server Protocol
 - [ ] LSP server for Ipp language
@@ -1196,11 +1170,61 @@ Ordered by severity × frequency of impact:
 - [ ] Diagnostics (linting)
 - [ ] Hover information
 
-### Editor Extensions
-- [ ] VSCode extension
+### VSCode Extension
+- [ ] Syntax highlighting (TMGrammar)
+- [ ] Snippets (func, class, for, while, etc.)
+- [ ] LSP integration (diagnostics, completion, hover)
+- [ ] Run/Debug Ipp code from VSCode
+- [ ] Integrated REPL panel
+- [ ] Task runner for `ipp run`, `ipp check`
+
+### Other IDE Extensions
 - [ ] Vim/Neovim plugin
 - [ ] Emacs major mode
 - [ ] Sublime Text package
+
+---
+
+## v1.5.2 — WASM Compilation 📋 PLANNED
+
+### WASM Backend
+- [ ] Compile Ipp bytecode to WebAssembly
+- [ ] JavaScript bridge for browser
+- [ ] Web Playground with Monaco Editor
+
+---
+
+## v1.5.3 — WebGL Integration + 2D Rendering 📋 PLANNED
+
+### 2D Canvas API
+- [ ] `canvas(width, height)` — create canvas
+- [ ] `canvas.draw_rect`, `canvas.draw_circle`, `canvas.draw_line`
+- [ ] `canvas.draw_text`, `canvas.clear`, `canvas.render`
+
+### WebGL Bindings
+- [ ] `webgl.init`, `webgl.create_shader`, `webgl.create_program`
+- [ ] `webgl.draw_triangles`, `webgl.set_uniform`
+
+---
+
+## v1.6.0 — C++ Integration 📋 PLANNED
+
+### C++ API
+- [ ] `#include "ipp.hpp"` — C++ header for embedding
+- [ ] `ipp::Interpreter`, `ipp::VM` — C++ classes
+- [ ] `ipp::register_function`, `ipp::register_class`
+- [ ] Native extension loading
+
+---
+
+## v1.6.1 — Cross-Platform 📋 PLANNED
+
+### Platform Support
+- [ ] macOS: Homebrew formula
+- [ ] Linux: APT/DEB package, Snap/Flatpak
+- [ ] Windows: MSI installer, Scoop/Chocolatey
+- [ ] iOS: Ipp runtime for iOS apps
+- [ ] Android: Ipp runtime for Android apps
 
 ---
 

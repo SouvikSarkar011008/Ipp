@@ -490,13 +490,11 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.4.2 | Tutorial Documentation + Getting Started Guide (TUTORIAL.md) |
 | v1.4.3 | PyPI Publishing + `pip install ipp-lang` |
 | v1.5.0 | Async/Await + Coroutines + Event Loop + Additional Builtins (31 new builtins) |
-| v1.5.1 | WASM Compilation + Web Playground |
-| v1.5.2 | WebGL Integration + 2D Canvas Rendering |
-| v1.5.3 | 3D Rendering + Scene Graph |
+| v1.5.1 | VSCode Extension + LSP + Other IDE Extensions |
+| v1.5.2 | WASM Compilation + Web Playground |
+| v1.5.3 | WebGL Integration + 2D Canvas Rendering |
 | v1.6.0 | C++ Integration + Native Extensions |
 | v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
-| v1.6.2 | Language Server Protocol (LSP) |
-| v1.6.3 | VSCode Extension + IDE Integration |
 | v2.0.0 | Package Manager + Full Ecosystem + Game Engine |
 
 ---

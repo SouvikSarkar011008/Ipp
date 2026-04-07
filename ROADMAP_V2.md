@@ -45,13 +45,11 @@
 | **v1.4.2** | ✅ DONE | Tutorial Documentation + Getting Started Guide |
 | **v1.4.3** | ✅ DONE | PyPI Publishing + `pip install ipp-lang` |
 | **v1.5.0** | ✅ DONE | Async/Await + Coroutines + Event Loop + Additional Builtins |
-| **v1.5.1** | 📋 PLANNED | WASM Compilation + Web Playground |
-| **v1.5.2** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
-| **v1.5.3** | 📋 PLANNED | 3D Rendering + Scene Graph |
+| **v1.5.1** | 📋 PLANNED | VSCode Extension + LSP |
+| **v1.5.2** | 📋 PLANNED | WASM Compilation + Web Playground |
+| **v1.5.3** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
 | **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
-| **v1.6.2** | 📋 PLANNED | Language Server Protocol (LSP) |
-| **v1.6.3** | 📋 PLANNED | VSCode Extension + IDE Integration |
 | **v2.0.0** | 📋 PLANNED | Package Manager + Full Ecosystem + Game Engine |
 
 ---
@@ -430,25 +428,54 @@
 
 ---
 
-## v1.5.0 — Async/Await + Coroutines 📋 PLANNED
+## v1.5.0 — Async/Await + Coroutines + Event Loop ✅ DONE
 
-### Async/Await Implementation
-- [ ] Add event loop to interpreter
-- [ ] Compile `await expr` as `yield wait(expr)`
-- [ ] Mark functions with `await` as async automatically
-- [ ] Add `async` keyword for explicit async functions
-- [ ] Implement `sleep()` as awaitable
-- [ ] Implement `wait()` builtin for awaiting multiple futures
+### Async/Await Implementation ✅ DONE
+- [x] Add event loop to interpreter
+- [x] Compile `await expr` as `yield wait(expr)`
+- [x] Mark functions with `await` as async automatically
+- [x] Add `async` keyword for explicit async functions
+- [x] Implement `sleep()` as awaitable
+- [x] Implement `wait()` builtin for awaiting multiple futures
 
-### Coroutines
-- [ ] `coroutine(func)` — create coroutine from generator
-- [ ] `coro.send(value)` — send value to coroutine
-- [ ] `coro.close()` — close coroutine
-- [ ] `coro.throw(exc)` — throw exception into coroutine
+### Coroutines ✅ DONE
+- [x] `coroutine(func)` — create coroutine from generator
+- [x] `coro.send(value)` — send value to coroutine
+- [x] `coro.close()` — close coroutine
+- [x] `coro.throw(exc)` — throw exception into coroutine
 
 ---
 
-## v1.5.1 — WASM Compilation 📋 PLANNED
+## v1.5.1 — VSCode Extension 📋 PLANNED
+
+### LSP Server
+- [ ] `ipp lsp` — start LSP server
+- [ ] Go-to-definition
+- [ ] Find all references
+- [ ] Symbol search
+- [ ] Hover information (type, docstring)
+- [ ] Diagnostics (linting, type hints)
+- [ ] Auto-completion
+- [ ] Rename symbol
+- [ ] Code actions / quick fixes
+- [ ] Document symbols (outline)
+
+### VSCode Features
+- [ ] Syntax highlighting (TMGrammar)
+- [ ] Snippets (func, class, for, while, etc.)
+- [ ] LSP integration (diagnostics, completion, hover)
+- [ ] Run/Debug Ipp code from VSCode
+- [ ] Integrated REPL panel
+- [ ] Task runner for `ipp run`, `ipp check`
+
+### Other IDE Extensions (included in v1.5.1)
+- [ ] Vim/Neovim plugin
+- [ ] Emacs major mode
+- [ ] Sublime Text package
+
+---
+
+## v1.5.2 — WASM Compilation 📋 PLANNED
 
 ### WASM Backend
 - [ ] Compile Ipp bytecode to WebAssembly
@@ -466,7 +493,7 @@
 
 ---
 
-## v1.5.2 — WebGL Integration + 2D Rendering 📋 PLANNED
+## v1.5.3 — WebGL Integration + 2D Rendering 📋 PLANNED
 
 ### 2D Canvas API
 - [ ] `canvas(width, height)` — create canvas
@@ -483,25 +510,6 @@
 - [ ] `webgl.create_program(vertex, fragment)` — create program
 - [ ] `webgl.draw_triangles(vertices, colors)` — render triangles
 - [ ] `webgl.set_uniform(name, value)` — set uniform values
-
----
-
-## v1.5.3 — 3D Rendering + Scene Graph 📋 PLANNED
-
-### 3D Math
-- [ ] `mat4()` — 4x4 matrix operations
-- [ ] `vec4()` — 4D vector
-- [ ] `quat()` — quaternion operations (slerp, rotate)
-- [ ] `perspective(fov, aspect, near, far)` — perspective matrix
-- [ ] `look_at(eye, target, up)` — view matrix
-
-### Scene Graph
-- [ ] `Scene()` — scene container
-- [ ] `Node()` — scene node with transform
-- [ ] `Camera(fov, aspect)` — camera node
-- [ ] `Mesh(vertices, indices)` — mesh node
-- [ ] `Light(type, color, intensity)` — light node
-- [ ] `scene.render()` — render scene
 
 ---
 
@@ -535,39 +543,6 @@
 - [ ] GitHub Actions for all platforms
 - [ ] Auto-build on release
 - [ ] Cross-compilation pipeline
-
----
-
-## v1.6.2 — Language Server Protocol 📋 PLANNED
-
-### LSP Server
-- [ ] `ipp lsp` — start LSP server
-- [ ] Go-to-definition
-- [ ] Find all references
-- [ ] Symbol search
-- [ ] Hover information (type, docstring)
-- [ ] Diagnostics (linting, type hints)
-- [ ] Auto-completion
-- [ ] Rename symbol
-- [ ] Code actions / quick fixes
-- [ ] Document symbols (outline)
-
----
-
-## v1.6.3 — VSCode Extension 📋 PLANNED
-
-### VSCode Features
-- [ ] Syntax highlighting (TMGrammar)
-- [ ] Snippets (func, class, for, while, etc.)
-- [ ] LSP integration (diagnostics, completion, hover)
-- [ ] Run/Debug Ipp code from VSCode
-- [ ] Integrated REPL panel
-- [ ] Task runner for `ipp run`, `ipp check`
-
-### Other IDEs
-- [ ] Vim/Neovim plugin
-- [ ] Emacs major mode
-- [ ] Sublime Text package
 
 ---
 
