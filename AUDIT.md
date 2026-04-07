@@ -56,25 +56,6 @@ This document provides a comprehensive audit of Ipp v0.7.0 (Comprehensions Updat
 - List/dict comprehensions like Python (v0.7.0)
 - Game-focused built-ins (Vector2, Vector3, Color, Rect)
 
-#### Comparison:
-```python
-# Ipp (current limitation - no comprehensions)
-var result = []
-for i in 0..10 {
-    result.append(i * 2)
-}
-
-# Python (one-liner)
-result = [i * 2 for i in range(10)]
-
-# Lua (no comprehensions either)
-local result = {}
-for i = 0, 9 do table.insert(result, i * 2) end
-
-# GDScript (has comprehensions)
-var result = [i * 2 for i in range(10)]
-```
-
 **Verdict: NOT PRODUCTION READY** - Syntax is too limited for modern game development workflows.
 
 ---
@@ -105,41 +86,6 @@ var result = [i * 2 for i in range(10)]
 - ❌ No tuples
 - ❌ No runtime type checking
 
-#### Language Comparison:
-
-| Feature | Ipp v0.7.0 | Lua | Python | JavaScript | GDScript |
-|---------|------------|-----|--------|------------|----------|
-| Numbers | int + float | float+int | int+float | number | int+float |
-| Optional Typing | ❌ | ❌ | ✅ (3.5+) | ✅ (TS) | ✅ (4.0+) |
-| Type Annotations | ✅ (v0.6.0) | ❌ | ✅ | ✅ | ✅ |
-| Interfaces | ❌ | ❌ | ✅ (Protocol) | ✅ (TS) | ❌ |
-| Enums | ✅ (v0.6.0) | ❌ | ✅ | ✅ | ✅ |
-| Generics | ❌ | ❌ | ✅ | ✅ (TS) | ❌ |
-| Type Guards | ❌ | ❌ | ✅ | ✅ (TS) | ❌ |
-
-#### Now Works in Ipp:
-```ipp
-# Integer type (v0.6.0)
-var x = 5  # Integer
-var y = 5.0  # Float
-var z = 7 // 3  # Floor division = 2 (integer)
-
-# Bitwise operations (v0.5.0)
-var flag = 0b1010 & 0b1100  # 0b1000
-
-# Power operator (v0.6.1)
-var result = 2 ** 10  # 1024
-
-# Type annotations (v0.6.0)
-var count: int = 10
-func add(a: int, b: int): int {
-    return a + b
-}
-
-# Enums (v0.6.0)
-enum Direction { UP, DOWN, LEFT, RIGHT }
-```
-
 **Verdict: CRITICAL GAP** - Need at least integer types and optional type hints for production game development.
 
 ---
@@ -165,24 +111,6 @@ enum Direction { UP, DOWN, LEFT, RIGHT }
 - ❌ **No spread operator** - `...arr`
 - ❌ **No pipeline operator** - `|>` (modern but nice to have)
 
-#### Comparison with Languages:
-```python
-# Ipp - NO TERNARY
-var result = if x > 0 then "positive" else "negative"  # NOT SUPPORTED
-
-# Lua - NO TERNARY  
-local result = x > 0 and "positive" or "negative"  # Hacky
-
-# Python - YES
-result = "positive" if x > 0 else "negative"
-
-# GDScript - YES
-var result = "positive" if x > 0 else "negative"
-
-# JavaScript - YES
-const result = x > 0 ? "positive" : "negative"
-```
-
 **Verdict: MAJOR GAP** - No ternary operator is a serious usability issue for game logic.
 
 ---
@@ -203,25 +131,6 @@ const result = x > 0 ? "positive" : "negative"
 - ❌ **No try-catch-finally** - no exception handling
 - ❌ **No raise/throw** - no custom exceptions
 - ❌ **No with statement** - context managers
-
-#### Critical Issue - NO EXCEPTION HANDLING:
-```ipp
-# Ipp - NO TRY-CATCH
-func load_game() {
-    var data = read_file("save.json")  # If fails, program crashes!
-    return json_parse(data)
-}
-
-# Compare to Python
-def load_game():
-    try:
-        with open("save.json") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError:
-        return {}
-```
 
 **Verdict: CRITICAL** - No exception handling makes Ipp unsuitable for production games.
 
@@ -251,29 +160,6 @@ def load_game():
 - ❌ **No partial application**
 - ❌ **No function composition**
 
-#### Comparison:
-```python
-# Ipp - NO YIELD/GENERATORS
-func count_to(n) {
-    # Can't yield values - must return list
-    var result = []
-    for i in 0..n {
-        result.append(i)
-    }
-    return result
-}
-
-# Python - HAS YIELD
-def count_to(n):
-    for i in range(n):
-        yield i  # Memory efficient!
-
-# GDScript - HAS YIELD
-func count_to(n):
-    for i in range(n):
-        yield(i)
-```
-
 **Verdict: MEDIUM GAP** - Functional features are adequate but missing generators and async limit game dev use cases.
 
 ---
@@ -301,34 +187,6 @@ func count_to(n):
 - ❌ **No operator overloading** - except Vector2/3, Color, Rect have it
 - ❌ **No `super()` shorthand** - must use parent class name
 - ❌ **No __str__, __repr__ support** - need custom methods
-
-#### Critical Issue:
-```ipp
-# Ipp - No privacy
-class Player {
-    init(name) {
-        this.name = name
-        this._health = 100  # Convention only - still accessible!
-    }
-    
-    func get_health() {
-        return this._health  # Must use getter
-    }
-}
-
-# Can't do: player._health = -100 (SHOULD BE BLOCKED)
-
-# Compare to Python
-class Player:
-    def __init__(self, name):
-        self.name = name
-        self._health = 100  # Convention
-        self.__score = 0   # Name mangling - truly private
-    
-    @property
-    def health(self):
-        return self._health
-```
 
 **Verdict: MEDIUM GAP** - Basic OOP works but lacks encapsulation critical for large game projects.
 
@@ -412,19 +270,6 @@ class Player:
 - ❌ Type inference (future)
 - ❌ Memory pooling (future)
 
-#### The Path to Performance (Roadmap):
-```
-v0.x: Pure Interpreter
-  ↓
-v1.0.x: Bytecode VM + Basic Optimization (DONE)
-  ↓
-v1.1.x: VM Stabilization + Profiler (DONE)
-  ↓
-v2.x: JIT + Native Extensions (future)
-  ↓
-v3.x: Advanced Optimization (future)
-```
-
 **Verdict: ACCEPTABLE FOR GAMES** - Bytecode VM provides 10-50x speedup over interpreter.
 
 ---
@@ -452,12 +297,6 @@ v3.x: Advanced Optimization (future)
 - ❌ **No type checker**
 - ❌ **No VS Code extension**
 - ❌ **No IDE integration**
-
-#### Comparison - What Competitors Have:
-- **Lua**: ZeroBrane Studio, LuaRocks package manager
-- **Python**: PyCharm, VS Code, pip, Black, mypy, pytest
-- **JavaScript**: VS Code, npm, ESLint, Prettier, Jest
-- **GDScript**: Godot Editor (first-class), debugger built-in
 
 **Verdict: IMPROVING** - Basic tooling in place, needs debugger and IDE integration.
 
@@ -544,9 +383,9 @@ Despite gaps, Ipp has some strengths:
 | P1 | Enums | Type safety | ✅ DONE |
 | P1 | Power operator (**) | Math essential | ✅ DONE |
 | P1 | Tooling (debugger) | Usability | ❌ PENDING |
-| P2 | Bytecode/VM | Performance | 🔄 IN PROGRESS (v1.0.0) |
+| P2 | Bytecode/VM | Performance | ✅ DONE (v1.0.0) |
 | P2 | Package manager | Ecosystem | ❌ PENDING |
-| P2 | Generators (yield) | Memory efficiency | ❌ PENDING |
+| P2 | Generators (yield) | Memory efficiency | ✅ DONE (v1.4.0) |
 
 ---
 
@@ -571,44 +410,43 @@ See [ROADMAP_V2.md](ROADMAP_V2.md) for detailed version-by-version plan.
 | v1.0.1 | VM Stabilization & Bug Fixes | ✅ DONE |
 | v1.1.0 | Performance Optimization & Profiler | ✅ DONE |
 | v1.1.1 | Bug Fixes (Dict/List Assignment) | ✅ DONE |
-| v2.0.0 | Game Features | ⏳ PENDING |
-| v3.0.0 | Embedding | ⏳ PENDING |
+| v1.2.0 | Benchmark Suite vs Other Languages | ✅ DONE |
+| v1.2.4 | Full VM Class Support | ✅ DONE |
+| v1.3.0 | REPL Enhancements | ✅ DONE |
+| v1.3.1 | Critical + Major Bugs Fixed | ✅ DONE |
+| v1.3.2 | VM Stabilization + Set type | ✅ DONE |
+| v1.3.3 | Bug Fixes + Standard Library + Networking | ✅ DONE |
+| v1.3.4 | Comprehensive stdlib testing | ✅ DONE |
+| v1.3.5 | Regex fix + REPL color fix | ✅ DONE |
+| v1.3.6 | VM compatibility tests + REPL warning | ✅ DONE |
+| v1.3.7 | REPL enhancements (10 new commands) | ✅ DONE |
+| v1.3.8 | HTTP Server, WebSocket, PriorityQueue, Tree, Graph | ✅ DONE |
+| v1.3.9 | REPL error handling (smart suggestions) | ✅ DONE |
+| v1.3.10 | REPL Intelligence (tab completion, debugger, themes) | ✅ DONE |
+| v1.4.0 | Generators + all 7 VM bugs fixed | ✅ DONE |
+| v1.5.0 | REPL Performance + Advanced Features | 📋 PLANNED |
+| v1.6.0 | Language Server + IDE Integration | 📋 PLANNED |
+| v2.0.0 | Package Manager + Ecosystem | 📋 PLANNED |
 
 ---
 
 ## Summary
 
-**Current State**: Beta-Ready (v1.1.1)
-- 55+/100 overall score
+**Current State**: v1.4.0
+- 69.5+/100 overall score
 - Most critical features implemented
 - VM infrastructure complete with v1.0.0
-- VM stabilization with bug fixes in v1.0.1
-- Performance profiler added in v1.1.0
-- Bug fixes (dict/list assignment) in v1.1.1
+- All 7 VM bugs fixed by contributor
+- Generator functions implemented
+- 132+ built-in functions
+- 34 passing regression tests
+- World-class REPL with tab completion, debugging, themes, shell integration
 
-**What's NEW in v0.7.0:**
-- List comprehensions: `[x*x for x in 1..10]`
-- Dict comprehensions: `{k: v*2 for k, v in pairs}`
-- Full type system: int/float, enums, type annotations
-- Power operator `**`
-- Fixed XOR bug
-- Improved error handling
+**v1.5.0 Target State:**
+- REPL Performance + Advanced Features
+- Hot reload, async REPL, multi-line editor
 
-**v0.8.0 - v0.13.0 Roadmap (Pre-v1.0.0):**
-- Advanced operators (nullish coalescing, optional chaining, spread)
-- Tuples, runtime type checking
-- Do-while, labeled breaks, throw/raise
-- Named arguments, generators (yield), async/await
-- Private/public, static methods, super(), properties
-- Standard library: datetime, path, hashlib, base64, csv
-- Package manager (ippkg), virtual environments
-- REPL history, autocomplete, formatter, linter
-
-**v1.0.0 Target State:**
-- 55+/100 overall score (with bytecode VM)
-- Performance acceptable for games
-
-**v3.0.0 Production State:**
+**v2.0.0 Production State:**
 - 85+/100 overall score
 - Full feature set
 - Tooling complete
@@ -1053,26 +891,35 @@ Ordered by severity × frequency of impact:
 | BUG-NEW-M1 | Closures (interpreter) | 🟠 Major | ✅ FIXED v1.3.1 | Low |
 | BUG-NEW-M2 | int/float indistinguishable at runtime | 🟠 Major | ✅ FIXED v1.3.1 | Low |
 | BUG-NEW-M3 | No default parameter values | 🟠 Major | ✅ FIXED v1.3.1 | Medium |
-| BUG-NEW-M4 | Named args silently produce wrong results | 🟠 Major | ⏳ TODO | High |
+| BUG-NEW-M4 | Named args silently produce wrong results | 🟠 Major | ✅ FIXED v1.3.3 | High |
 | BUG-NEW-M5 | VM upvalues captured by value | 🟠 Major | ✅ FIXED v1.3.2 | High |
 | BUG-NEW-M6 | No Set type | 🟠 Major | ✅ FIXED v1.3.2 | Low |
-| BUG-NEW-M7 | No tuple unpacking / multi-assignment | 🟠 Major | ⏳ TODO | Medium |
+| BUG-NEW-M7 | No tuple unpacking / multi-assignment | 🟠 Major | ✅ FIXED v1.3.3 | Medium |
 | BUG-NEW-N1 | No access control enforcement | 🟡 Notable | ⏳ TODO | Low |
-| BUG-NEW-N2 | No Ipp-level recursion limit | 🟡 Notable | Low |
-| BUG-NEW-N3 | No f-strings | 🟡 Notable | Medium |
-| BUG-NEW-N4 | No generators/yield | 🟡 Notable | High |
-| BUG-NEW-N5 | Runtime errors lack column info | 🟡 Notable | Low |
-| BUG-NEW-N6 | `__str__` not called by print() | 🟡 Notable | Low |
-| BUG-NEW-N7 | No async/await | 🟡 Notable | Very High |
-| BUG-NEW-N8 | IppList/native list method inconsistency | 🟡 Notable | Medium |
-| BUG-NEW-N9 | Match is equality-only, not structural | 🟡 Notable | High |
-| BUG-NEW-N10 | Labeled break/continue silently ignored | 🟡 Notable | Medium |
+| BUG-NEW-N2 | No Ipp-level recursion limit | 🟡 Notable | ⏳ TODO | Low |
+| BUG-NEW-N3 | No f-strings | 🟡 Notable | ⏳ TODO | Medium |
+| BUG-NEW-N4 | No generators/yield | 🟡 Notable | ✅ FIXED v1.4.0 | High |
+| BUG-NEW-N5 | Runtime errors lack column info | 🟡 Notable | ⏳ TODO | Low |
+| BUG-NEW-N6 | `__str__` not called by print() | 🟡 Notable | ✅ FIXED v1.3.3 | Low |
+| BUG-NEW-N7 | No async/await | 🟡 Notable | ⏳ TODO | Very High |
+| BUG-NEW-N8 | IppList/native list method inconsistency | 🟡 Notable | ✅ FIXED v1.3.3 | Medium |
+| BUG-NEW-N9 | Match is equality-only, not structural | 🟡 Notable | ⏳ TODO | High |
+| BUG-NEW-N10 | Labeled break/continue silently ignored | 🟡 Notable | ⏳ TODO | Medium |
 
 ---
 
 *Supplement audit completed: 2026-03-28 | v1.3.0*
 *v1.3.1 completed: 2026-03-29 - Critical bugs fixed*
-*v1.3.2 in progress: 2026-03-30 - VM upvalues + Set type + partial fixes*
+*v1.3.2 completed: 2026-03-30 - VM upvalues + Set type*
+*v1.3.3 completed: 2026-04-02 - Bug fixes + Networking + Standard Library*
+*v1.3.4 completed: 2026-04-02 - Comprehensive stdlib testing (130+ builtins)*
+*v1.3.5 completed: 2026-04-02 - Regex fix + REPL color fix*
+*v1.3.6 completed: 2026-04-02 - VM compatibility tests + REPL warning*
+*v1.3.7 completed: 2026-04-02 - REPL enhancements (10 new commands)*
+*v1.3.8 completed: 2026-04-02 - HTTP Server, WebSocket, PriorityQueue, Tree, Graph*
+*v1.3.9 completed: 2026-04-02 - REPL error handling (smart suggestions)*
+*v1.3.10 completed: 2026-04-02 - REPL Intelligence (tab completion, debugger, themes)*
+*v1.4.0 completed: 2026-04-02 - Generators + all 7 VM bugs fixed (contributor)*
 *Total new issues found: 20 (3 critical, 7 major, 10 notable)*
 
 ---
@@ -1125,17 +972,6 @@ Ordered by severity × frequency of impact:
 ### Regression Tests
 - All 15 test suites pass (v0.5.0 through v1.3.3 including network tests)
 - No regressions introduced
-
----
-
-*Supplement audit completed: 2026-03-28 | v1.3.0*
-*v1.3.1 completed: 2026-03-29 - Critical bugs fixed*
-*v1.3.2 completed: 2026-03-30 - VM upvalues + Set type*
-*v1.3.3 completed: 2026-04-02 - Bug fixes + Networking + Standard Library*
-*v1.3.4 completed: 2026-04-02 - Comprehensive stdlib testing + log/logger fix*
-*v1.3.5 completed: 2026-04-02 - Regex fix + REPL color fix + README update*
-*v1.3.6 completed: 2026-04-02 - VM compatibility tests + REPL warning*
-*Total new issues found: 20 (3 critical, 7 major, 10 notable)*
 
 ---
 
@@ -1284,6 +1120,15 @@ Ordered by severity × frequency of impact:
 - [x] `next(gen)` and `for x in gen` iteration
 - [x] `is_generator(obj)` builtin function
 
+### VM Bug Fixes ✅ DONE (by contributor)
+- [x] VM-BUG-1: Function calls with arguments — `add(3, 4)` returns 7
+- [x] VM-BUG-2: Dict index access — `d["key"]` works correctly
+- [x] VM-BUG-3: Try/catch — catches undefined variables
+- [x] VM-BUG-4: Class property access — `instance.field` works
+- [x] VM-BUG-5: Named arguments — `f(y=1, x=10)` works
+- [x] VM-BUG-6: Recursion — `fib(10)` returns 55
+- [x] VM-BUG-7: For loops — `for i in 0..5` works
+
 ### Async/Await ⏳ TODO
 - [ ] Implement async/await over generators
 - [ ] Add event loop
@@ -1301,52 +1146,6 @@ Ordered by severity × frequency of impact:
 - [ ] Vim/Neovim plugin
 - [ ] Emacs major mode
 - [ ] LSP server (v1.6.0)
-
----
-
-## v1.4.1 — VM Builtin Functions + Dict Access 📋 PLANNED
-
-### VM-IMPL-B1: Builtin Functions with Arguments
-- [ ] Fix `upper("hello")` → currently "Undefined variable"
-- [ ] Fix `print(x)` with variable args in VM
-- [ ] Fix all 130+ builtins to work on VM path
-
-### VM-IMPL-B2: Dict Access
-- [ ] Fix `d["key"]` → currently "list index out of range"
-- [ ] VM uses wrong opcode path for dict indexing
-
-### VM-IMPL-B3: Try/Catch
-- [ ] Fix `try { var x = undef } catch e { }` in VM
-- [ ] Currently throws "Undefined variable" instead of catching
-
----
-
-## v1.4.2 — VM Functions + Recursion 📋 PLANNED
-
-### VM-IMPL-F1: Function Calls with Arguments
-- [ ] Fix `func add(a, b) { return a + b }` → "Cannot call int"
-- [ ] Fix function argument passing in VM CALL handler
-
-### VM-IMPL-F2: Named Arguments
-- [ ] Fix `f(y=1, x=10)` → NoneType arithmetic
-- [ ] Named arg parsing in VM compiler
-
-### VM-IMPL-F3: Recursion
-- [ ] Fix recursive function calls in VM
-- [ ] Fix class instantiation and property access
-
----
-
-## v1.4.3 — VM For Loops + CLI Flag 📋 PLANNED
-
-### VM-IMPL-L1: For Loops
-- [ ] Fix `for` loop compilation (missing `emit_get_global`)
-- [ ] For loop compilation broken in VM
-
-### VM-IMPL-C1: CLI Flag
-- [ ] Add `--vm` CLI flag: `python main.py run --vm file.ipp`
-- [ ] Add `--vm` to regression test runner
-- [ ] Full VM regression test pass (all 23 tests on VM path)
 
 ---
 
@@ -1410,4 +1209,3 @@ Ordered by severity × frequency of impact:
 - [ ] WebSocket client/server
 - [ ] Image processing
 - [ ] Audio processing
-

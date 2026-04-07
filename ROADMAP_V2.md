@@ -33,8 +33,17 @@
 | **v1.3.1** | ✅ DONE | Critical + Major Bugs Fixed (for-loop, line 0, overload, defaults, int/float, closures) |
 | **v1.3.2** | ✅ DONE | VM Stabilization (upvalues) + Set type + Class Fix |
 | **v1.3.3** | ✅ DONE | Bug Fixes + Standard Library + Math + Collections + Networking |
-| **v1.4.0** | 📋 PLANNED | Generators + Engine Integration |
-| **v2.0.0** | 📋 PLANNED | Advanced Game Features |
+| **v1.3.4** | ✅ DONE | Comprehensive stdlib testing (130+ builtins verified) |
+| **v1.3.5** | ✅ DONE | Regex fix + REPL color fix |
+| **v1.3.6** | ✅ DONE | VM compatibility tests + REPL warning |
+| **v1.3.7** | ✅ DONE | REPL enhancements (.load, .save, .doc, .time, .which, .undo, .profile, .alias, .edit, .last) |
+| **v1.3.8** | ✅ DONE | HTTP Server, WebSocket, PriorityQueue, Tree, Graph |
+| **v1.3.9** | ✅ DONE | REPL error handling (smart suggestions, highlight fix, .colors fix) |
+| **v1.3.10** | ✅ DONE | REPL Intelligence (tab completion, debugger, pretty printing, shell integration, themes, search, examples) |
+| **v1.4.0** | ✅ DONE | Generator functions (`yield`) + VM Bug Fixes (all 7 VM bugs fixed by contributor) |
+| **v1.5.0** | 📋 PLANNED | REPL Performance + Advanced Features (hot reload, async REPL, multi-line editor) |
+| **v1.6.0** | 📋 PLANNED | Language Server + IDE Integration (LSP, VSCode, Vim extensions) |
+| **v2.0.0** | 📋 PLANNED | Package Manager + Ecosystem (`ippkg`, registry, database drivers) |
 
 ---
 
@@ -352,31 +361,14 @@
 - [ ] Add event loop
 - [ ] Handle `await expr` as `yield wait(expr)`
 
-### Generator Functions (BUG-NEW-N4)
-
-```ipp
-func fibonacci() {
-    var a = 0
-    var b = 1
-    while true {
-        yield a
-        var temp = a
-        a = b
-        b = temp + b
-    }
-}
-
-for n in fibonacci() |> take(10) {
-    print(n)
-}
-```
-
-**Plan:**
-- `yield` becomes a keyword (TokenType.YIELD)
-- Functions containing `yield` produce `IppGenerator` objects, not immediate values
-- `IppGenerator` stores: function body AST, current execution position, local environment snapshot
-- `next(gen)` resumes execution until next `yield` or return
-- `for x in gen` iterates the generator
+### VM Bug Fixes ✅ DONE (by contributor)
+- [x] VM-BUG-1: Function calls with arguments — `add(3, 4)` returns 7
+- [x] VM-BUG-2: Dict index access — `d["key"]` works correctly
+- [x] VM-BUG-3: Try/catch — catches undefined variables
+- [x] VM-BUG-4: Class property access — `instance.field` works
+- [x] VM-BUG-5: Named arguments — `f(y=1, x=10)` works
+- [x] VM-BUG-6: Recursion — `fib(10)` returns 55
+- [x] VM-BUG-7: For loops — `for i in 0..5` works
 
 ### Engine Bindings (FREE Options) ⏳ TODO
 - [ ] Pygame integration (free, Python)
@@ -390,58 +382,6 @@ for n in fibonacci() |> take(10) {
 - [ ] Vim/Neovim plugin (free)
 - [ ] Emacs major mode (free)
 - [ ] LSP server (free)
-
-### Package Manager ⏳ TODO
-- [ ] `ippkg` - Package manager (build with Python, free)
-- [ ] Public package registry (GitHub Packages, free)
-- [ ] `ippkg install <package>`
-- [ ] `ippkg publish <package>`
-
----
-
-## v1.4.1 — VM Builtin Functions + Dict Access 📋 PLANNED
-
-### VM-IMPL-B1: Builtin Functions with Arguments ⏳ TODO
-- [ ] Fix `upper("hello")` → currently "Undefined variable"
-- [ ] Fix `print(x)` with variable args in VM
-- [ ] Fix all 130+ builtins to work on VM path
-
-### VM-IMPL-B2: Dict Access ⏳ TODO
-- [ ] Fix `d["key"]` → currently "list index out of range"
-- [ ] VM uses wrong opcode path for dict indexing
-
-### VM-IMPL-B3: Try/Catch ⏳ TODO
-- [ ] Fix `try { var x = undef } catch e { }` in VM
-- [ ] Currently throws "Undefined variable" instead of catching
-
----
-
-## v1.4.2 — VM Functions + Recursion 📋 PLANNED
-
-### VM-IMPL-F1: Function Calls with Arguments ⏳ TODO
-- [ ] Fix `func add(a, b) { return a + b }` → "Cannot call int"
-- [ ] Fix function argument passing in VM CALL handler
-
-### VM-IMPL-F2: Named Arguments ⏳ TODO
-- [ ] Fix `f(y=1, x=10)` → NoneType arithmetic
-- [ ] Named arg parsing in VM compiler
-
-### VM-IMPL-F3: Recursion ⏳ TODO
-- [ ] Fix recursive function calls in VM
-- [ ] Fix class instantiation and property access
-
----
-
-## v1.4.3 — VM For Loops + CLI Flag 📋 PLANNED
-
-### VM-IMPL-L1: For Loops ⏳ TODO
-- [ ] Fix `for i in 0..3 { }` → missing `emit_get_global`
-- [ ] For loop compilation broken in VM
-
-### VM-IMPL-C1: CLI Flag ⏳ TODO
-- [ ] Add `--vm` flag: `python main.py run --vm file.ipp`
-- [ ] Add `--vm` to regression test runner
-- [ ] Full VM regression test pass (all 23 tests on VM path)
 
 ---
 

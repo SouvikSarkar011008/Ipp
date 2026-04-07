@@ -1075,8 +1075,18 @@ class Interpreter:
             items = list(iterable)
         elif isinstance(iterable, list):
             items = iterable
+        elif isinstance(iterable, str):
+            # FIX: iterate over characters of a string
+            items = list(iterable)
+        elif isinstance(iterable, IppDict):
+            # iterate over dict keys
+            items = list(iterable.data.keys())
+        elif isinstance(iterable, dict):
+            items = list(iterable.keys())
         elif hasattr(iterable, '__iter__') and hasattr(iterable, '__next__'):
             # Generator support
+            items = list(iterable)
+        elif hasattr(iterable, '__iter__'):
             items = list(iterable)
         else:
             raise RuntimeError(f"Cannot iterate over {type(iterable)}")

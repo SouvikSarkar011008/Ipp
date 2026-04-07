@@ -340,47 +340,26 @@ class Compiler:
 
     def compile_for(self, node: ForStmt):
         """
-        For loops iterate over a list. Implementation:
-          iter = <expr>           # push list
-          len_iter                # push length
-          idx = 0                 # push 0 as index
-          [loop_start]
-          DUP2                    # copy list and index for comparison
-          SWAP                    # put index on top
-          LOAD_CONST idx          # load index
-          SWAP                    # put len on top
-          GREATER_EQUAL           # idx >= len?
-          JUMP_IF_FALSE_POP break # if idx >= len, exit
-          DUP                     # duplicate list for indexing
-          LOAD_CONST idx          # load index
-          GET_INDEX               # list[idx]
-          <assign to var>
-          <body>
-          LOAD_CONST idx          # load index
-          CONST 1
-          ADD                     # idx + 1
-          SET_LOCAL idx           # idx = idx + 1
-          LOOP → loop_start
-          [break]
+        FIX BUG-7: rewritten using only real Chunk/Compiler API.
+        Locals layout: [iter_list, index, loop_var?]
         """
         self.push_scope()
-        
-        # Push the iterator list
+
+        # slot 0: iterator list
         self.compile_expr(node.iterator)
-        
-        # Get list length - we need to call the len() builtin
-        self.chunk.emit_get_global(self.chunk.add_constant("len"), self.current_line)
-        self.chunk.emit_call(1, self.current_line)  # len() takes 1 arg
-        
-        # Reserve local slot for index (will initialize to 0)
+        list_slot = self.define_local("__for_iter__")
+
+        # slot 1: index = 0
+        self.chunk.add_constant(0, self.current_line)
+        idx_slot = self.define_local("__for_idx__")
+
+        # slot 2: loop variable
         if node.variable:
-            self.define_local(node.variable)
-        index_slot = self.reserve_local("__for_index__")
-        
-        # Push 0 as initial index
-        self.chunk.emit_constant(self.chunk.add_constant(0), self.current_line)
-        self.chunk.emit_set_local(index_slot, self.current_line)
-        
+            self.chunk.write(OpCode.NIL, self.current_line)
+            var_slot = self.define_local(node.variable)
+        else:
+            var_slot = None
+
         loop_start = len(self.chunk.code)
 
         self.loop_stack.append({
@@ -390,49 +369,51 @@ class Compiler:
             'continue_jumps': [],
         })
 
-        # Duplicate list and index for bounds check
-        self.chunk.emit(OpCode.DUP, self.current_line)      # stack: [list, len, idx, list]
-        self.chunk.emit(OpCode.DUP, self.current_line)      # stack: [list, len, idx, list, list]
-        self.chunk.emit(OpCode.SWAP, self.current_line)     # stack: [list, len, idx, list, list]
-        
-        # Load index
-        self.chunk.emit_constant(self.chunk.add_constant(index_slot), self.current_line)
-        self.chunk.emit_get_local(index_slot, self.current_line)
-        
-        # Compare: idx >= len
-        self.chunk.emit(OpCode.GREATER_EQUAL, self.current_line)
-        
-        # If idx >= len, jump to exit
-        break_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
+        # bounds check: idx < len(list)
+        self.compile_identifier("len")
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(list_slot, self.current_line)
+        self.chunk.write(OpCode.CALL, self.current_line)
+        self.chunk.write(1, self.current_line)
 
-        # Get list[index] and assign to loop variable
-        self.chunk.emit(OpCode.DUP, self.current_line)      # duplicate list
-        self.chunk.emit_get_local(index_slot, self.current_line)  # load index
-        self.chunk.emit(OpCode.GET_INDEX, self.current_line)
-        
-        if node.variable:
-            self.chunk.emit(OpCode.SET_LOCAL, self.current_line)
-            self.chunk.emit(self.chunk.add_local(node.variable), self.current_line)
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
 
-        # Compile body
+        # LESS: len < idx  (i.e. idx >= len → exit)
+        self.chunk.write(OpCode.LESS, self.current_line)
+        exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
+
+        # get list[idx]
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(list_slot, self.current_line)
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+        self.chunk.write(OpCode.GET_INDEX, self.current_line)
+
+        if var_slot is not None:
+            self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+            self.chunk.write(var_slot, self.current_line)
+        else:
+            self.chunk.write(OpCode.POP, self.current_line)
+
+        # body
         for stmt in node.body:
             self.compile_stmt(stmt)
 
-        # continue target: increment index and loop back
+        # continue lands here
         continue_target = len(self.chunk.code)
         self.loop_stack[-1]['continue_target'] = continue_target
 
-        # Increment index: idx = idx + 1
-        self.chunk.emit_get_local(index_slot, self.current_line)
-        self.chunk.emit_constant(self.chunk.add_constant(1), self.current_line)
-        self.chunk.emit(OpCode.ADD, self.current_line)
-        self.chunk.emit_set_local(index_slot, self.current_line)
-        
-        # Loop back to start
+        # idx += 1
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+        self.chunk.add_constant(1, self.current_line)
+        self.chunk.write(OpCode.ADD, self.current_line)
+        self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+
         self.chunk.emit_loop(loop_start, self.current_line)
-        
-        # Patch the break jump
-        self.chunk.patch_jump(break_jump)
+        self.chunk.patch_jump(exit_jump)
 
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
@@ -840,10 +821,19 @@ class Compiler:
 
     def compile_call(self, node: CallExpr):
         self.compile_expr(node.callee)
+        # Push positional args
         for arg in node.arguments:
             self.compile_expr(arg)
+        total_args = len(node.arguments)
+        # FIX BUG-5: also push named args in the order they appear
+        # The VM passes them positionally; _merge_named_args in interpreter
+        # handles reordering, but for the VM path we push them as-is.
+        if hasattr(node, 'named_arguments') and node.named_arguments:
+            for named in node.named_arguments:
+                self.compile_expr(named.value)
+                total_args += 1
         self.chunk.write(OpCode.CALL, self.current_line)
-        self.chunk.write(len(node.arguments), self.current_line)
+        self.chunk.write(total_args, self.current_line)
 
     def compile_get(self, node: GetExpr):
         self.compile_expr(node.object)
@@ -854,10 +844,12 @@ class Compiler:
         self.chunk.lines.append(self.current_line)
 
     def compile_set(self, node: SetExpr):
-        # FIX: removed DUP — SET_PROPERTY pops both value and obj cleanly
+        # FIX BUG-4: SET_PROPERTY pops value+obj. ExprStmt emits POP after,
+        # so we push NIL to give POP something to consume without corrupting locals.
         self.compile_expr(node.object)
         self.compile_expr(node.value)
         self.compile_set_property(node.name)
+        self.chunk.write(OpCode.NIL, self.current_line)
 
     def compile_list(self, node: ListLiteral):
         for elem in node.elements:

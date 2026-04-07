@@ -172,6 +172,8 @@ _SIZE1 = frozenset([
     OpCode.CLOSE_UPVALUE,
     OpCode.BREAK, OpCode.CONTINUE,
     OpCode.SUBCLASS, OpCode.END_IMPORT,
+    # FIX BUG-2: GET_INDEX/SET_INDEX have no operand — they pop from stack
+    OpCode.GET_INDEX, OpCode.SET_INDEX, OpCode.SET_INDEX_POP,
 ])
 
 _SIZE2 = frozenset([
@@ -187,8 +189,7 @@ _SIZE2 = frozenset([
     OpCode.CONCATENATE, OpCode.CONCAT_COUNT,
     OpCode.GET_SUPER,
     OpCode.THROW,
-    OpCode.GET_INDEX, OpCode.SET_INDEX, OpCode.SET_INDEX_POP,
-    OpCode.GET_CAPTURED,   # FIX: BUG-V7 — needs 1-byte operand
+    OpCode.GET_CAPTURED,
     OpCode.CLOSURE,
     OpCode.OPTIONAL_CHAIN,
 ])

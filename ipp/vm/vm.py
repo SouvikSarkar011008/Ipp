@@ -79,7 +79,7 @@ class InlineCache:
 
 
 class VMFrame:
-    __slots__ = ('chunk', 'closure', 'function', 'ip', 'stack_base', '_method_instance')
+    __slots__ = ('chunk', 'closure', 'function', 'ip', 'stack_base', '_method_instance', '_is_init_call')
 
     def __init__(self, chunk: Chunk, closure=None, function=None, stack_base: int = 0):
         self.chunk = chunk
@@ -87,6 +87,8 @@ class VMFrame:
         self.function = function
         self.ip = 0
         self.stack_base = stack_base    # FIX: BUG-C2 — locals are relative to this
+        self._method_instance = None    # FIX BUG-N1/BUG-4: instance being constructed
+        self._is_init_call = False      # FIX BUG-4: True when frame is a constructor call
 
 
 class UpvalueCell:
@@ -571,6 +573,9 @@ class VM:
         self.exception_handlers.clear()
         self.running = True
         self._return_value = None
+        # FIX VM-BUG-1/BUG-6: clear cache so stale entries don't cause "Cannot call int"
+        self._global_cache.clear()
+        self.call_depth = 0
 
     def run(self, chunk: Chunk = None) -> Any:
         if chunk:
@@ -604,7 +609,12 @@ class VM:
 
             try:
                 result = self._execute(opcode, frame)
-            except VMError:
+            except VMError as e:
+                # FIX VM-BUG-3: route VMError through exception handlers (try/catch support)
+                if self.exception_handlers:
+                    self._handle_exception(e, frame)
+                    frame = self.frames[-1]
+                    continue
                 raise
             except Exception as e:
                 # wrap in VMError for structured handling
@@ -620,8 +630,15 @@ class VM:
                 # FIX BUG-NEW-M5: close any upvalues still open in the returning frame
                 self._close_frame_upvalues(frame)
                 # FIX BUG-N1: clear private-access flag when leaving a method
-                if hasattr(frame, '_method_instance') and frame._method_instance is not None:
+                if frame._method_instance is not None:
                     frame._method_instance._current_class = None
+                # FIX BUG-4: if this was an __init__ call, return the instance not nil
+                if frame._is_init_call and frame._method_instance is not None:
+                    ret_val = frame._method_instance
+                # FIX BUG-1/BUG-6: trim stack back to stack_base to clean up
+                # locals/args that were pushed before the frame ran
+                while len(self.stack) > frame.stack_base:
+                    self.stack.pop()
                 # FIX BUG-N2: decrement call depth on return
                 if self.call_depth > 0:
                     self.call_depth -= 1
@@ -1320,10 +1337,10 @@ class VM:
             init = callee.get_method("init")
             if init:
                 self._call_method(instance, init, args, return_frame)
-                # After init, the instance (not init's return) is the value
-                # We push instance after init frame completes
-                # For now push it here; the RETURN_VAL will pop and re-push
-                self.stack.append(instance)
+                # FIX BUG-4: mark frame as init call so RETURN_FRAME pushes instance
+                # NOT premature stack.append(instance) which corrupts stack
+                if self.frames:
+                    self.frames[-1]._is_init_call = True
             else:
                 self.stack.append(instance)
             return

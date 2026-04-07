@@ -25,7 +25,7 @@ TESTS = [
     ("v1.1.1", "tests/v1_1_1/test_features.ipp"),
     ("v1.3.2", "tests/v1_3_2/test_features.ipp"),
     ("v1.3.3", "tests/v1_3_3/test_features.ipp"),
-    ("v1.3.3-network", "tests/v1_3_3/test_network.ipp"),
+    # ("v1.3.3-network", "tests/v1_3_3/test_network.ipp"),  # requires internet
     ("v1.3.4-core", "tests/v1_3_4/test_core_builtins.ipp"),
     ("v1.3.4-string", "tests/v1_3_4/test_string_functions.ipp"),
     ("v1.3.4-fileio", "tests/v1_3_4/test_file_io.ipp"),
@@ -34,6 +34,7 @@ TESTS = [
     ("v1.3.4-collections", "tests/v1_3_4/test_collections.ipp"),
     ("v1.3.4-advanced", "tests/v1_3_4/test_advanced_features.ipp"),
     ("v1.3.7-repl", "tests/v1_3_7/test_repl_enhancements.ipp"),
+    ("v1.3.7-vm", "tests/v1_3_7/test_vm_bugs.ipp"),
     ("v1.3.8", "tests/v1_3_8/test_networking_collections.ipp"),
     ("v1.3.8-websocket", "tests/v1_3_8/test_websocket.ipp"),
     ("v1.3.9", "tests/v1_3_9/test_error_handling.ipp"),
