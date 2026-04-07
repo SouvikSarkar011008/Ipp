@@ -433,8 +433,8 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.3.9 | REPL error handling (smart suggestions, highlight fix, .colors fix) |
 | v1.3.10 | REPL Intelligence (tab completion, debugger, pretty printing, shell integration, themes) |
 | v1.4.0 | Generator functions (`yield`) + VM Bug Fixes (all 7 VM bugs fixed) |
-| v1.4.1 | Error Documentation + Error Reference Guide |
-| v1.4.2 | Tutorial Documentation + Getting Started Guide |
+| v1.4.1 | Error Documentation + Error Reference Guide (ERRORS.md) |
+| v1.4.2 | Tutorial Documentation + Getting Started Guide (TUTORIAL.md) |
 | v1.4.3 | PyPI Publishing + `pip install ipp-lang` |
 | v1.5.0 | Async/Await + Coroutines + Event Loop |
 | v1.5.1 | WASM Compilation + Web Playground |

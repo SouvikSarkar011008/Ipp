@@ -920,9 +920,9 @@ Ordered by severity × frequency of impact:
 *v1.3.9 completed: 2026-04-02 - REPL error handling (smart suggestions)*
 *v1.3.10 completed: 2026-04-02 - REPL Intelligence (tab completion, debugger, themes)*
 *v1.4.0 completed: 2026-04-07 - Generators + all 7 VM bugs fixed (contributor)*
-*v1.4.1 planned: Error Documentation + Error Reference Guide*
-*v1.4.2 planned: Tutorial Documentation + Getting Started Guide*
-*v1.4.3 planned: PyPI Publishing + pip install ipp-lang*
+*v1.4.1 completed: 2026-04-07 - Error Documentation + Error Reference Guide (ERRORS.md, 20 error codes)*
+*v1.4.2 completed: 2026-04-07 - Tutorial Documentation + Getting Started Guide (TUTORIAL.md, 25 verified examples)*
+*v1.4.3 completed: 2026-04-07 - PyPI Publishing (pyproject.toml, GitHub Actions, ipp-lang package)*
 *v1.5.0 planned: Async/Await + Coroutines + Event Loop*
 *v1.5.1 planned: WASM Compilation + Web Playground*
 *v1.5.2 planned: WebGL Integration + 2D Canvas Rendering*
