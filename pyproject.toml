@@ -40,7 +40,4 @@ Repository = "https://github.com/authorss81/Ipp"
 include = ["ipp*"]
 
 [tool.setuptools.package-data]
-ipp = ["*.ipp"]
-
-[tool.setuptools.data-files]
-data_files = [(".", ["main.py"])]
+ipp = ["*.ipp", "main.py"]

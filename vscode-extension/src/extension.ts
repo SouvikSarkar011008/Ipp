@@ -1,54 +1,38 @@
 import * as vscode from 'vscode';
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node';
-import * as path from 'path';
-
-let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
-    // The server is implemented in node
-    const serverModule = context.asAbsolutePath(
-        path.join('server', 'out', 'server.js')
-    );
-    // The debug options for the server
-    // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
-
-    // If the extension is launched in debug mode then the debug server options are used
-    // Otherwise the run options are used
-    const serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
-        debug: {
-            module: serverModule,
-            transport: TransportKind.ipc,
-            options: debugOptions
+    // Register commands for running Ipp code
+    const runCommand = vscode.commands.registerCommand('ipp.run', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const document = editor.document;
+            if (document.languageId === 'ipp') {
+                const terminal = vscode.window.createTerminal({
+                    name: 'Ipp Runner',
+                    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+                });
+                terminal.sendText(`python main.py run "${document.fileName}"`);
+                terminal.show();
+            }
         }
-    };
+    });
 
-    // Options to control the language client
-    const clientOptions: LanguageClientOptions = {
-        // Register the server for plain text documents
-        documentSelector: [{ scheme: 'file', language: 'ipp' }],
-        synchronize: {
-            // Notify the server about file changes to '.clientrc files contained in the workspace
-            fileEvents: vscode.WorkspaceConfiguration.createFileSystemWatcher('**/.clientrc')
+    const checkCommand = vscode.commands.registerCommand('ipp.check', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const document = editor.document;
+            if (document.languageId === 'ipp') {
+                const terminal = vscode.window.createTerminal({
+                    name: 'Ipp Checker',
+                    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+                });
+                terminal.sendText(`python main.py check "${document.fileName}"`);
+                terminal.show();
+            }
         }
-    };
+    });
 
-    // Create the language client and start the client.
-    client = new LanguageClient(
-        'ippLanguageServer',
-        'Ipp Language Server',
-        serverOptions,
-        clientOptions
-    );
-
-    // Start the client. This will also launch the server
-    client.start();
+    context.subscriptions.push(runCommand, checkCommand);
 }
 
-export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
-        return undefined;
-    }
-    return client.stop();
-}
+export function deactivate() {}
