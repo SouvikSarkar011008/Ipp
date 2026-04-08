@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Ipp",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#constants"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.ipp",
+          "match": "//.*"
+        },
+        {
+          "begin": "/\\*",
+          "end": "\\*/",
+          "name": "comment.block.ipp"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.ipp",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.ipp"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.ipp",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.ipp"
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(func|if|else|for|while|return|break|continue|class|import|async|await|try|catch|throw|finally)\\b",
+          "name": "keyword.control.ipp"
+        },
+        {
+          "match": "\\b(var|let|const)\\b",
+          "name": "storage.type.ipp"
+        },
+        {
+          "match": "\\b(true|false|null)\\b",
+          "name": "constant.language.ipp"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "match": "\\b[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?\\b",
+          "name": "constant.numeric.ipp"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "match": "\\b[A-Z_][A-Z0-9_]*\\b",
+          "name": "constant.other.ipp"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.ipp"
+}

@@ -1,0 +1,59 @@
+{
+  "name": "ipp-language-support",
+  "displayName": "Ipp Language Support",
+  "description": "Language support for the Ipp programming language",
+  "version": "0.0.1",
+  "publisher": "authorss81",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:ipp"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "ipp",
+        "aliases": [
+          "Ipp",
+          "ipp"
+        ],
+        "extensions": [
+          ".ipp"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ipp",
+        "scopeName": "source.ipp",
+        "path": "./syntaxes/ipp.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext .ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.70.0",
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "16.x",
+    "eslint": "^8.0.1",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.6.4",
+    "vscode-test": "^1.5.0"
+  }
+}
