@@ -45,7 +45,7 @@
 | **v1.4.2** | ✅ DONE | Tutorial Documentation + Getting Started Guide |
 | **v1.4.3** | ✅ DONE | PyPI Publishing + `pip install ipp-lang` |
 | **v1.5.0** | ✅ DONE | Async/Await + Coroutines + Event Loop + Additional Builtins |
-| **v1.5.1** | 📋 PLANNED | VSCode Extension + LSP |
+| **v1.5.1** | 🔧 IN PROGRESS | VSCode Extension + LSP |
 | **v1.5.2** | 📋 PLANNED | WASM Compilation + Web Playground |
 | **v1.5.3** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
 | **v1.5.4** | 📋 PLANNED | Repl Enhancements| 
