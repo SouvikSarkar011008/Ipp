@@ -384,6 +384,12 @@ if isTrue {
                             continue;
                         }
                         
+                        // Canvas function calls
+                        if (l.startsWith('canvas.')) {
+                            this.evalExpr(l);
+                            continue;
+                        }
+                        
                         // Variable declaration: var x = value
                         const varMatch = l.match(/^(var|let)\s+(\w+)\s*=\s*(.+)$/);
                         if (varMatch) {
