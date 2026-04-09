@@ -48,6 +48,7 @@ TESTS = [
     ("v1.5.0-async", "tests/v1_5_0/test_async_await.ipp"),
     ("v1.5.2", "tests/v1_5_2/test_wasm_backend.ipp"),
     ("v1.5.2a", "tests/v1_5_2/test_wasm_implementation.ipp"),
+    ("v1.5.2b", "tests/v1_5_2/test_web_playground.ipp"),
 ]
 
 def run_test(version, filepath):
