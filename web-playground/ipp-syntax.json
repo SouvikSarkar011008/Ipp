@@ -1,0 +1,77 @@
+{
+    "comments": {
+        "lineComment": "#"
+    },
+    "brackets": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"]
+    ],
+    "autoClosingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"]
+    ],
+    "surroundingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"]
+    ],
+    "folding": {
+        "markers": {
+            "start": "^\\s*#",
+            "end": ""
+        }
+    },
+    "keywords": [
+        "func", "class", "var", "let", "if", "elif", "else", "for", "while",
+        "return", "break", "continue", "import", "try", "catch", "throw",
+        "finally", "match", "case", "default", "async", "await", "nil",
+        "true", "false", "yield", "this", "super", "new", "in"
+    ],
+    "typeKeywords": [
+        "int", "float", "str", "bool", "list", "dict", "func", "any"
+    ],
+    "operators": [
+        "=", ">", "<", "!", "~", "?", ":",
+        "==", "<=", ">=", "!=", "&&", "||", "++", "--",
+        "+", "-", "*", "/", "&", "|", "^", "%", "<<", ">>", "**",
+        "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=", "<<=", ">>="
+    ],
+    "symbols": /[=><!~?:&|+\-*\/\^%]+/,
+    "tokenizer": {
+        root: [
+            [/[a-zA-Z_]\w*/, {
+                cases: {
+                    "@keywords": "keyword",
+                    "@typeKeywords": "type",
+                    "@default": "identifier"
+                }
+            }],
+            [/#.*$/, "comment"],
+            [/"([^"\\]|\\.)*$/, "string.invalid"],
+            [/"/, { token: "string.quote", bracket: "@open", next: "@string" }],
+            [/'([^'\\]|\\.)*$/, "string.invalid"],
+            [/'/, { token: "string.quote", bracket: "@open", next: "@string" }],
+            [/\d+/, "number"],
+            [/\d+\.\d+/, "number.float"],
+            [/@symbols/, {
+                cases: {
+                    "@operators": "operator",
+                    "@default": ""
+                }
+            }],
+            [/[{}()\[\]]/, "@brackets"],
+            [/[;,.]/, "delimiter"]
+        ],
+        string: [
+            [/[^\\"]+/, "string"],
+            [/\\./, "string.escape"],
+            [/"/, { token: "string.quote", bracket: "@close", next: "@pop" }]
+        ]
+    }
+}

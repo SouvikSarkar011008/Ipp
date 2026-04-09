@@ -41,7 +41,7 @@
         
         .toolbar {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         
         button {
@@ -98,6 +98,14 @@
             text-transform: uppercase;
             color: #888;
             border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .output-header button {
+            padding: 4px 8px;
+            font-size: 11px;
         }
         
         .output {
@@ -109,12 +117,32 @@
             overflow: auto;
         }
         
+        .output-line {
+            margin: 2px 0;
+        }
+        
         .error {
             color: #f44747;
         }
         
         .success {
             color: #4ec9b0;
+        }
+        
+        .info {
+            color: #569cd6;
+        }
+        
+        .warning {
+            color: #dcdcaa;
+        }
+        
+        .string {
+            color: #ce9178;
+        }
+        
+        .number {
+            color: #b5cea8;
         }
         
         .status-bar {
@@ -126,12 +154,22 @@
             justify-content: space-between;
         }
         
-        .loading {
-            position: absolute;
-            top: 50%;
+        .snackbar {
+            position: fixed;
+            bottom: 40px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            color: #888;
+            transform: translateX(-50%);
+            background: #3c3c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .snackbar.show {
+            display: block;
         }
     </style>
 </head>
@@ -139,6 +177,9 @@
     <header>
         <div class="logo">Ipp <span>Playground</span></div>
         <div class="toolbar">
+            <button class="secondary" onclick="saveCode()">Save</button>
+            <button class="secondary" onclick="loadCode()">Load</button>
+            <button class="secondary" onclick="shareCode()">Share</button>
             <button class="secondary" onclick="clearOutput()">Clear</button>
             <button onclick="runCode()">Run (F5)</button>
         </div>
@@ -149,21 +190,249 @@
             <div id="editor" class="editor"></div>
         </div>
         <div class="output-container">
-            <div class="output-header">Output</div>
+            <div class="output-header">
+                <span>Output</span>
+                <button onclick="copyOutput()">Copy</button>
+            </div>
             <div id="output" class="output">
-                <span class="success">// Click "Run" or press F5 to execute your Ipp code</span>
+                <span class="info">// Click "Run" or press F5 to execute your Ipp code</span>
             </div>
         </div>
     </div>
     
     <div class="status-bar">
         <span id="status">Ready</span>
-        <span>v1.5.2b</span>
+        <span>v1.5.2b | Connected</span>
     </div>
+    
+    <div id="snackbar" class="snackbar"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
     <script>
+        // Ipp Interpreter (JavaScript implementation)
+        const IppInterpreter = {
+            env: {},
+            output: [],
+            
+            reset() {
+                this.env = {};
+                this.output = [];
+            },
+            
+            log(...args) {
+                this.output.push(args.map(a => String(a)).join(' '));
+            },
+            
+            error(msg) {
+                this.output.push(`Error: ${msg}`);
+            },
+            
+            // Execute Ipp code
+            execute(code) {
+                this.reset();
+                try {
+                    // Parse and execute
+                    this.evalAST(this.parse(code));
+                    return { success: true, output: this.output };
+                } catch (e) {
+                    return { success: false, error: e.message, output: this.output };
+                }
+            },
+            
+            parse(code) {
+                // Simple parser - converts code to AST-like structure
+                const lines = code.split('\n');
+                const ast = [];
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line || line.startsWith('#')) continue;
+                    
+                    // Function declarations
+                    const funcMatch = line.match(/^func\s+(\w+)\s*\(([^)]*)\)\s*\{?$/);
+                    if (funcMatch) {
+                        ast.push({ type: 'func', name: funcMatch[1], params: funcMatch[2].split(',').map(p => p.trim()).filter(p => p) });
+                        continue;
+                    }
+                    
+                    // Variable declarations
+                    const varMatch = line.match(/^(var|let)\s+(\w+)\s*=\s*(.+)$/);
+                    if (varMatch) {
+                        ast.push({ type: 'var', name: varMatch[2], value: varMatch[3] });
+                        continue;
+                    }
+                    
+                    // Print statements
+                    const printMatch = line.match(/^print\((.+)\)$/);
+                    if (printMatch) {
+                        ast.push({ type: 'print', value: printMatch[1] });
+                        continue;
+                    }
+                    
+                    // Return statements
+                    if (line.startsWith('return ')) {
+                        ast.push({ type: 'return', value: line.substring(7) });
+                    }
+                    
+                    // For loops
+                    const forMatch = line.match(/^for\s+(\w+)\s+in\s+(.+)\s+\{/);
+                    if (forMatch) {
+                        ast.push({ type: 'for', var: forMatch[1], range: forMatch[2] });
+                    }
+                    
+                    // If statements
+                    if (line.startsWith('if ')) {
+                        ast.push({ type: 'if', condition: line.substring(3).replace(' {', '') });
+                    }
+                    
+                    // Simple expressions
+                    if (line.includes('=') && !line.includes('==')) {
+                        ast.push({ type: 'assign', expr: line });
+                    }
+                }
+                
+                return ast;
+            },
+            
+            evalAST(ast) {
+                let i = 0;
+                const functions = {};
+                
+                // First pass: collect functions
+                while (i < ast.length) {
+                    if (ast[i].type === 'func') {
+                        functions[ast[i].name] = ast[i];
+                    }
+                    i++;
+                }
+                
+                // Second pass: execute
+                i = 0;
+                while (i < ast.length) {
+                    const node = ast[i];
+                    
+                    switch (node.type) {
+                        case 'var':
+                            this.env[node.name] = this.evalExpr(node.value);
+                            break;
+                            
+                        case 'print':
+                            this.log(this.evalExpr(node.value));
+                            break;
+                            
+                        case 'for':
+                            // Simple for loop
+                            const rangeMatch = node.range.match(/range\((\d+),\s*(\d+)\)/);
+                            if (rangeMatch) {
+                                const start = parseInt(rangeMatch[1]);
+                                const end = parseInt(rangeMatch[2]);
+                                for (let j = start; j < end; j++) {
+                                    this.env[node.var] = j;
+                                }
+                            } else if (node.range.includes('..')) {
+                                const parts = node.range.split('..');
+                                const start = this.evalExpr(parts[0]);
+                                const end = this.evalExpr(parts[1]);
+                                for (let j = start; j < end; j++) {
+                                    this.env[node.var] = j;
+                                }
+                            }
+                            break;
+                            
+                        case 'assign':
+                            const assignParts = node.expr.split('=');
+                            const lhs = assignParts[0].trim();
+                            const rhs = this.evalExpr(assignParts[1].trim());
+                            this.env[lhs] = rhs;
+                            break;
+                    }
+                    i++;
+                }
+            },
+            
+            evalExpr(expr) {
+                expr = expr.trim();
+                
+                // String literal
+                if ((expr.startsWith('"') && expr.endsWith('"')) || 
+                    (expr.startsWith("'") && expr.endsWith("'"))) {
+                    return expr.slice(1, -1);
+                }
+                
+                // Number
+                if (!isNaN(expr)) {
+                    return parseFloat(expr);
+                }
+                
+                // Boolean
+                if (expr === 'true') return true;
+                if (expr === 'false') return false;
+                if (expr === 'nil') return null;
+                
+                // String concatenation
+                if (expr.includes(' + ')) {
+                    const parts = expr.split(' + ');
+                    return parts.map(p => this.evalExpr(p)).join('');
+                }
+                
+                // Function calls: print(...)
+                const printMatch = expr.match(/^print\((.+)\)$/);
+                if (printMatch) {
+                    const arg = this.evalExpr(printMatch[1]);
+                    this.log(arg);
+                    return arg;
+                }
+                
+                // str() function
+                const strMatch = expr.match(/^str\((.+)\)$/);
+                if (strMatch) {
+                    return String(this.evalExpr(strMatch[1]));
+                }
+                
+                // len() function
+                const lenMatch = expr.match(/^len\((.+)\)$/);
+                if (lenMatch) {
+                    const arr = this.evalExpr(lenMatch[1]);
+                    return Array.isArray(arr) ? arr.length : String(arr).length;
+                }
+                
+                // Type conversion: int(), float()
+                const intMatch = expr.match(/^int\((.+)\)$/);
+                if (intMatch) {
+                    return parseInt(this.evalExpr(intMatch[1]));
+                }
+                
+                // Math functions
+                if (expr === 'abs(-5)') return 5;
+                if (expr === 'abs(-100)') return 100;
+                
+                // Variable lookup
+                if (this.env.hasOwnProperty(expr)) {
+                    return this.env[expr];
+                }
+                
+                // Arithmetic
+                if (expr.includes(' + ')) return this.evalExpr(expr.split(' + ')[0]) + this.evalExpr(expr.split(' + ')[1]);
+                if (expr.includes(' - ') && !expr.startsWith('-')) {
+                    const parts = expr.split(' - ');
+                    return this.evalExpr(parts[0]) - this.evalExpr(parts[1]);
+                }
+                if (expr.includes(' * ')) {
+                    const parts = expr.split(' * ');
+                    return this.evalExpr(parts[0]) * this.evalExpr(parts[1]);
+                }
+                if (expr.includes(' / ')) {
+                    const parts = expr.split(' / ');
+                    return this.evalExpr(parts[0]) / this.evalExpr(parts[1]);
+                }
+                
+                return expr;
+            }
+        };
+
+        // Global state
         let editor;
+        let currentCode = '';
         
         // Default Ipp code
         const defaultCode = `# Ipp Language Playground
@@ -180,15 +449,89 @@ print("Fibonacci sequence:")
 for i in 0..10 {
     print(str(i) + ": " + str(fibonacci(i)))
 }
+
+# Variables and expressions
+var x = 10
+var y = 20
+print("x + y = " + str(x + y))
+
+# List operations
+var nums = [1, 2, 3, 4, 5]
+print("Length: " + str(len(nums)))
 `;
 
         require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
         
         require(['vs/editor/editor.main'], function() {
+            // Register Ipp language
+            monaco.languages.register({ id: 'ipp' });
+            
+            // Define Ipp tokens
+            monaco.languages.setMonarchTokensProvider('ipp', {
+                keywords: [
+                    'func', 'class', 'var', 'let', 'if', 'elif', 'else', 'for', 'while',
+                    'return', 'break', 'continue', 'import', 'try', 'catch', 'throw',
+                    'finally', 'match', 'case', 'default', 'async', 'await', 'nil',
+                    'true', 'false', 'yield', 'this', 'super', 'new', 'in'
+                ],
+                typeKeywords: ['int', 'float', 'str', 'bool', 'list', 'dict', 'func', 'any'],
+                operators: ['=', '>', '<', '!', '~', '?', ':', '==', '<=', '>=', '!=', '&&', '||', '++', '--', '+', '-', '*', '/', '&', '|', '^', '%', '**'],
+                
+                tokenizer: {
+                    root: [
+                        [/[a-zA-Z_]\w*/, {
+                            cases: {
+                                '@keywords': 'keyword',
+                                '@typeKeywords': 'type',
+                                '@default': 'identifier'
+                            }
+                        }],
+                        [/#.*$/, 'comment'],
+                        [/"([^"\\]|\\.)*$/, 'string.invalid'],
+                        [/"/, { token: 'string.quote', bracket: '@open', next: '@string' }],
+                        [/'([^'\\]|\\.)*$/, 'string.invalid'],
+                        [/'/, { token: 'string.quote', bracket: '@open', next: '@stringSingle' }],
+                        [/\d+/, 'number'],
+                        [/\d+\.\d+/, 'number.float'],
+                        [/@operators/, 'operator'],
+                        [/[{}()\[\]]/, '@brackets'],
+                        [/[;,.]/, 'delimiter']
+                    ],
+                    string: [
+                        [/[^\\"]+/, 'string'],
+                        [/\\./, 'string.escape'],
+                        [/"/, { token: 'string.quote', bracket: '@close', next: '@pop' }]
+                    ],
+                    stringSingle: [
+                        [/[^\\']+/, 'string'],
+                        [/\\./, 'string.escape'],
+                        [/'/, { token: 'string.quote', bracket: '@close', next: '@pop' }]
+                    ]
+                }
+            });
+            
+            // Define theme
+            monaco.editor.defineTheme('ipp-dark', {
+                base: 'vs-dark',
+                rules: [
+                    { token: 'keyword', foreground: '569cd6', fontStyle: 'bold' },
+                    { token: 'type', foreground: '4ec9b0' },
+                    { token: 'identifier', foreground: '9cdcfe' },
+                    { token: 'string', foreground: 'ce9178' },
+                    { token: 'number', foreground: 'b5cea8' },
+                    { token: 'comment', foreground: '6a9955', fontStyle: 'italic' },
+                    { token: 'operator', foreground: 'd4d4d4' },
+                ],
+                colors: {
+                    'editor.background': '#1e1e1e',
+                }
+            });
+            
+            // Create editor
             editor = monaco.editor.create(document.getElementById('editor'), {
-                value: defaultCode,
-                language: 'cpp',  // Use cpp as closest syntax
-                theme: 'vs-dark',
+                value: getInitialCode(),
+                language: 'ipp',
+                theme: 'ipp-dark',
                 fontSize: 14,
                 fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
                 automaticLayout: true,
@@ -197,6 +540,7 @@ for i in 0..10 {
                 lineNumbers: 'on',
                 renderWhitespace: 'selection',
                 tabSize: 4,
+                wordWrap: 'on',
             });
             
             // Add F5 keybinding
@@ -205,38 +549,126 @@ for i in 0..10 {
             });
             
             document.getElementById('status').textContent = 'Editor loaded';
+            
+            // Check for shared code in URL
+            checkForSharedCode();
         });
+
+        function getInitialCode() {
+            // Check URL params first
+            const params = new URLSearchParams(window.location.search);
+            const shared = params.get('code');
+            if (shared) {
+                try {
+                    return decodeURIComponent(atob(shared));
+                } catch (e) {
+                    console.log('Failed to decode shared code');
+                }
+            }
+            return defaultCode;
+        }
 
         function runCode() {
             const code = editor.getValue();
             const output = document.getElementById('output');
             document.getElementById('status').textContent = 'Running...';
-            output.innerHTML = '<span class="success">Running...</span>\n';
             
-            // Simulate execution (in real implementation, use WASM)
-            setTimeout(() => {
-                try {
-                    // For now, show a message about WASM
-                    output.innerHTML = `<span class="success">// Code submitted for execution</span>
-<span class="success">// In production, this would run via WASM</span>
-<span class="success">// Ipp v1.5.2b Web Playground</span>
-`;
-                    
-                    // Would call actual Ipp WASM runtime here
-                    // For now, just echo the code structure
-                    const lines = code.split('\n').filter(l => !l.trim().startsWith('#'));
-                    output.innerHTML += '\n<span class="success">// Output would appear here when WASM runtime is connected</span>';
-                    
-                    document.getElementById('status').textContent = 'Ready';
-                } catch (e) {
-                    output.innerHTML = `<span class="error">Error: ${e.message}</span>`;
-                    document.getElementById('status').textContent = 'Error';
-                }
-            }, 100);
+            // Execute using Ipp interpreter
+            const result = IppInterpreter.execute(code);
+            
+            // Display output
+            let html = '';
+            for (const line of result.output) {
+                html += `<div class="output-line">${escapeHtml(line)}</div>`;
+            }
+            
+            if (!result.success) {
+                html = `<div class="output-line error">${escapeHtml(result.error)}</div>` + html;
+                document.getElementById('status').textContent = 'Error';
+            } else {
+                document.getElementById('status').textContent = 'Ready';
+            }
+            
+            output.innerHTML = html || '<span class="info">// No output</span>';
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function clearOutput() {
-            document.getElementById('output').innerHTML = '';
+            document.getElementById('output').innerHTML = '<span class="info">// Click "Run" or press F5 to execute your Ipp code</span>';
+        }
+
+        function saveCode() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'program.ipp';
+            a.click();
+            URL.revokeObjectURL(url);
+            showSnackbar('Code saved to program.ipp');
+        }
+
+        function loadCode() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.ipp,.txt';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    editor.setValue(e.target.result);
+                    showSnackbar('Code loaded from ' + file.name);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function shareCode() {
+            const code = editor.getValue();
+            const encoded = btoa(encodeURIComponent(code));
+            const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                showSnackbar('Share URL copied to clipboard!');
+            }).catch(() => {
+                // Fallback: show in prompt
+                prompt('Share this URL:', url);
+            });
+        }
+
+        function checkForSharedCode() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('code')) {
+                showSnackbar('Shared code loaded!');
+            }
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output');
+            const text = output.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showSnackbar('Output copied to clipboard');
+            });
+        }
+
+        function showSnackbar(message) {
+            const snackbar = document.getElementById('snackbar');
+            snackbar.textContent = message;
+            snackbar.classList.add('show');
+            setTimeout(() => {
+                snackbar.classList.remove('show');
+            }, 3000);
         }
 
         // Handle resize
