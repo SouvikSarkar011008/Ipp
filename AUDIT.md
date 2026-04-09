@@ -432,22 +432,23 @@ See [ROADMAP_V2.md](ROADMAP_V2.md) for detailed version-by-version plan.
 
 ## Summary
 
-**Current State**: v1.5.1
+**Current State**: v1.5.2
 - 70+/100 overall score
 - Most critical features implemented
 - VM infrastructure complete with v1.0.0
 - All 7 VM bugs fixed by contributor
 - Generator functions + Async/Await implemented
 - 163+ built-in functions
-- 37 passing regression tests
+- 38 passing regression tests
 - World-class REPL with tab completion, debugging, themes, shell integration
-- VSCode extension with LSP support, snippets, task runner
+- VSCode extension with LSP support, snippets, task runner (publish coming soon)
+- WASM backend infrastructure (v1.5.2a)
 
-**v1.5.1 Target State:**
-- VSCode Extension with LSP
+**v1.5.2 Target State:**
+- WASM backend infrastructure
+- Web playground preparation
 - Code snippets (15 snippets)
 - Task runner for ipp run/check
-- Language server protocol (go-to-definition, completion, hover)
 
 **v2.0.0 Production State:**
 - 85+/100 overall score

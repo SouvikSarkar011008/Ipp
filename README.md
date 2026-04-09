@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.5.1-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.5.2-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -20,7 +20,7 @@ Python-like syntax · Closures · Classes with Inheritance · Pattern Matching �
 
 Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
 
-**v1.5.1** includes all v1.5.0 features plus VSCode extension with LSP support, 15 code snippets, task runner for running/checking scripts, and full language server protocol implementation for IDE integration.
+**v1.5.2** includes all v1.5.1 features plus WASM backend infrastructure preparation for compiling Ipp to WebAssembly. VSCode extension publish coming soon.
 
 ---
 
@@ -50,6 +50,8 @@ ipp run hello.ipp
 ---
 
 ## VSCode Extension
+
+> **Note:** VSCode extension marketplace publish coming soon. Currently available for local installation.
 
 Ipp includes a VSCode extension in `vscode-extension/`:
 
@@ -84,7 +86,7 @@ Ipp has a world-class REPL with 30+ built-in commands:
   ██║██║     ██║
   ╚═╝╚═╝     ╚═╝
 
-  Ipp  v1.5.1
+  Ipp  v1.5.2
   A scripting language for game development
 ──────────────────────────────────────────
   ❯ var x = 2 ** 10
