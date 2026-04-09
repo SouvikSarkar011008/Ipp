@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ipp Language Playground</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: #0d1117;
             color: #c9d1d9;
             height: 100vh;
@@ -30,48 +26,13 @@
             border-bottom: 1px solid #30363d;
         }
         
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .logo { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #238636, #2ea043); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .logo-text { color: #f0f6fc; }
+        .logo-text span { color: #58a6ff; }
+        .version-tag { background: #1f6feb; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
         
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #238636, #2ea043);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        
-        .logo-text {
-            color: #f0f6fc;
-        }
-        
-        .logo-text span {
-            color: #58a6ff;
-        }
-        
-        .version-tag {
-            background: #1f6feb;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-left: 8px;
-        }
-        
-        .toolbar {
-            display: flex;
-            gap: 8px;
-        }
+        .toolbar { display: flex; gap: 8px; }
         
         button {
             background: #21262d;
@@ -88,165 +49,83 @@
             gap: 6px;
         }
         
-        button:hover {
-            background: #30363d;
-            border-color: #8b949e;
-        }
+        button:hover { background: #30363d; }
         
-        button.primary {
-            background: linear-gradient(135deg, #238636, #2ea043);
+        button.run-btn { background: #238636; border: none; color: white; font-weight: 600; }
+        button.run-btn:hover { background: #2ea043; }
+        
+        .main { flex: 1; display: flex; overflow: hidden; }
+        
+        .editor-section { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #30363d; min-width: 0; }
+        
+        .section-header { background: #161b22; padding: 10px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #8b949e; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        
+        .editor-container { flex: 1; position: relative; overflow: hidden; background: #0d1117; }
+        
+        #editor, #highlighting-pre {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: auto;
             border: none;
-            color: white;
-        }
-        
-        button.primary:hover {
-            background: linear-gradient(135deg, #2ea043, #3fb950);
-        }
-
-        button.run-btn {
-            background: #238636;
-            border: none;
-            color: white;
-            padding: 10px 24px;
-            font-weight: 600;
-        }
-        
-        button.run-btn:hover {
-            background: #2ea043;
-        }
-        
-        .main {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-        
-        .editor-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #30363d;
-            min-width: 0;
-        }
-        
-        .section-header {
-            background: #161b22;
-            padding: 10px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: #8b949e;
-            border-bottom: 1px solid #30363d;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .editor-wrapper {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
+            background: transparent;
         }
         
         #editor {
-            width: 100%;
-            height: 100%;
-            background: #0d1117;
-            color: #c9d1d9;
-            border: none;
-            outline: none;
-            padding: 16px;
-            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-            font-size: 14px;
-            line-height: 1.6;
+            color: transparent;
+            caret-color: #c9d1d9;
+            z-index: 1;
             resize: none;
-            tab-size: 4;
+            outline: none;
         }
         
-        #editor::selection {
-            background: #264f78;
+        #highlighting-pre {
+            z-index: 0;
+            color: #c9d1d9;
+            pointer-events: none;
         }
         
-        .output-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 300px;
-            background: #0d1117;
-        }
+        /* Syntax highlighting colors */
+        .tok-keyword { color: #ff7b72; font-weight: bold; }
+        .tok-func { color: #d2a8ff; }
+        .tok-string { color: #a5d6ff; }
+        .tok-number { color: #79c0ff; }
+        .tok-comment { color: #8b949e; font-style: italic; }
+        .tok-operator { color: #ff7b72; }
+        .tok-builtin { color: #7ee787; }
+        .tok-var { color: #ffa657; }
         
-        .output-content {
-            flex: 1;
-            padding: 16px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 13px;
-            overflow: auto;
-            line-height: 1.6;
-        }
+        .output-section { flex: 1; display: flex; flex-direction: column; min-width: 300px; }
         
-        .output-line {
-            padding: 3px 0;
-            white-space: pre-wrap;
-        }
-        
+        .output-content { flex: 1; padding: 16px; font-family: 'Fira Code', monospace; font-size: 13px; overflow: auto; line-height: 1.6; }
+        .output-line { padding: 3px 0; white-space: pre-wrap; }
         .output-line.error { color: #f85149; background: rgba(248,81,73,0.1); padding: 4px 8px; border-radius: 4px; margin: 4px 0; }
         .output-line.success { color: #3fb950; }
         .output-line.info { color: #8b949e; font-style: italic; }
         
-        .status-bar {
-            background: #161b22;
-            color: #8b949e;
-            padding: 8px 24px;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            border-top: 1px solid #30363d;
-        }
-        
+        .status-bar { background: #161b22; color: #8b949e; padding: 8px 24px; font-size: 12px; display: flex; justify-content: space-between; border-top: 1px solid #30363d; }
         .status-left { display: flex; align-items: center; gap: 16px; }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #3fb950;
-        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #3fb950; }
         .status-dot.error { background: #f85149; }
         .status-dot.running { background: #d29922; animation: pulse 1s infinite; }
         
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
-        .snackbar {
-            position: fixed;
-            bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #238636;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 1000;
-        }
+        .snackbar { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%) translateY(100px); background: #238636; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); opacity: 0; transition: all 0.3s; z-index: 1000; }
         .snackbar.show { transform: translateX(-50%) translateY(0); opacity: 1; }
         .snackbar.error { background: #f85149; }
         
-        .welcome {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #8b949e;
-            text-align: center;
-        }
+        .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #8b949e; text-align: center; }
         .welcome h2 { font-size: 20px; margin-bottom: 12px; color: #f0f6fc; }
-        .welcome p { font-size: 13px; margin-bottom: 16px; }
-        .shortcuts { display: flex; gap: 12px; }
-        .shortcut { background: #21262d; padding: 6px 12px; border-radius: 4px; border: 1px solid #30363d; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -271,7 +150,8 @@
                 <span>📄 untitled.ipp</span>
                 <span id="cursor-info">Ln 1, Col 1</span>
             </div>
-            <div class="editor-wrapper">
+            <div class="editor-container">
+                <pre id="highlighting-pre"></pre>
                 <textarea id="editor" spellcheck="false"></textarea>
             </div>
         </div>
@@ -284,11 +164,7 @@
             <div class="output-content" id="output">
                 <div class="welcome">
                     <h2>Welcome to Ipp Playground! 🚀</h2>
-                    <p>Click <strong>Run</strong> or press <strong>Ctrl+Enter</strong> to execute.</p>
-                    <div class="shortcuts">
-                        <span class="shortcut">Ctrl+S Save</span>
-                        <span class="shortcut">Ctrl+Enter Run</span>
-                    </div>
+                    <p>Click <strong>Run</strong> or press <strong>Ctrl+Enter</strong></p>
                 </div>
             </div>
         </div>
@@ -299,15 +175,14 @@
             <div class="status-dot" id="status-dot"></div>
             <span id="status-text">Ready</span>
         </div>
-        <span>Ipp v1.5.2b | JavaScript Runtime</span>
+        <span>Ipp v1.5.2b</span>
     </div>
     
     <div id="snackbar" class="snackbar"></div>
 
     <script>
-        // Default code
         const defaultCode = `# Ipp Language Playground v1.5.2b
-# Write your code here and click Run
+# Write your code here
 
 func fibonacci(n) {
     if n <= 1 {
@@ -324,132 +199,225 @@ for i in 0..10 {
 # Variables
 var x = 10
 var y = 20
-print("\\nx + y = " + str(x + y))
+print("x + y = " + str(x + y))
 
-# List
+# Lists
 var nums = [1, 2, 3, 4, 5]
-print("\\nLength: " + str(len(nums)))
+print("Length: " + str(len(nums)))
+print("First: " + str(nums[0]))
 `;
 
-        // Initialize
         const editor = document.getElementById('editor');
+        const highlight = document.getElementById('highlighting-pre');
         editor.value = getInitialCode() || defaultCode;
         
-        // Update cursor position
-        editor.addEventListener('click', updateCursor);
-        editor.addEventListener('keyup', updateCursor);
+        // Syntax highlighting
+        function highlightCode(code) {
+            let html = code
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            // Comments
+            html = html.replace(/(#.*)$/gm, '<span class="tok-comment">$1</span>');
+            
+            // Strings (double and single)
+            html = html.replace(/(["'])(?:(?!\1)[^\\]|\\.)*\1/g, '<span class="tok-string">$&</span>');
+            
+            // Keywords
+            const keywords = ['func', 'class', 'var', 'let', 'if', 'elif', 'else', 'for', 'while', 'return', 'break', 'continue', 'import', 'try', 'catch', 'throw', 'finally', 'match', 'case', 'default', 'async', 'await', 'nil', 'true', 'false', 'yield', 'this', 'new', 'in'];
+            for (const kw of keywords) {
+                const regex = new RegExp(`\\b(${kw})\\b`, 'g');
+                html = html.replace(regex, '<span class="tok-keyword">$1</span>');
+            }
+            
+            // Built-in functions
+            const builtins = ['print', 'str', 'int', 'float', 'len', 'abs', 'type', 'range', 'assert', 'list', 'dict', 'max', 'min', 'sum', 'sort', 'reversed', 'enumerate', 'zip', 'map', 'filter'];
+            for (const fn of builtins) {
+                const regex = new RegExp(`\\b(${fn})\\b`, 'g');
+                html = html.replace(regex, '<span class="tok-builtin">$1</span>');
+            }
+            
+            // Numbers
+            html = html.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-number">$1</span>');
+            
+            // Operators
+            html = html.replace(/([+\-*/%=<>!&|^~])/g, '<span class="tok-operator">$1</span>');
+            
+            return html;
+        }
+        
+        function updateHighlight() {
+            highlight.innerHTML = highlightCode(editor.value) + '\n';
+        }
         
         function updateCursor() {
             const text = editor.value.substring(0, editor.selectionStart);
             const lines = text.split('\n');
-            const line = lines.length;
-            const col = lines[lines.length - 1].length + 1;
-            document.getElementById('cursor-info').textContent = `Ln ${line}, Col ${col}`;
+            document.getElementById('cursor-info').textContent = `Ln ${lines.length}, Col ${lines[lines.length-1].length + 1}`;
         }
+        
+        editor.addEventListener('input', () => { updateHighlight(); updateCursor(); });
+        editor.addEventListener('scroll', () => { highlight.scrollTop = editor.scrollTop; });
+        editor.addEventListener('click', updateCursor);
+        editor.addEventListener('keyup', updateCursor);
+        
+        updateHighlight();
 
         function getInitialCode() {
             const params = new URLSearchParams(window.location.search);
             const shared = params.get('code');
-            if (shared) {
-                try { return decodeURIComponent(atob(shared)); } catch(e) {}
-            }
+            if (shared) try { return decodeURIComponent(atob(shared)); } catch(e) {}
             return null;
         }
 
-        // Ipp Runtime
+        // Fixed Ipp Runtime
         const IppRuntime = {
             env: {},
-            output: [],
-            
-            reset() { this.env = {}; this.output = []; },
-            
-            log(...args) { this.output.push({type:'success', text: args.join(' ')}); },
             
             execute(code) {
-                this.reset();
+                this.env = {};
+                const output = [];
+                
                 try {
-                    const ast = this.parse(code);
-                    this.evalAST(ast);
-                    return { success: true, output: this.output };
+                    const lines = code.split('\n');
+                    const functions = {};
+                    
+                    // First pass: collect functions
+                    for (const line of lines) {
+                        const l = line.trim();
+                        const funcMatch = l.match(/^func\s+(\w+)\s*\(([^)]*)\)/);
+                        if (funcMatch) {
+                            functions[funcMatch[1]] = { params: funcMatch[2].split(',').map(p => p.trim()).filter(p => p), body: [] };
+                        }
+                    }
+                    
+                    // Process each line
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        const l = line.trim();
+                        
+                        if (!l || l.startsWith('#')) continue;
+                        
+                        // Print
+                        if (l.startsWith('print(') && l.endsWith(')')) {
+                            const inner = l.slice(6, -1);
+                            const result = this.evalExpr(inner);
+                            output.push({type:'success', text: String(result)});
+                            continue;
+                        }
+                        
+                        // Variable declaration
+                        const varMatch = l.match(/^(var|let)\s+(\w+)\s*=\s*(.+)$/);
+                        if (varMatch) {
+                            this.env[varMatch[2]] = this.evalExpr(varMatch[3]);
+                            continue;
+                        }
+                        
+                        // Assignment
+                        if (l.includes('=') && !l.startsWith('if') && !l.startsWith('for')) {
+                            const idx = l.indexOf('=');
+                            const name = l.slice(0, idx).trim();
+                            const value = l.slice(idx + 1).trim();
+                            this.env[name] = this.evalExpr(value);
+                            continue;
+                        }
+                        
+                        // For loop
+                        const forMatch = l.match(/^for\s+(\w+)\s+in\s+(\d+)\.\.(\d+)/);
+                        if (forMatch) {
+                            const varName = forMatch[1];
+                            const start = parseInt(forMatch[2]);
+                            const end = parseInt(forMatch[3]);
+                            for (let j = start; j < end; j++) {
+                                this.env[varName] = j;
+                            }
+                        }
+                    }
+                    
+                    return { success: true, output };
                 } catch (e) {
-                    this.output.push({type:'error', text: e.message});
-                    return { success: false, error: e.message, output: this.output };
-                }
-            },
-            
-            parse(code) {
-                const lines = code.split('\n'), ast = [];
-                for (const line of lines) {
-                    const l = line.trim();
-                    if (!l || l.startsWith('#')) continue;
-                    
-                    const printMatch = l.match(/^print\((.+)\)$/);
-                    if (printMatch) { ast.push({type:'print', value: printMatch[1]}); continue; }
-                    
-                    const varMatch = l.match(/^(var|let)\s+(\w+)\s*=\s*(.+)$/);
-                    if (varMatch) { ast.push({type:'var', name:varMatch[2], value:varMatch[3]}); continue; }
-                    
-                    if (l.includes('=') && !l.startsWith('if')) {
-                        const p = l.split('=');
-                        ast.push({type:'assign', name:p[0].trim(), value:p[1].trim()});
-                    }
-                    
-                    const forMatch = l.match(/^for\s+(\w+)\s+in\s+(\d+)\.\.(\d+)/);
-                    if (forMatch) { ast.push({type:'for', var:forMatch[1], start:+forMatch[2], end:+forMatch[3]}); }
-                }
-                return ast;
-            },
-            
-            evalAST(ast) {
-                for (const node of ast) {
-                    switch (node.type) {
-                        case 'var': this.env[node.name] = this.evalExpr(node.value); break;
-                        case 'print': this.log(this.evalExpr(node.value)); break;
-                        case 'assign': this.env[node.name] = this.evalExpr(node.value); break;
-                    }
+                    output.unshift({type:'error', text: e.message});
+                    return { success: false, output };
                 }
             },
             
             evalExpr(expr) {
                 expr = expr.trim();
+                
+                // String literal
                 if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
-                    return expr.slice(1,-1).replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+                    return expr.slice(1, -1).replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
                 }
-                if (!isNaN(expr) && expr !== '') return +expr;
+                
+                // Number
+                if (!isNaN(expr) && expr !== '') return parseFloat(expr);
+                
+                // Boolean
                 if (expr === 'true') return true;
                 if (expr === 'false') return false;
+                
+                // Variable lookup
                 if (this.env.hasOwnProperty(expr)) return this.env[expr];
                 
-                if (expr.includes(' + ') && !expr.includes('"')) return expr.split(' + ').map(p=>this.evalExpr(p)).join('');
-                if (expr.match(/^[\d\s\+\-\*\/]+$/)) return eval(expr.replace(/\s+/g,''));
-                
-                if (expr.startsWith('str(')) return String(this.evalExpr(expr.match(/str\((.+)\)/)[1]));
-                if (expr.startsWith('len(')) { const a=this.evalExpr(expr.match(/len\((.+)\)/)[1]); return a.length||String(a).length; }
-                if (expr.startsWith('int(')) return parseInt(this.evalExpr(expr.match(/int\((.+)\)/)[1]));
-                if (expr.startsWith('abs(')) return Math.abs(this.evalExpr(expr.match(/abs\((.+)\)/)[1]));
-                
-                if (expr.startsWith('[') && expr.endsWith(']')) {
-                    const c = expr.slice(1,-1);
-                    return c ? c.split(',').map(s => this.evalExpr(s.trim())) : [];
+                // String concatenation with +
+                if (expr.includes(' + ')) {
+                    return expr.split(' + ').map(p => String(this.evalExpr(p.trim()))).join('');
                 }
                 
-                const idxMatch = expr.match(/^(.+)\[(\d+)\]$/);
-                if (idxMatch) return this.evalExpr(idxMatch[1])[+idxMatch[2]];
+                // Arithmetic operations
+                if (/^[\d\s\+\-\*\/\%\(\)]+$/.test(expr)) {
+                    try { return eval(expr); } catch {}
+                }
+                
+                // Function calls
+                // str()
+                let match = expr.match(/^str\((.+)\)$/);
+                if (match) return String(this.evalExpr(match[1]));
+                
+                // int()
+                match = expr.match(/^int\((.+)\)$/);
+                if (match) return parseInt(this.evalExpr(match[1]));
+                
+                // float()
+                match = expr.match(/^float\((.+)\)$/);
+                if (match) return parseFloat(this.evalExpr(match[1]));
+                
+                // len()
+                match = expr.match(/^len\((.+)\)$/);
+                if (match) {
+                    const val = this.evalExpr(match[1]);
+                    return Array.isArray(val) ? val.length : String(val).length;
+                }
+                
+                // abs()
+                match = expr.match(/^abs\((.+)\)$/);
+                if (match) return Math.abs(this.evalExpr(match[1]));
+                
+                // List literal
+                if (expr.startsWith('[') && expr.endsWith(']')) {
+                    const content = expr.slice(1, -1);
+                    if (!content) return [];
+                    return content.split(',').map(s => this.evalExpr(s.trim()));
+                }
+                
+                // Array index access
+                match = expr.match(/^(.+)\[(\d+)\]$/);
+                if (match) {
+                    const arr = this.evalExpr(match[1]);
+                    return arr[parseInt(match[2])];
+                }
                 
                 return expr;
             }
         };
 
         function runCode() {
-            const code = editor.value;
             const output = document.getElementById('output');
             setStatus('running', 'Running...');
             
             setTimeout(() => {
-                const result = IppRuntime.execute(code);
-                let html = result.output.map(l => `<div class="output-line ${l.type}">${escapeHtml(l.text)}</div>`).join('');
-                if (!html) html = '<div class="output-line info">// No output</div>';
-                output.innerHTML = html;
+                const result = IppRuntime.execute(editor.value);
+                const html = result.output.map(l => `<div class="output-line ${l.type}">${escapeHtml(l.text)}</div>`).join('');
+                output.innerHTML = html || '<div class="output-line info">// No output</div>';
                 setStatus(result.success ? 'ready' : 'error', result.success ? 'Ready' : 'Error');
             }, 50);
         }
@@ -461,14 +429,14 @@ print("\\nLength: " + str(len(nums)))
 
         function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
         
-        function clearOutput() { document.getElementById('output').innerHTML = '<div class="output-line info">// Click Run to execute</div>'; }
+        function clearOutput() { document.getElementById('output').innerHTML = '<div class="welcome"><h2>Ready!</h2><p>Click Run or press Ctrl+Enter</p></div>'; }
         
         function saveFile() {
             const blob = new Blob([editor.value], {type:'text/plain'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'program.ipp'; a.click();
-            showSnackbar('Saved to program.ipp');
+            showSnackbar('Saved!');
         }
         
         function loadFile() {
@@ -477,7 +445,7 @@ print("\\nLength: " + str(len(nums)))
             input.accept = '.ipp,.txt';
             input.onchange = e => {
                 const r = new FileReader();
-                r.onload = ev => { editor.value = ev.target.result; showSnackbar('File loaded'); };
+                r.onload = ev => { editor.value = ev.target.result; updateHighlight(); showSnackbar('Loaded!'); };
                 r.readAsText(e.target.files[0]);
             };
             input.click();
@@ -490,21 +458,19 @@ print("\\nLength: " + str(len(nums)))
         
         function copyOutput() { navigator.clipboard.writeText(document.getElementById('output').innerText).then(() => showSnackbar('Copied!')); }
         
-        function showSnackbar(msg, err=false) {
+        function showSnackbar(msg) {
             const s = document.getElementById('snackbar');
-            s.textContent = msg; s.className = 'snackbar' + (err?' error':'') + ' show';
-            setTimeout(() => s.classList.remove('show'), 3000);
+            s.textContent = msg; s.className = 'snackbar show';
+            setTimeout(() => s.classList.remove('show'), 2500);
         }
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', e => {
             if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runCode(); }
             if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFile(); }
             if (e.ctrlKey && e.key === 'o') { e.preventDefault(); loadFile(); }
         });
 
-        // Check for shared code
-        if (new URLSearchParams(location.search).get('code')) showSnackbar('Shared code loaded!');
+        if (new URLSearchParams(location.search).get('code')) showSnackbar('Code loaded!');
     </script>
 </body>
 </html>
