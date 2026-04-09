@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.2"
+VERSION = "1.5.2a"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -2157,6 +2157,7 @@ def print_usage():
         ("lint <f>",  "Lint code"),
         ("repl",      "Start REPL (default)"),
         ("lsp",       "Start LSP server"),
+        ("wasm <f>",  "Compile to WASM"),
     ]
     print(BOLD("Commands:"))
     for c, d in cmds:
@@ -2179,6 +2180,20 @@ def main():
         from ipp.lsp.server import main as lsp_main
         lsp_main()
         return 0
+    if cmd == 'wasm' and len(args) >= 2:
+        from ipp.wasm import compile_to_wasm
+        import os
+        input_file = args[1]
+        output_file = args[2] if len(args) > 2 else input_file.replace('.ipp', '.wat')
+        try:
+            with open(input_file, 'r') as f:
+                source = f.read()
+            wasm = compile_to_wasm(source, output_file)
+            print(f"Compiled to {output_file}")
+            return 0
+        except Exception as e:
+            print(f"Error: {e}")
+            return 1
     if cmd == 'run' and len(args) >= 2:
         return run_file(args[1])
     if cmd == 'check' and len(args) >= 2:

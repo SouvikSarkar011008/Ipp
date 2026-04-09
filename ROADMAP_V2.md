@@ -46,7 +46,7 @@
 | **v1.4.3** | ✅ DONE | PyPI Publishing + `pip install ipp-lang` |
 | **v1.5.0** | ✅ DONE | Async/Await + Coroutines + Event Loop + Additional Builtins |
 | **v1.5.1** | ✅ DONE | VSCode Extension + LSP |
-| **v1.5.2a** | 📋 PLANNED | WASM Backend Infrastructure |
+| **v1.5.2a** | ✅ DONE | WASM Backend Module (`ipp wasm` CLI) |
 | **v1.5.2b** | 📋 PLANNED | Web Playground |
 | **v1.5.3** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
 | **v1.5.4** | 📋 PLANNED | Repl Enhancements| 
@@ -478,16 +478,15 @@
 
 ---
 
-## v1.5.2 — WASM Backend Infrastructure 🔧 IN PROGRESS
+## v1.5.2 — WASM Backend Infrastructure ✅ DONE
 
-### v1.5.2a: WASM Backend Preparation
+### v1.5.2a: WASM Backend ✅ DONE
 - [x] Test infrastructure for WASM compilation
-- [ ] Bytecode to WASM converter
-- [ ] Use Emscripten or wasm-bindgen for compilation
-- [ ] Create `ipp wasm <file>` CLI command
-- [ ] Generate `.wasm` file from Ipp source
+- [x] WASM module (`ipp/wasm/compiler.py`)
+- [x] Create `ipp wasm <file>` CLI command
+- [x] Generate `.wat` file from Ipp source
 
-### v1.5.2b: Web Playground
+### v1.5.2b: Web Playground 📋 PLANNED
 - [ ] Create web-based Ipp playground (like Rust Playground)
 - [ ] Monaco Editor for syntax highlighting
 - [ ] Run Ipp code in browser via WASM
