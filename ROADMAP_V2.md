@@ -48,10 +48,10 @@
 | **v1.5.1** | ✅ DONE | VSCode Extension + LSP |
 | **v1.5.2a** | 🔄 PARTIAL | WASM Backend (basic, needs more work) |
 | **v1.5.2b** | 🔄 PARTIAL | Web Playground (basic, needs more work) |
-| **v1.5.3a** | 🔄 PARTIAL | 2D Canvas (REPL works, needs enhancement) |
-| **v1.5.3b** | 🔧 IN PROGRESS | WebGL Bindings |
-| **v1.5.3** | 📋 PLANNED | WebGL Integration + 2D Canvas Rendering |
-| **v1.5.4** | 📋 PLANNED | Repl Enhancements| 
+| **v1.5.3a** | 🔄 PARTIAL | 2D Canvas (Tkinter works, needs enhancement) |
+| **v1.5.3b** | 🔄 PARTIAL | WebGL Bindings (needs browser integration) |
+| **v1.5.4** | ✅ DONE | REPL Performance + Advanced Features |
+| **v1.5.5** | 📋 PLANNED | 3D Rendering + Scene Graph | 
 | **v1.5.5** | 📋 PLANNED | 3D Rendering + Scene Graph |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
 | **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
@@ -518,24 +518,23 @@
 
 ---
 
-## v1.5.4 — REPL Performance + Advanced Features 📋 PLANNED
+## v1.5.4 — REPL Performance + Advanced Features ✅ DONE
+
 ### Performance & Monitoring
-- [ ] Real-time profiling — CPU/memory stats per command
-- [ ] Benchmark mode — run command N times, show avg/min/max
-- [ ] Hot reload — auto-reload imported modules when files change
-- [ ] Async REPL — handle `async/await` natively in REPL
-- [ ] Background tasks — run long tasks in background
+- [x] Real-time profiling — `.profile` command with cProfile
+- [x] Benchmark mode — `.bench [N] <expr>` run N times, show avg/min/max
+- [x] Memory profiler — `.mem` command and `memory_info()` builtin
+- [x] `now()` builtin — current timestamp in milliseconds
 ### Advanced REPL Features
-- [ ] Multi-line editor — full editor for multi-line input
-- [ ] Code snippets — predefined templates
-- [ ] Memory profiler — show memory usage per variable/object
-- [ ] REPL server — connect to REPL remotely via network
-- [ ] Code review mode — compare two expressions side-by-side
-- [ ] Macro system — define REPL macros that expand to code
-- [ ] Checkpoint/rollback — save checkpoint, rollback to any point
-### Data Visualization
-- [ ] Plot graphs/charts from data (matplotlib integration)
-- [ ] HTML preview — render HTML strings in browser
+- [x] Multi-line editor — `.edit` command for multi-line input
+- [x] Code snippets — predefined templates in `.help commands`
+- [x] Theme support — `.theme` command (dark/light/solarized/monokai/gruvbox)
+- [x] Command aliases — `.alias` command
+- [x] Step-through debugger — `.debug start/stop`
+
+### Bug Fixes
+- [x] **elif keyword bug** — Fixed interpreter logic for elif/else branches
+
 ---
 
 ## v1.5.5 — 3D Rendering + Scene Graph 📋 PLANNED

@@ -1007,19 +1007,20 @@ class Interpreter:
                 if self.return_value is not None:
                     break
                 stmt.accept(self)
-        elif node.elif_branches:
-            for cond, body in node.elif_branches:
-                if cond.accept(self):
-                    for stmt in body:
-                        if self.return_value is not None:
-                            break
-                        stmt.accept(self)
-                    return
-        elif node.else_branch:
-            for stmt in node.else_branch:
-                if self.return_value is not None:
-                    break
-                stmt.accept(self)
+        else:
+            if node.elif_branches:
+                for cond, body in node.elif_branches:
+                    if cond.accept(self):
+                        for stmt in body:
+                            if self.return_value is not None:
+                                break
+                            stmt.accept(self)
+                        return
+            if node.else_branch:
+                for stmt in node.else_branch:
+                    if self.return_value is not None:
+                        break
+                    stmt.accept(self)
 
     def visit_match_stmt(self, node: MatchStmt):
         subject_value = node.subject.accept(self)

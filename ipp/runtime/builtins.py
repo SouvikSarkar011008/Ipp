@@ -1146,6 +1146,22 @@ def ipp_clock():
     return time.perf_counter()
 
 
+def ipp_memory_info():
+    """Get current memory usage information"""
+    try:
+        import psutil
+        process = psutil.Process()
+        mem_info = process.memory_info()
+        return {
+            "rss": mem_info.rss,
+            "vms": mem_info.vms,
+            "rss_mb": mem_info.rss / (1024 * 1024),
+            "vms_mb": mem_info.vms / (1024 * 1024),
+        }
+    except ImportError:
+        return {"error": "psutil not installed", "rss": 0, "vms": 0, "rss_mb": 0, "vms_mb": 0}
+
+
 # Game Dev Math Functions
 
 def ipp_lerp(a, b, t):
@@ -2842,6 +2858,7 @@ BUILTINS = {
     "time": ipp_time,
     "sleep": ipp_sleep,
     "clock": ipp_clock,
+    "memory_info": ipp_memory_info,
     "split": ipp_split,
     "join": ipp_join,
     "upper": ipp_upper,

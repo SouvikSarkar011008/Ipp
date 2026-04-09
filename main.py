@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.3b"
+VERSION = "1.5.4"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -619,6 +619,7 @@ def print_help():
         (".save <file>",    "Save command history to file"),
         (".doc <fn>",       "Show builtin documentation"),
         (".time <expr>",    "Benchmark expression"),
+        (".bench [N] <expr>","Benchmark N times (default 10), show avg/min/max"),
         (".which <name>",   "Check if builtin/var/function"),
         (".last / $_",      "Reference last result"),
         (".undo",           "Undo last command"),
@@ -626,6 +627,7 @@ def print_help():
         (".edit",           "Edit last command in editor"),
         (".profile",        "Profile last command"),
         (".alias n cmd",    "Create command alias"),
+        (".mem",            "Show memory usage"),
     ]
     for cmd, desc in tools:
         c_cmd  = colour(C_CMD, cmd.ljust(16))
@@ -1352,8 +1354,34 @@ def run_repl():
                     interp.return_value = None
                     interp.last_value = None
                     if val is not None:
-                        print(f"  {colour(DIM, '→')} {format_output(val)}")
+                        print(f"  {colour(DIM, '>')} {format_output(val)}")
                     print(f"  {colour(DIM, f'  {elapsed*1000:.2f}ms')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .bench <expr> — Run benchmark N times, show avg/min/max
+            m = re.match(r'\.bench\s+(\d+)?\s+(.+)$', stripped)
+            if m:
+                try:
+                    runs = int(m.group(1)) if m.group(1) else 10
+                    expr = m.group(2)
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    times = []
+                    for _ in range(runs):
+                        t_start = time.perf_counter()
+                        interp.run(ast)
+                        elapsed = time.perf_counter() - t_start
+                        times.append(elapsed * 1000)
+                        interp.return_value = None
+                        interp.last_value = None
+                    avg = sum(times) / len(times)
+                    min_t = min(times)
+                    max_t = max(times)
+                    print(f"  {colour(DIM, f'Benchmark: {runs} runs')}")
+                    print(f"    {colour(C_OK, 'avg:')} {avg:.2f}ms  {colour(C_OK, 'min:')} {min_t:.2f}ms  {colour(C_OK, 'max:')} {max_t:.2f}ms")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, str(e))}")
                 continue
@@ -1653,14 +1681,24 @@ def run_repl():
             if m:
                 theme = m.group(1).lower()
                 themes = {
-                    'dark': {'prompt': '\033[38;2;100;200;255m', 'error': '\033[38;2;255;100;100m'},
-                    'light': {'prompt': '\033[38;2;0;100;200m', 'error': '\033[38;2;200;0;0m'},
-                    'solarized': {'prompt': '\033[38;2;100;150;200m', 'error': '\033[38;2;200;100;50m'},
+                    'dark': {'prompt': '100,200,255', 'error': '255,100,100', 'ok': '80,220,120', 'warn': '255,200,80'},
+                    'light': {'prompt': '0,100,200', 'error': '200,0,0', 'ok': '0,150,0', 'warn': '200,100,0'},
+                    'solarized': {'prompt': '100,150,200', 'error': '200,100,50', 'ok': '100,200,100', 'warn': '180,150,0'},
+                    'monokai': {'prompt': '249,38,114', 'error': '249,38,114', 'ok': '166,226,46', 'warn': '253,151,31'},
+                    'gruvbox': {'prompt': '191,145,0', 'error': '204,46,46', 'ok': '142,191,107', 'warn': '215,133,18'},
                 }
+                global _current_theme
                 if theme in themes:
-                    print(f"  {colour(C_OK, f'Theme set to {theme}')}")
+                    _current_theme = theme
+                    t = themes[theme]
+                    print(f"  {colour(C_OK, f'✓ Theme set to {theme}')}")
+                    print(f"    {colour(C_PROMPT, f'Prompt:  RGB({t[\"prompt\"]})')}")
+                    print(f"    {colour(C_ERROR, f'Error:   RGB({t[\"error\"]})')}")
+                    print(f"    {colour(C_OK,    f'OK:      RGB({t[\"ok\"]})')}")
+                    print(f"    {colour(C_WARN,  f'Warn:    RGB({t[\"warn\"]})')}")
                 else:
-                    print(f"  {colour(C_WARN, f'Unknown theme: {theme}. Available: {", ".join(themes.keys())}')}")
+                    print(f"  {colour(C_WARN, f'Unknown theme: {theme}')}")
+                    print(f"  {colour(DIM, f'Available: {", ".join(themes.keys())}')}")
                 continue
 
             # .tutorial — Start interactive tutorial
@@ -2020,6 +2058,22 @@ def run_repl():
                         print(f"  {colour(C_ERROR, str(e))}")
                 else:
                     print(f"  {colour(C_WARN, 'No command history to profile')}")
+                continue
+
+            # .mem — Show memory usage
+            if stripped == '.mem':
+                try:
+                    from ipp.runtime.builtins import ipp_memory_info
+                    mem = ipp_memory_info()
+                    if "error" in mem:
+                        print(f"  {colour(C_WARN, mem['error'])}")
+                        print(f"  {colour(DIM, 'Install psutil: pip install psutil')}")
+                    else:
+                        print(f"  {colour(C_OK, 'Memory Usage:')}")
+                        print(f"    RSS:  {mem['rss_mb']:.2f} MB")
+                        print(f"    VMS:  {mem['vms_mb']:.2f} MB")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
                 continue
 
         if not stripped and not buf:
