@@ -112,4 +112,24 @@ d["c"] = 3
 assert(d["c"] == 3, "dict assignment should work")
 print("  PASS")
 
+# Test 11: For loop with range (FIXED - was removed earlier)
+print("Test 11 - For loop with range...")
+var sum = 0
+for i in range(1, 6) {
+    sum = sum + i
+}
+assert(sum == 15, "for loop with range should sum 1+2+3+4+5 = 15")
+print("  PASS")
+
+# Test 12: While loop (FIXED)
+print("Test 12 - While loop...")
+var count = 0
+var n = 3
+while n > 0 {
+    count = count + 1
+    n = n - 1
+}
+assert(count == 3, "while loop should run 3 times")
+print("  PASS")
+
 print("\n=== v1.5.2a WASM Backend tests complete! ===")
