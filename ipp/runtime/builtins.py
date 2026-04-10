@@ -1260,6 +1260,178 @@ def ipp_quat_to_mat4(q):
     return q.to_mat4()
 
 
+class SceneNode:
+    """Scene graph node with transform"""
+    __slots__ = ('name', 'position', 'rotation', 'scale', 'children', 'parent')
+    
+    def __init__(self, name="node"):
+        self.name = name
+        self.position = Vector3(0, 0, 0)
+        self.rotation = Quaternion(0, 0, 0, 1)
+        self.scale = Vector3(1, 1, 1)
+        self.children = []
+        self.parent = None
+    
+    def add(self, child):
+        if isinstance(child, SceneNode):
+            child.parent = self
+            self.children.append(child)
+    
+    def remove(self, child):
+        if child in self.children:
+            child.parent = None
+            self.children.remove(child)
+    
+    def get_transform(self):
+        """Get world transform matrix."""
+        t = mat4_translate(self.position.x, self.position.y, self.position.z)
+        r = self.rotation.to_mat4()
+        s = mat4_scale(self.scale.x, self.scale.y, self.scale.z)
+        return mat4_multiply(mat4_multiply(t, r), s)
+    
+    def look_at(self, target):
+        """Make node look at target."""
+        if not isinstance(target, Vector3):
+            target = Vector3(target[0], target[1], target[2])
+        direction = (target - self.position).normalize()
+        if direction.length() < 0.001:
+            return
+        up = Vector3(0, 1, 0)
+        right = up.cross(direction).normalize()
+        if right.length() < 0.001:
+            right = Vector3(1, 0, 0)
+        new_up = direction.cross(right)
+        
+        m = [
+            right.x, new_up.x, direction.x, self.position.x,
+            right.y, new_up.y, direction.y, self.position.y,
+            right.z, new_up.z, direction.z, self.position.z,
+            0, 0, 0, 1
+        ]
+        return Matrix4(m)
+    
+    def __repr__(self):
+        return f"SceneNode({self.name}, children={len(self.children)})"
+
+
+class Camera(SceneNode):
+    """Camera node for 3D rendering"""
+    __slots__ = ('fov', 'aspect', 'near', 'far', 'projection')
+    
+    def __init__(self, name="camera", fov=60, aspect=1.5, near=0.1, far=100):
+        super().__init__(name)
+        self.fov = fov
+        self.aspect = aspect
+        self.near = near
+        self.far = far
+        self.projection = None
+    
+    def get_projection(self):
+        return mat4_perspective(self.fov, self.aspect, self.near, self.far)
+    
+    def get_view(self):
+        return mat4_look_at(self.position, self.position + Vector3(0, 0, -1), Vector3(0, 1, 0))
+    
+    def __repr__(self):
+        return f"Camera({self.name}, fov={self.fov})"
+
+
+class Mesh(SceneNode):
+    """Mesh node for 3D geometry"""
+    __slots__ = ('vertices', 'indices', 'color')
+    
+    def __init__(self, name="mesh", vertices=None, indices=None):
+        super().__init__(name)
+        self.vertices = vertices if vertices else []
+        self.indices = indices if indices else []
+        self.color = Color(255, 255, 255)
+    
+    def __repr__(self):
+        return f"Mesh({self.name}, verts={len(self.vertices)}, indices={len(self.indices)})"
+
+
+class Light(SceneNode):
+    """Light node for 3D rendering"""
+    __slots__ = ('light_type', 'color', 'intensity')
+    
+    def __init__(self, name="light", light_type="directional", color=None, intensity=1):
+        super().__init__(name)
+        self.light_type = light_type
+        self.color = color if color else Color(255, 255, 255)
+        self.intensity = float(intensity)
+    
+    def __repr__(self):
+        return f"Light({self.name}, {self.light_type})"
+
+
+class Scene:
+    """Scene container for 3D rendering"""
+    __slots__ = ('name', 'nodes', 'camera')
+    
+    def __init__(self, name="scene"):
+        self.name = name
+        self.nodes = []
+        self.camera = None
+    
+    def add(self, node):
+        if isinstance(node, (SceneNode, Camera, Mesh, Light)):
+            self.nodes.append(node)
+            return True
+        return False
+    
+    def remove(self, node):
+        if node in self.nodes:
+            self.nodes.remove(node)
+            return True
+        return False
+    
+    def set_camera(self, camera):
+        if isinstance(camera, Camera):
+            self.camera = camera
+            return True
+        return False
+    
+    def get_all_nodes(self):
+        result = list(self.nodes)
+        for node in self.nodes:
+            result.extend(self._get_children(node))
+        return result
+    
+    def _get_children(self, node):
+        result = []
+        for child in node.children:
+            result.append(child)
+            result.extend(self._get_children(child))
+        return result
+    
+    def render(self):
+        """Basic rendering info."""
+        return f"Scene: {self.name}, nodes: {len(self.get_all_nodes())}, camera: {self.camera}"
+    
+    def __repr__(self):
+        return f"Scene({self.name}, nodes={len(self.nodes)})"
+
+
+def ipp_scene(name="scene"):
+    return Scene(name)
+
+
+def ipp_node(name="node"):
+    return SceneNode(name)
+
+
+def ipp_camera(name="camera", fov=60, aspect=1.5, near=0.1, far=100):
+    return Camera(name, fov, aspect, near, far)
+
+
+def ipp_mesh(name="mesh", vertices=None, indices=None):
+    return Mesh(name, vertices, indices)
+
+
+def ipp_light(name="light", light_type="directional", intensity=1):
+    return Light(name, light_type, None, intensity)
+
+
 def ipp_color(r=0, g=0, b=0, a=255):
     return Color(r, g, b, a)
 
@@ -3203,6 +3375,11 @@ BUILTINS = {
     "quat_multiply": ipp_quat_multiply,
     "quat_slerp": ipp_quat_slerp,
     "quat_to_mat4": ipp_quat_to_mat4,
+    "scene": ipp_scene,
+    "node": ipp_node,
+    "camera": ipp_camera,
+    "mesh": ipp_mesh,
+    "light": ipp_light,
     "color": ipp_color,
     "rect": ipp_rect,
     

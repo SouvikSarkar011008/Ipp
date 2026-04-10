@@ -59,7 +59,7 @@
 | **v1.5.5.0** | ✅ DONE | 3D Math Basics (vec4, mat4, multiply) |
 | **v1.5.5.1** | ✅ DONE | Matrix Operations (perspective, look_at, transform) |
 | **v1.5.5.2** | ✅ DONE | Quaternion (create, slerp, to_mat4) |
-| **v1.5.5.3** | 📋 PLANNED | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
+| **v1.5.5.3** | ✅ DONE | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
 | **v1.5.5.4** | 📋 PLANNED | Basic Renderer (wireframe/projection render) |
 | **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
@@ -603,13 +603,13 @@
 - [x] `quat_slerp(a, b, t)` — spherical interpolation
 - [x] `quat_to_mat4(q)` — convert to rotation matrix
 
-### v1.5.5.3 - Scene Graph (Classes)
-- [ ] `Scene()` — scene container
-- [ ] `Node()` — scene node with transform (position, rotation, scale)
-- [ ] `Camera(fov, aspect, near, far)` — camera node
-- [ ] `Mesh(vertices, indices)` — mesh node
-- [ ] `Light(type, color, intensity)` — light node
-- [ ] `scene.add(node)` — add node to scene
+### v1.5.5.3 - Scene Graph (Classes) ✅ DONE
+- [x] `Scene()` — scene container
+- [x] `Node()` — scene node with transform (position, rotation, scale)
+- [x] `Camera(fov, aspect, near, far)` — camera node
+- [x] `Mesh(vertices, indices)` — mesh node
+- [x] `Light(type, color, intensity)` — light node
+- [x] `scene.add(node)` — add node to scene
 
 ### v1.5.5.4 - Scene Graph (Basic Renderer)
 - [ ] `scene.render()` — basic render (simple 3D->2D projection)
