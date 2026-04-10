@@ -540,6 +540,12 @@ Ipp REPL includes 50+ commands. Here are all of them:
 .async <expr>          # Run async expression
 ```
 
+### Advanced Features (v1.5.4.5)
+```ipp
+.serve [port]         # Start REPL server (default 8080)
+.compare expr1 expr2  # Compare two expressions
+```
+
 ### Display & Formatting
 ```ipp
 .debug start            # Start step-through debugger

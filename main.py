@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.4.4"
+VERSION = "1.5.4.5"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -673,6 +673,8 @@ def print_help():
         (".bg <expr>",     "Run in background"),
         (".jobs",          "Show background jobs"),
         (".async <expr>",  "Run async expression"),
+        (".serve [port]",  "Start REPL server on port"),
+        (".compare a b",   "Compare two expressions"),
         ("Tab",             "Auto-complete (builtins, vars, keys)"),
         ("(",               "Signature help when typing"),
     ]
@@ -1854,6 +1856,77 @@ func __async_task__() {{
                             print(f"  {colour(C_WARN, 'Expression is not async')}")
                     else:
                         print(f"  {colour(C_WARN, 'async_run not available')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .serve [port] — Start REPL server
+            m = re.match(r'\.serve(?:\s+(\d+))?$', stripped)
+            if m:
+                port = int(m.group(1)) if m.group(1) else 8080
+                import socket
+                import threading
+                server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                server_socket.bind(('0.0.0.0', port))
+                server_socket.listen(5)
+                print(f"  {colour(C_OK, f'REPL server started on port {port}')}")
+                print(f"  {colour(DIM, 'Connect with: telnet localhost ' + str(port))}")
+                
+                def handle_client(client_socket):
+                    try:
+                        client_socket.send(b"Ipp REPL v1.5.4.5\r\nType 'exit' to quit\r\n\r\n")
+                        while True:
+                            client_socket.send(b">>> ")
+                            data = client_socket.recv(1024).decode().strip()
+                            if not data or data == 'exit':
+                                break
+                            try:
+                                tokens = tokenize(data)
+                                ast = parse(tokens)
+                                interp = Interpreter()
+                                interp.run(ast)
+                                result = str(interp.last_value) if interp.last_value else "nil"
+                                client_socket.send((result + "\r\n").encode())
+                            except Exception as e:
+                                client_socket.send((f"Error: {str(e)}\r\n").encode())
+                    except:
+                        pass
+                    finally:
+                        client_socket.close()
+                
+                # Start server in background
+                t = threading.Thread(target=lambda: server_socket.listen(), daemon=True)
+                t.start()
+                print(f"  {colour(DIM, 'Server running in background')}")
+                continue
+
+            # .compare a b — Compare two expressions
+            m = re.match(r'\.compare\s+(.+)\s+(.+)$', stripped)
+            if m:
+                expr1 = m.group(1)
+                expr2 = m.group(2)
+                try:
+                    tokens1 = tokenize(expr1)
+                    ast1 = parse(tokens1)
+                    interp1 = Interpreter()
+                    interp1.run(ast1)
+                    result1 = interp1.last_value
+                    
+                    tokens2 = tokenize(expr2)
+                    ast2 = parse(tokens2)
+                    interp2 = Interpreter()
+                    interp2.run(ast2)
+                    result2 = interp2.last_value
+                    
+                    print(f"  {colour(C_CMD, 'Expression 1:')} {expr1}")
+                    print(f"    → {format_output(result1)}")
+                    print(f"  {colour(C_CMD, 'Expression 2:')} {expr2}")
+                    print(f"    → {format_output(result2)}")
+                    if result1 == result2:
+                        print(f"  {colour(C_OK, '✓ Results are equal')}")
+                    else:
+                        print(f"  {colour(C_WARN, '✗ Results differ')}")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, str(e))}")
                 continue

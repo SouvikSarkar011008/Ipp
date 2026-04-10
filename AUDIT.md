@@ -939,6 +939,7 @@ Ordered by severity × frequency of impact:
 *v1.5.4 completed: 2026-04-09 - REPL Performance + Advanced Features (.bench, .mem, .reload, .checkpoint, .restore, .macro, memory_info, theme, elif fix)*
 *v1.5.4.3 completed: 2026-04-10 - Easy Enhancements (.html, .hist, better error hints)*
 *v1.5.4.4 completed: 2026-04-10 - Medium Features (.bg, .jobs, .plot, .async, matplotlib)*
+*v1.5.4.5 completed: 2026-04-10 - Advanced Features (.serve, .compare, REPL server)*
 *v1.5.5 planned: 3D Rendering + Scene Graph*
 *v1.6.0 planned: C++ Integration + Native Extensions*
 *v1.6.1 planned: Cross-Platform (iOS, macOS, Linux, Windows)*
