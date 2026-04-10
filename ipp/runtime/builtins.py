@@ -1149,6 +1149,117 @@ def ipp_mat4_scale(x=1, y=1, z=1):
     return m
 
 
+class Quaternion:
+    """Quaternion for 3D rotation"""
+    __slots__ = ('x', 'y', 'z', 'w')
+    
+    def __init__(self, x=0, y=0, z=0, w=1):
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+        self.w = float(w)
+    
+    @staticmethod
+    def from_axis_angle(axis, angle):
+        """Create quaternion from axis-angle (angle in degrees)."""
+        if not isinstance(axis, Vector3):
+            axis = Vector3(axis[0], axis[1], axis[2])
+        axis = axis.normalize()
+        rad = math.radians(angle) / 2
+        s = math.sin(rad)
+        return Quaternion(axis.x * s, axis.y * s, axis.z * s, math.cos(rad))
+    
+    def multiply(self, other):
+        """Quaternion multiplication."""
+        return Quaternion(
+            self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y,
+            self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x,
+            self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w,
+            self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
+        )
+    
+    def __mul__(self, other):
+        return self.multiply(other)
+    
+    def slerp(self, other, t):
+        """Spherical linear interpolation."""
+        dot = self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+        
+        if dot < 0:
+            other = Quaternion(-other.x, -other.y, -other.z, -other.w)
+            dot = -dot
+        
+        if dot > 0.9995:
+            return Quaternion(
+                self.x + t * (other.x - self.x),
+                self.y + t * (other.y - self.y),
+                self.z + t * (other.z - self.z),
+                self.w + t * (other.w - self.w)
+            ).normalize()
+        
+        theta_0 = math.acos(dot)
+        theta = theta_0 * t
+        s0 = math.cos(theta) - dot * math.sin(theta) / math.sin(theta_0)
+        s1 = math.sin(theta) / math.sin(theta_0)
+        
+        return Quaternion(
+            s0 * self.x + s1 * other.x,
+            s0 * self.y + s1 * other.y,
+            s0 * self.z + s1 * other.z,
+            s0 * self.w + s1 * other.w
+        )
+    
+    def normalize(self):
+        l = math.sqrt(self.x*self.x + self.y*self.y + self.z*self.z + self.w*self.w)
+        if l == 0:
+            return Quaternion(0, 0, 0, 1)
+        return Quaternion(self.x/l, self.y/l, self.z/l, self.w/l)
+    
+    def to_mat4(self):
+        """Convert quaternion to rotation matrix."""
+        x, y, z, w = self.x, self.y, self.z, self.w
+        x2, y2, z2 = x*x, y*y, z*z
+        xy, xz, yz = x*y, x*z, y*z
+        wx, wy, wz = w*x, w*y, w*z
+        
+        m = [
+            1 - 2*(y2 + z2), 2*(xy + wz),   2*(xz - wy),   0,
+            2*(xy - wz),   1 - 2*(x2 + z2), 2*(yz + wx),   0,
+            2*(xz + wy),   2*(yz - wx),   1 - 2*(x2 + y2), 0,
+            0,             0,             0,             1
+        ]
+        return Matrix4(m)
+    
+    def __repr__(self):
+        return f"Quaternion({self.x:.3f}, {self.y:.3f}, {self.z:.3f}, {self.w:.3f})"
+
+
+def ipp_quat(x=0, y=0, z=0, w=1):
+    return Quaternion(x, y, z, w)
+
+
+def ipp_quat_from_axis_angle(axis, angle):
+    return Quaternion.from_axis_angle(axis, angle)
+
+
+def ipp_quat_multiply(a, b):
+    if not isinstance(a, Quaternion) or not isinstance(b, Quaternion):
+        raise TypeError("Expected Quaternion arguments")
+    return a.multiply(b)
+
+
+def ipp_quat_slerp(a, b, t):
+    if not isinstance(a, Quaternion) or not isinstance(b, Quaternion):
+        raise TypeError("Expected Quaternion arguments")
+    return a.slerp(b, t)
+
+
+def ipp_quat_to_mat4(q):
+    if not isinstance(q, Quaternion):
+        raise TypeError("Expected Quaternion argument")
+    return q.to_mat4()
+
+
 def ipp_color(r=0, g=0, b=0, a=255):
     return Color(r, g, b, a)
 
@@ -3087,6 +3198,11 @@ BUILTINS = {
     "mat4_translate": ipp_mat4_translate,
     "mat4_rotate": ipp_mat4_rotate,
     "mat4_scale": ipp_mat4_scale,
+    "quat": ipp_quat,
+    "quat_from_axis_angle": ipp_quat_from_axis_angle,
+    "quat_multiply": ipp_quat_multiply,
+    "quat_slerp": ipp_quat_slerp,
+    "quat_to_mat4": ipp_quat_to_mat4,
     "color": ipp_color,
     "rect": ipp_rect,
     

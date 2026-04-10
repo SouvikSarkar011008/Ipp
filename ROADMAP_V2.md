@@ -58,7 +58,7 @@
 | **v1.5.4.7** | ✅ DONE | Performance Optimizations (Bytecode Cache, .cache command) |
 | **v1.5.5.0** | ✅ DONE | 3D Math Basics (vec4, mat4, multiply) |
 | **v1.5.5.1** | ✅ DONE | Matrix Operations (perspective, look_at, transform) |
-| **v1.5.5.2** | 📋 PLANNED | Quaternion (create, slerp, to_mat4) |
+| **v1.5.5.2** | ✅ DONE | Quaternion (create, slerp, to_mat4) |
 | **v1.5.5.3** | 📋 PLANNED | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
 | **v1.5.5.4** | 📋 PLANNED | Basic Renderer (wireframe/projection render) |
 | **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) |
@@ -597,11 +597,11 @@
 - [x] `mat4_scale(x, y, z)` — scale
 
 ### v1.5.5.2 - Quaternion
-- [ ] `quat(x, y, z, w)` — quaternion creation
-- [ ] `quat_from_axis_angle(axis, angle)` — from axis-angle
-- [ ] `quat_multiply(a, b)` — quaternion multiplication
-- [ ] `quat_slerp(a, b, t)` — spherical interpolation
-- [ ] `quat_to_mat4(q)` — convert to rotation matrix
+- [x] `quat(x, y, z, w)` — quaternion creation
+- [x] `quat_from_axis_angle(axis, angle)` — from axis-angle
+- [x] `quat_multiply(a, b)` — quaternion multiplication
+- [x] `quat_slerp(a, b, t)` — spherical interpolation
+- [x] `quat_to_mat4(q)` — convert to rotation matrix
 
 ### v1.5.5.3 - Scene Graph (Classes)
 - [ ] `Scene()` — scene container
