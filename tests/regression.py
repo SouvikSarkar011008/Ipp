@@ -61,6 +61,7 @@ TESTS = [
     ("v1.5.5.2", "tests/v1_5_5/test_quaternion_v152.ipp"),
     ("v1.5.5.3", "tests/v1_5_5/test_scene_graph_v153.ipp"),
     ("v1.5.5.4", "tests/v1_5_5/test_basic_renderer_v154.ipp"),
+    ("v1.5.6", "tests/v1_5_6/test_primitives_v156.ipp"),
 ]
 
 def run_test(version, filepath):

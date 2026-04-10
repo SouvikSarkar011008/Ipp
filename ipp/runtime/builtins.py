@@ -1346,6 +1346,50 @@ class Mesh(SceneNode):
         self.indices = indices if indices else []
         self.color = Color(255, 255, 255)
     
+    def set_color(self, r, g, b, a=255):
+        self.color = Color(r, g, b, a)
+    
+    @staticmethod
+    def cube(size=1):
+        s = size / 2
+        verts = [
+            [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s],
+            [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]
+        ]
+        inds = [
+            0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6,
+            0, 4, 5, 0, 5, 1, 2, 6, 7, 2, 7, 3,
+            0, 3, 7, 0, 7, 4, 1, 5, 6, 1, 6, 2
+        ]
+        return Mesh("cube", verts, inds)
+    
+    @staticmethod
+    def sphere(radius=1, segments=16, rings=8):
+        verts = []
+        inds = []
+        for i in range(rings + 1):
+            phi = math.pi * i / rings
+            y = radius * math.cos(phi)
+            r = radius * math.sin(phi)
+            for j in range(segments + 1):
+                theta = 2 * math.pi * j / segments
+                x = r * math.cos(theta)
+                z = r * math.sin(theta)
+                verts.append([x, y, z])
+        for i in range(rings):
+            for j in range(segments):
+                a = i * (segments + 1) + j
+                b = a + segments + 1
+                inds.extend([a, b, a + 1, b, b + 1, a + 1])
+        return Mesh("sphere", verts, inds)
+    
+    @staticmethod
+    def plane(width=1, height=1):
+        hw, hh = width / 2, height / 2
+        verts = [[-hw, 0, -hh], [hw, 0, -hh], [hw, 0, hh], [-hw, 0, hh]]
+        inds = [0, 2, 1, 0, 3, 2]
+        return Mesh("plane", verts, inds)
+    
     def __repr__(self):
         return f"Mesh({self.name}, verts={len(self.vertices)}, indices={len(self.indices)})"
 
@@ -1470,6 +1514,18 @@ def ipp_mesh(name="mesh", vertices=None, indices=None):
 
 def ipp_light(name="light", light_type="directional", intensity=1):
     return Light(name, light_type, None, intensity)
+
+
+def ipp_mesh_cube(size=1):
+    return Mesh.cube(size)
+
+
+def ipp_mesh_sphere(radius=1, segments=16, rings=8):
+    return Mesh.sphere(radius, segments, rings)
+
+
+def ipp_mesh_plane(width=1, height=1):
+    return Mesh.plane(width, height)
 
 
 def ipp_color(r=0, g=0, b=0, a=255):
@@ -3419,6 +3475,9 @@ BUILTINS = {
     "node": ipp_node,
     "camera": ipp_camera,
     "mesh": ipp_mesh,
+    "mesh_cube": ipp_mesh_cube,
+    "mesh_sphere": ipp_mesh_sphere,
+    "mesh_plane": ipp_mesh_plane,
     "light": ipp_light,
     "color": ipp_color,
     "rect": ipp_rect,
