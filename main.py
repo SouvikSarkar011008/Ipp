@@ -196,6 +196,43 @@ C_LOGO5   = lambda t: _fg(27, t)
 def colour(fn, text):
     return fn(text)   # lambdas already no-op when IS_TTY=False
 
+def _serve_accept_loop(server_socket):
+    """Accept loop for REPL server - defined at module level to avoid closure issues"""
+    from ipp.parser.parser import parse
+    from ipp.lexer.lexer import tokenize
+    from ipp.interpreter.interpreter import Interpreter
+    
+    def handle_client(client_socket, addr):
+        try:
+            client_socket.send(b"Ipp REPL v1.5.4.5\r\nType 'exit' to quit\r\n\r\n")
+            while True:
+                client_socket.send(b">>> ")
+                data = client_socket.recv(1024).decode().strip()
+                if not data or data == 'exit':
+                    break
+                try:
+                    tokens = tokenize(data)
+                    ast = parse(tokens)
+                    interp = Interpreter()
+                    interp.run(ast)
+                    result = str(interp.last_value) if interp.last_value else "nil"
+                    client_socket.send((result + "\r\n").encode())
+                except Exception as e:
+                    client_socket.send((f"Error: {str(e)}\r\n").encode())
+        except:
+            pass
+        finally:
+            client_socket.close()
+    
+    import threading
+    while True:
+        try:
+            client_socket, addr = server_socket.accept()
+            t = threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True)
+            t.start()
+        except:
+            break
+
 def strip_ansi(s):
     return re.sub(r'\033\[[0-9;]*m', '', s)
 
@@ -1182,6 +1219,7 @@ def run_repl():
     _macros = {}  # For .macro
     _bg_jobs = []  # For .bg/.jobs
     _repl_server = None  # For .serve
+    _repl_accept_thread = None  # For .serve accept loop
     _PROMPT_FORMAT = "ipp"  # Default prompt format
     _PROMPT_ARROW = "❯" if _UNI else ">>>"  # Default prompt arrow
     _current_dir = os.getcwd()  # Track current directory for .cd
@@ -1865,7 +1903,16 @@ func __async_task__() {{
             m = re.match(r'\.serve(?:\s+(\d+))?$', stripped)
             if m:
                 port = int(m.group(1)) if m.group(1) else 8080
-                if not hasattr(_repl_server, 'fileno') or _repl_server.fileno() == -1:
+                server_running = False
+                
+                if _repl_server is not None:
+                    try:
+                        if _repl_server.fileno() != -1:
+                            server_running = True
+                    except:
+                        _repl_server = None
+                
+                if not server_running:
                     import socket
                     import threading
                     _repl_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1875,31 +1922,12 @@ func __async_task__() {{
                     print(f"  {colour(C_OK, f'REPL server started on port {port}')}")
                     print(f"  {colour(DIM, 'Connect with: telnet localhost ' + str(port))}")
                 
-                def handle_client(client_socket):
-                    try:
-                        client_socket.send(b"Ipp REPL v1.5.4.5\r\nType 'exit' to quit\r\n\r\n")
-                        while True:
-                            client_socket.send(b">>> ")
-                            data = client_socket.recv(1024).decode().strip()
-                            if not data or data == 'exit':
-                                break
-                            try:
-                                tokens = tokenize(data)
-                                ast = parse(tokens)
-                                interp = Interpreter()
-                                interp.run(ast)
-                                result = str(interp.last_value) if interp.last_value else "nil"
-                                client_socket.send((result + "\r\n").encode())
-                            except Exception as e:
-                                client_socket.send((f"Error: {str(e)}\r\n").encode())
-                    except:
-                        pass
-                    finally:
-                        client_socket.close()
+                # Start accept loop if not already running
+                if _repl_accept_thread is None or not _repl_accept_thread.is_alive():
+                    import threading
+                    _repl_accept_thread = threading.Thread(target=lambda: _serve_accept_loop(_repl_server), daemon=True)
+                    _repl_accept_thread.start()
                 
-                # Start server in background
-                t = threading.Thread(target=lambda: _repl_server.listen(), daemon=True)
-                t.start()
                 print(f"  {colour(DIM, 'Server running in background')}")
                 continue
 

@@ -48,16 +48,15 @@ print("Sum: " + str(sum(nums)))
 print("Max: " + str(max(nums)))
 print("Min: " + str(min(nums)))
 
-# Test 4: Pattern matching
+# Test 4: Pattern matching (as statement, not expression)
 print("\n--- Test 4: Pattern Matching ---")
 var day = 3
-var day_name = match day {
-    case 1 => "Monday"
-    case 2 => "Tuesday"
-    case 3 => "Wednesday"
-    default => "Other"
+match day {
+    case 1 => print("Monday")
+    case 2 => print("Tuesday")
+    case 3 => print("Wednesday")
+    default => print("Other")
 }
-print("Day 3 is: " + day_name)
 
 # Test 5: Enum
 print("\n--- Test 5: Enum ---")
