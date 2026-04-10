@@ -957,6 +957,124 @@ def ipp_vec3(x=0, y=0, z=0):
     return Vector3(x, y, z)
 
 
+class Vector4:
+    """4D Vector for 3D graphics"""
+    __slots__ = ('x', 'y', 'z', 'w')
+    
+    def __init__(self, x=0, y=0, z=0, w=1):
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+        self.w = float(w)
+    
+    def __add__(self, other):
+        return Vector4(self.x + other.x, self.y + other.y, self.z + other.z, self.w + other.w)
+    
+    def __sub__(self, other):
+        return Vector4(self.x - other.x, self.y - other.y, self.z - other.z, self.w - other.w)
+    
+    def __mul__(self, scalar):
+        return Vector4(self.x * scalar, self.y * scalar, self.z * scalar, self.w * scalar)
+    
+    def __rmul__(self, scalar):
+        return Vector4(self.x * scalar, self.y * scalar, self.z * scalar, self.w * scalar)
+    
+    def __truediv__(self, scalar):
+        return Vector4(self.x / scalar, self.y / scalar, self.z / scalar, self.w / scalar)
+    
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+    
+    def length(self):
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w)
+    
+    def normalize(self):
+        l = self.length()
+        if l == 0:
+            return Vector4(0, 0, 0, 0)
+        return Vector4(self.x / l, self.y / l, self.z / l, self.w / l)
+    
+    def to_vec3(self):
+        return Vector3(self.x, self.y, self.z)
+    
+    def __repr__(self):
+        return f"Vector4({self.x}, {self.y}, {self.z}, {self.w})"
+    
+    def __str__(self):
+        return f"Vector4({self.x}, {self.y}, {self.z}, {self.w})"
+
+
+class Matrix4:
+    """4x4 Matrix for 3D transformations"""
+    __slots__ = ('m',)
+    
+    def __init__(self, m=None):
+        if m is None:
+            self.m = [1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1]
+        else:
+            self.m = list(m)
+    
+    def __getitem__(self, idx):
+        return self.m[idx]
+    
+    def __setitem__(self, idx, val):
+        self.m[idx] = val
+    
+    @staticmethod
+    def identity():
+        return Matrix4()
+    
+    def multiply(self, other):
+        a = self.m
+        b = other.m
+        result = []
+        for i in range(4):
+            for j in range(4):
+                val = a[i*4+0] * b[0*4+j] + a[i*4+1] * b[1*4+j] + a[i*4+2] * b[2*4+j] + a[i*4+3] * b[3*4+j]
+                result.append(val)
+        return Matrix4(result)
+    
+    def __mul__(self, other):
+        return self.multiply(other)
+    
+    def transform_vector(self, v):
+        x, y, z, w = v.x, v.y, v.z, v.w
+        return Vector4(
+            self.m[0]*x + self.m[1]*y + self.m[2]*z + self.m[3]*w,
+            self.m[4]*x + self.m[5]*y + self.m[6]*z + self.m[7]*w,
+            self.m[8]*x + self.m[9]*y + self.m[10]*z + self.m[11]*w,
+            self.m[12]*x + self.m[13]*y + self.m[14]*z + self.m[15]*w
+        )
+    
+    def __repr__(self):
+        return f"Matrix4([{', '.join(str(x) for x in self.m[:4])}, ...])"
+    
+    def __str__(self):
+        lines = []
+        for i in range(4):
+            row = [f"{self.m[i*4+j]:7.3f}" for j in range(4)]
+            lines.append("[" + " ".join(row) + "]")
+        return "\n".join(lines)
+
+
+def ipp_vec4(x=0, y=0, z=0, w=1):
+    return Vector4(x, y, z, w)
+
+
+def ipp_mat4():
+    return Matrix4()
+
+
+def ipp_mat4_identity():
+    return Matrix4.identity()
+
+
+def ipp_mat4_multiply(a, b):
+    if not isinstance(a, Matrix4) or not isinstance(b, Matrix4):
+        raise TypeError("Expected Matrix4 arguments")
+    return a.multiply(b)
+
+
 def ipp_color(r=0, g=0, b=0, a=255):
     return Color(r, g, b, a)
 
@@ -2886,6 +3004,10 @@ BUILTINS = {
     "regex_replace": ipp_regex_replace,
     "vec2": ipp_vec2,
     "vec3": ipp_vec3,
+    "vec4": ipp_vec4,
+    "mat4": ipp_mat4,
+    "mat4_identity": ipp_mat4_identity,
+    "mat4_multiply": ipp_mat4_multiply,
     "color": ipp_color,
     "rect": ipp_rect,
     

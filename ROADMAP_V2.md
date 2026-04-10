@@ -56,7 +56,7 @@
 | **v1.5.4.5** | ✅ DONE | Advanced Features (.serve, .compare, REPL server) |
 | **v1.5.4.6** | ✅ DONE | Expert Features (Plugins, ML autocomplete) |
 | **v1.5.4.7** | ✅ DONE | Performance Optimizations (Bytecode Cache, .cache command) |
-| **v1.5.5.0** | 📋 PLANNED | 3D Math Basics (vec4, mat4, multiply) |
+| **v1.5.5.0** | ✅ DONE | 3D Math Basics (vec4, mat4, multiply) |
 | **v1.5.5.1** | 📋 PLANNED | Matrix Operations (perspective, look_at, transform) |
 | **v1.5.5.2** | 📋 PLANNED | Quaternion (create, slerp, to_mat4) |
 | **v1.5.5.3** | 📋 PLANNED | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
@@ -583,11 +583,11 @@
 
 ## v1.5.5 — 3D Rendering + Scene Graph
 
-### v1.5.5.0 - 3D Math Basics (vec4, mat4)
-- [ ] `vec4(x, y, z, w)` — 4D vector
-- [ ] `mat4()` — 4x4 matrix (identity)
-- [ ] `mat4_identity()` — create identity matrix
-- [ ] `mat4_multiply(a, b)` — matrix multiplication
+### v1.5.5.0 - 3D Math Basics (vec4, mat4) ✅ DONE
+- [x] `vec4(x, y, z, w)` — 4D vector
+- [x] `mat4()` — 4x4 matrix (identity)
+- [x] `mat4_identity()` — create identity matrix
+- [x] `mat4_multiply(a, b)` — matrix multiplication
 
 ### v1.5.5.1 - Matrix Operations
 - [ ] `mat4_perspective(fov, aspect, near, far)` — perspective matrix
