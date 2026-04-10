@@ -525,6 +525,13 @@ Ipp REPL includes 50+ commands. Here are all of them:
 .macro name expansion   # Define macro: .macro hi print("hello")
 ```
 
+### Easy Enhancements (v1.5.4.3)
+```ipp
+.html "<h1>Hello</h1>"  # Preview HTML in browser
+.hist                   # Show last 10 expression results
+.history $_             # Show expression history ($_1, $_2...)
+```
+
 ### Debugging
 ```ipp
 .debug start            # Start step-through debugger

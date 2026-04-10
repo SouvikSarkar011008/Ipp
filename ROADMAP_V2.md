@@ -51,7 +51,7 @@
 | **v1.5.3a** | 🔄 PARTIAL | 2D Canvas (Tkinter works, needs enhancement) |
 | **v1.5.3b** | 🔄 PARTIAL | WebGL Bindings (needs browser integration) |
 | **v1.5.4** | ✅ DONE | REPL Performance + Advanced Features (v1.5.4.2) |
-| **v1.5.4.3** | 📋 PLANNED | Easy Enhancements (HTML preview, better errors) |
+| **v1.5.4.3** | ✅ DONE | Easy Enhancements (.html, .hist, better errors) |
 | **v1.5.4.4** | 📋 PLANNED | Medium Features (Async REPL, Background tasks, Charts) |
 | **v1.5.4.5** | 📋 PLANNED | Advanced Features (REPL server, Code review) |
 | **v1.5.4.6** | 📋 PLANNED | Expert Features (Plugins, ML autocomplete) |
@@ -542,10 +542,10 @@
 
 ---
 
-## v1.5.4.3 — Easy Enhancements 📋 PLANNED
-- [ ] **HTML preview** — Render HTML strings in default browser
-- [ ] **Expression history** — Better `$_1`, `$_2` handling with persistent history
-- [ ] **Better error messages** — More descriptive parse/runtime errors with location hints
+## v1.5.4.3 — Easy Enhancements ✅ DONE
+- [x] **HTML preview** — `.html <expr>` renders result in browser
+- [x] **Expression history** — `.hist` shows last 10 results (`$_1`, `$_2`...)
+- [x] **Better error messages** — Hints for common mistakes (missing parens, braces, quotes)
 
 ---
 

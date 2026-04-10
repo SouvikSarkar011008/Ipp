@@ -780,7 +780,20 @@ class Parser:
         token = self.peek()
         line = token.line if hasattr(token, 'line') else 1
         col  = token.column if hasattr(token, 'column') else 1
-        raise SyntaxError(f"Parse error at line {line}, col {col}: {message}")
+        hint = ""
+        if "Expect" in message:
+            if "'(" in message:
+                hint = " → Did you forget a closing parenthesis?"
+            elif "'{" in message:
+                hint = " → Did you forget a closing brace?"
+            elif "'[" in message:
+                hint = " → Did you forget a closing bracket?"
+            elif "'" in message:
+                hint = " → Check for missing quotes"
+        msg = f"Parse error at line {line}, col {col}: {message}"
+        if hint:
+            msg += hint
+        raise SyntaxError(msg)
 
 
 def parse(tokens) -> Program:

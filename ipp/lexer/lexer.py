@@ -349,7 +349,18 @@ class Lexer:
         return self.current >= len(self.source)
 
     def error(self, message):
-        raise SyntaxError(f"Lexical error at line {self.line}, column {self.column}: {message}")
+        hint = ""
+        if "Unterminated" in message:
+            if "string" in message.lower():
+                hint = " → Add a closing quote"
+            elif "comment" in message.lower():
+                hint = " → Close your /* */ comment"
+        elif "Unexpected" in message:
+            hint = " → Check for typos or invalid characters"
+        msg = f"Lexical error at line {self.line}, column {self.column}: {message}"
+        if hint:
+            msg += hint
+        raise SyntaxError(msg)
 
 
 def tokenize(source: str) -> list:

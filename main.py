@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.4.2"
+VERSION = "1.5.4.3"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -643,6 +643,7 @@ def print_help():
         (".pretty <expr>",  "Pretty print complex data"),
         (".stack",          "Show call stack"),
         (".history $_",     "Show expression history"),
+        (".hist",           "Show last 10 results ($_1, $_2...)"),
         ("! <cmd>",         "Execute shell command"),
         (".session save",   "Save session state"),
         (".session load",   "Load saved session"),
@@ -667,6 +668,7 @@ def print_help():
         (".locals",         "Show local variables"),
         (".table <var>",    "Show list of dicts as table"),
         (".theme <name>",   "Set color theme (dark/light/solarized)"),
+        (".html <expr>",    "Preview HTML in browser"),
         ("Tab",             "Auto-complete (builtins, vars, keys)"),
         ("(",               "Signature help when typing"),
     ]
@@ -1465,6 +1467,16 @@ def run_repl():
                         print(f"  {colour(DIM, f'$_{idx}:')} {format_output(val)}")
                 continue
 
+            # .hist — Quick show last results
+            if stripped == '.hist':
+                if not _last_results:
+                    print(f"  {colour(DIM, '(no results yet)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Last Results:')}")
+                    for idx, val in reversed(_last_results[-10:]):
+                        print(f"  {colour(DIM, f'$_{idx}:')} {format_output(val)}")
+                continue
+
             # ! shell command — Execute shell command
             if stripped.startswith('!'):
                 cmd = stripped[1:].strip()
@@ -1705,6 +1717,31 @@ def run_repl():
                 else:
                     print(f"  {colour(C_WARN, f'Unknown theme: {theme}')}")
                     print(f"  {colour(DIM, f'Available: {", ".join(themes.keys())}')}")
+                continue
+
+            # .html <expr> — Preview HTML in browser
+            m = re.match(r'\.html\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    result = interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    if val is not None:
+                        html_content = str(val)
+                        import tempfile
+                        import webbrowser
+                        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
+                            f.write(f"<html><body><pre>{html_content}</pre></body></html>")
+                            temp_path = f.name
+                        webbrowser.open('file://' + temp_path)
+                        print(f"  {colour(C_OK, '✓ Opened HTML in browser')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'Expression returned nil')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
                 continue
 
             # .tutorial — Start interactive tutorial
