@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.5.14-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.5.15-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -10,7 +10,7 @@
 <img src="https://img.shields.io/badge/status-stable-green.svg" alt="Status">
 
 **A beginner-friendly scripting language for game development.**  
-Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Bytecode VM · Async/Await · World-Class REPL
+Python-like syntax · Closures · Classes with Inheritance · Pattern Matching · Lambda Functions · Bytecode VM · Async/Await · World-Class REPL
 
 </div>
 
@@ -20,7 +20,7 @@ Python-like syntax · Closures · Classes with Inheritance · Pattern Matching �
 
 Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
 
-**v1.5.4.5** includes REPL Advanced Features (.serve, .compare, REPL server, code review). Previous phases (v1.5.2a, v1.5.2b, v1.5.3a, v1.5.3b) are partially done and need further enhancement.
+**v1.5.15** adds Lambda syntax with `func` keyword, Match expressions (assignable to variables), and improved Enum support. Previous versions include REPL Advanced Features (.serve, .compare), 3D Rendering, Canvas API, and more.
 
 ---
 
@@ -518,7 +518,10 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.5.1 | VSCode Extension + LSP (snippets, task runner, hover, completion) |
 | v1.5.2 | WASM Backend Infrastructure + Web Playground |
 | v1.5.3 | 2D Canvas API (Tkinter) + WebGL Bindings |
-| v1.5.4 | REPL Performance + Advanced Features (.serve, .compare, .cache) |
+| v1.5.4.3 | Easy Enhancements (.html, .hist, better errors) |
+| v1.5.4.4 | Medium Features (.bg, .jobs, .plot, .async) |
+| v1.5.4.5 | Advanced Features (.serve, .compare, REPL server) |
+| v1.5.4.6 | Expert Features (Plugins, ML autocomplete) |
 | v1.5.5 | 3D Math (vec4, mat4, quat) + Scene Graph (Scene, Node, Camera, Mesh, Light) |
 | v1.5.6 | 3D Primitives (mesh_cube, mesh_sphere, mesh_plane) |
 | v1.5.7 | 3D Visualization (wireframe, point cloud rendering via canvas) |
@@ -530,6 +533,9 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.5.13 | Final Polish (cleanup_check, perf_tips, health_check, version_info) |
 | v1.5.14 | Critical Bug Fixes (append, pop, insert, remove, clear + VM global_env fix) |
 | v1.5.15 | Syntax Additions (Lambda with func keyword, Match expression, Enum, else in match) |
+| v1.5.16 | VM/Performance (for-loop fix, .cache, WASM runtime) - PLANNED |
+| v1.5.17 | Missing Features (HTML templates, f-strings, list comprehensions) - PLANNED |
+| v1.5.18 | Polish (Unicode fixes, OpenGL shaders, async completion) - PLANNED |
 | v1.6.0 | C++ Integration + Native Extensions (PyBind11) |
 | v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
 | v2.0.0 | Package Manager + Full Ecosystem + Game Engine |

@@ -64,8 +64,8 @@
 | **v1.5.11** | ✅ DONE | Module System |
 | **v1.5.12** | ✅ DONE | Documentation & Testing |
 | **v1.5.13** | ✅ DONE | Final Polish |
-| **v1.5.14** | 🔄 IN PROGRESS | Critical Bug Fixes (List Slicing, Optional Chaining, Property Assignment) |
-| **v1.5.15** | 📋 PLANNED | Syntax Additions (Lambda, Enum, Match fixes) |
+| **v1.5.14** | ✅ DONE | Critical Bug Fixes (List Slicing, Optional Chaining, Property Assignment + append, pop, insert, remove, clear) |
+| **v1.5.15** | ✅ DONE | Syntax Additions (Lambda with func keyword, Match expression, Enum, else in match) |
 | **v1.5.16** | 📋 PLANNED | VM/Performance (Fix for-loop, .cache, WASM runtime) |
 | **v1.5.17** | 📋 PLANNED | Missing Features (HTML templates, f-strings, list comprehensions) |
 | **v1.5.18** | 📋 PLANNED | Polish (Unicode fixes, OpenGL shaders, async completion) |
@@ -597,32 +597,33 @@
 - [ ] `scene.render()` — render scene
 ---
 
-## v1.5.14 — Critical Bug Fixes 🔴 IN PROGRESS
+## v1.5.14 — Critical Bug Fixes ✅ DONE
 
 Based on audit2.md findings - Critical bugs that break basic functionality:
 
 ### Core Language Fixes
-- [ ] List Slicing — Add `lst[start:end]` syntax support
-- [ ] Optional Chaining — Fix lexer to handle `?.` operator
-- [ ] Class Property Assignment — Allow `obj.prop = value` for all instances
-- [ ] add `append()` function for lists
+- [x] List Slicing — Add `lst[start:end]` syntax support
+- [x] Optional Chaining — Fix lexer to handle `?.` operator
+- [x] Class Property Assignment — Allow `obj.prop = value` for all instances
+- [x] add `append()` function for lists
 
 ### Standard Library Fixes
-- [ ] JSON Parse — Fix string escaping with escaped quotes
-- [ ] Fix interpreter return value capture (all functions return None)
+- [x] JSON Parse — Fix string escaping with escaped quotes
+- [x] Fix interpreter return value capture (all functions return None)
 
 ### Testing
-- [ ] Test all fixed features with real code
-- [ ] Ensure backward compatibility
+- [x] Test all fixed features with real code
+- [x] Ensure backward compatibility
 
 ---
 
-## v1.5.15 — Syntax Additions 📋 PLANNED
+## v1.5.15 — Syntax Additions ✅ DONE
 
 ### Language Features
-- [ ] Lambda syntax — Add `fn => x` or `=>` shorthand
-- [ ] Enum syntax — Fix parsing for `enum Color { RED, GREEN }`
-- [ ] Match statement — Support multi-line cases
+- [x] Lambda syntax — Add `func(x, y) => x + y` with func keyword
+- [x] Enum syntax — Fix parsing for `enum Color { RED, GREEN }`
+- [x] Match statement — Support multi-line cases + else keyword
+- [x] Match expression — Use in variable assignment like `var x = match y { case 1 => "one" else => "other" }`
 - [ ] Type hints — Basic `def f(x: int) -> int` support
 
 ---
