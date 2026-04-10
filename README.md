@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.5.9-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.5.10-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -535,7 +535,7 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.5.7 | 3D Visualization (wireframe, point cloud rendering) |
 | v1.5.8 | Performance & Profiling + Full OpenGL |
 | v1.5.9 | Error Handling & Debugging (stack_trace, error_info, breakpoints) |
-| v1.5.9 | OpenGL Renderer (glfw/tkinter), shaders, triangles/lines/points drawing + Error Handling |
+| v1.5.10 | Standard Library (math_degrees, math_gcd, fs_exists, fs_copy, date_timestamp) |
 | v1.6.0 | C++ Integration + Native Extensions |
 | v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
 | v2.0.0 | Package Manager + Full Ecosystem + Game Engine |

@@ -2354,6 +2354,142 @@ def ipp_datetime_create(year, month, day, hour=0, minute=0, second=0):
     return DateTime(year, month, day, hour, minute, second)
 
 
+def ipp_math_degrees(rad):
+    """Convert radians to degrees"""
+    return math.degrees(rad)
+
+
+def ipp_math_radians(deg):
+    """Convert degrees to radians"""
+    return math.radians(deg)
+
+
+def ipp_math_factorial(n):
+    """Calculate factorial"""
+    return math.factorial(n)
+
+
+def ipp_math_gcd(a, b):
+    """Greatest common divisor"""
+    return math.gcd(a, b)
+
+
+def ipp_math_lcm(a, b):
+    """Least common multiple"""
+    return math.lcm(a, b)
+
+
+def ipp_math_hypot(x, y):
+    """Hypotenuse sqrt(x^2 + y^2)"""
+    return math.hypot(x, y)
+
+
+def ipp_math_isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    """Check if two values are close"""
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def ipp_math_remainder(x, y):
+    """Remainder of x/y"""
+    return math.remainder(x, y)
+
+
+def ipp_math_ulp(x):
+    """Unit in last place"""
+    return math.ulp(x)
+
+
+def ipp_fs_exists(path):
+    """Check if file/directory exists"""
+    import os
+    return os.path.exists(path)
+
+
+def ipp_fs_isfile(path):
+    """Check if path is a file"""
+    import os
+    return os.path.isfile(path)
+
+
+def ipp_fs_isdir(path):
+    """Check if path is a directory"""
+    import os
+    return os.path.isdir(path)
+
+
+def ipp_fs_size(path):
+    """Get file size in bytes"""
+    import os
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+    return 0
+
+
+def ipp_fs_mtime(path):
+    """Get file modification time"""
+    import os
+    if os.path.exists(path):
+        return os.path.getmtime(path)
+    return 0
+
+
+def ipp_fs_copy(src, dst):
+    """Copy file from src to dst"""
+    import shutil
+    try:
+        shutil.copy2(src, dst)
+        return True
+    except:
+        return False
+
+
+def ipp_fs_move(src, dst):
+    """Move file from src to dst"""
+    import shutil
+    try:
+        shutil.move(src, dst)
+        return True
+    except:
+        return False
+
+
+def ipp_fs_mkdir(path):
+    """Create directory"""
+    import os
+    try:
+        os.makedirs(path, exist_ok=True)
+        return True
+    except:
+        return False
+
+
+def ipp_fs_list_dir(path):
+    """List directory contents"""
+    import os
+    try:
+        return os.listdir(path)
+    except:
+        return []
+
+
+def ipp_date_timestamp():
+    """Get current Unix timestamp"""
+    import time
+    return int(time.time())
+
+
+def ipp_date_from_timestamp(ts):
+    """Convert timestamp to DateTime"""
+    return DateTime.fromtimestamp(ts)
+
+
+def ipp_date_format(dt, fmt="%Y-%m-%d %H:%M:%S"):
+    """Format DateTime as string"""
+    if isinstance(dt, DateTime):
+        return dt.format(fmt)
+    return str(dt)
+
+
 # Path utilities
 class Path:
     """Path class for path manipulation"""
@@ -3955,6 +4091,30 @@ BUILTINS = {
     "path_basename": ipp_path_basename,
     "path_join": ipp_path_join,
     "path_exists": ipp_path_exists,
+    
+    # v1.5.10 Standard Library Additions
+    "math_degrees": ipp_math_degrees,
+    "math_radians": ipp_math_radians,
+    "math_factorial": ipp_math_factorial,
+    "math_gcd": ipp_math_gcd,
+    "math_lcm": ipp_math_lcm,
+    "math_hypot": ipp_math_hypot,
+    "math_isclose": ipp_math_isclose,
+    "math_remainder": ipp_math_remainder,
+    "math_ulp": ipp_math_ulp,
+    "fs_exists": ipp_fs_exists,
+    "fs_isfile": ipp_fs_isfile,
+    "fs_isdir": ipp_fs_isdir,
+    "fs_size": ipp_fs_size,
+    "fs_mtime": ipp_fs_mtime,
+    "fs_copy": ipp_fs_copy,
+    "fs_move": ipp_fs_move,
+    "fs_mkdir": ipp_fs_mkdir,
+    "fs_list_dir": ipp_fs_list_dir,
+    "date_timestamp": ipp_date_timestamp,
+    "date_from_timestamp": ipp_date_from_timestamp,
+    "date_format": ipp_date_format,
+    
     "md5": ipp_md5,
     "sha256": ipp_sha256,
     "sha1": ipp_sha1,
