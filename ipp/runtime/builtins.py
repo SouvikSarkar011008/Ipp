@@ -1075,6 +1075,80 @@ def ipp_mat4_multiply(a, b):
     return a.multiply(b)
 
 
+def ipp_mat4_perspective(fov=60, aspect=1.0, near=0.1, far=100):
+    """Create perspective projection matrix."""
+    f = 1.0 / math.tan(math.radians(fov) / 2)
+    nf = 1.0 / (near - far)
+    m = [0.0] * 16
+    m[0] = f / aspect
+    m[5] = f
+    m[10] = (far + near) * nf
+    m[11] = -1.0
+    m[14] = 2 * far * near * nf
+    return Matrix4(m)
+
+
+def ipp_mat4_look_at(eye, target, up):
+    """Create view matrix looking at target."""
+    if not isinstance(eye, Vector3):
+        eye = Vector3(eye[0], eye[1], eye[2])
+    if not isinstance(target, Vector3):
+        target = Vector3(target[0], target[1], target[2])
+    if not isinstance(up, Vector3):
+        up = Vector3(up[0], up[1], up[2])
+    
+    z_axis = (eye - target).normalize()
+    x_axis = up.cross(z_axis).normalize()
+    y_axis = z_axis.cross(x_axis).normalize()
+    
+    m = [
+        x_axis.x, y_axis.x, z_axis.x, 0,
+        x_axis.y, y_axis.y, z_axis.y, 0,
+        x_axis.z, y_axis.z, z_axis.z, 0,
+        -x_axis.dot(eye), -y_axis.dot(eye), -z_axis.dot(eye), 1
+    ]
+    return Matrix4(m)
+
+
+def ipp_mat4_translate(x=0, y=0, z=0):
+    """Create translation matrix."""
+    m = Matrix4()
+    m.m[3] = float(x)
+    m.m[7] = float(y)
+    m.m[11] = float(z)
+    return m
+
+
+def ipp_mat4_rotate(angle, axis):
+    """Create rotation matrix around axis (angle in degrees)."""
+    if not isinstance(axis, Vector3):
+        axis = Vector3(axis[0], axis[1], axis[2])
+    axis = axis.normalize()
+    
+    rad = math.radians(angle)
+    c = math.cos(rad)
+    s = math.sin(rad)
+    t = 1 - c
+    x, y, z = axis.x, axis.y, axis.z
+    
+    m = [
+        t*x*x + c,   t*x*y - s*z, t*x*z + s*y, 0,
+        t*x*y + s*z, t*y*y + c,   t*y*z - s*x, 0,
+        t*x*z - s*y, t*y*z + s*x, t*z*z + c,   0,
+        0,           0,           0,           1
+    ]
+    return Matrix4(m)
+
+
+def ipp_mat4_scale(x=1, y=1, z=1):
+    """Create scale matrix."""
+    m = Matrix4()
+    m.m[0] = float(x)
+    m.m[5] = float(y)
+    m.m[10] = float(z)
+    return m
+
+
 def ipp_color(r=0, g=0, b=0, a=255):
     return Color(r, g, b, a)
 
@@ -3008,6 +3082,11 @@ BUILTINS = {
     "mat4": ipp_mat4,
     "mat4_identity": ipp_mat4_identity,
     "mat4_multiply": ipp_mat4_multiply,
+    "mat4_perspective": ipp_mat4_perspective,
+    "mat4_look_at": ipp_mat4_look_at,
+    "mat4_translate": ipp_mat4_translate,
+    "mat4_rotate": ipp_mat4_rotate,
+    "mat4_scale": ipp_mat4_scale,
     "color": ipp_color,
     "rect": ipp_rect,
     

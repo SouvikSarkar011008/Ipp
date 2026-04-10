@@ -57,7 +57,7 @@
 | **v1.5.4.6** | ✅ DONE | Expert Features (Plugins, ML autocomplete) |
 | **v1.5.4.7** | ✅ DONE | Performance Optimizations (Bytecode Cache, .cache command) |
 | **v1.5.5.0** | ✅ DONE | 3D Math Basics (vec4, mat4, multiply) |
-| **v1.5.5.1** | 📋 PLANNED | Matrix Operations (perspective, look_at, transform) |
+| **v1.5.5.1** | ✅ DONE | Matrix Operations (perspective, look_at, transform) |
 | **v1.5.5.2** | 📋 PLANNED | Quaternion (create, slerp, to_mat4) |
 | **v1.5.5.3** | 📋 PLANNED | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
 | **v1.5.5.4** | 📋 PLANNED | Basic Renderer (wireframe/projection render) |
@@ -589,12 +589,12 @@
 - [x] `mat4_identity()` — create identity matrix
 - [x] `mat4_multiply(a, b)` — matrix multiplication
 
-### v1.5.5.1 - Matrix Operations
-- [ ] `mat4_perspective(fov, aspect, near, far)` — perspective matrix
-- [ ] `mat4_look_at(eye, target, up)` — view matrix
-- [ ] `mat4_translate(m, x, y, z)` — translation
-- [ ] `mat4_rotate(m, angle, axis)` — rotation
-- [ ] `mat4_scale(m, x, y, z)` — scale
+### v1.5.5.1 - Matrix Operations ✅ DONE
+- [x] `mat4_perspective(fov, aspect, near, far)` — perspective matrix
+- [x] `mat4_look_at(eye, target, up)` — view matrix
+- [x] `mat4_translate(x, y, z)` — translation
+- [x] `mat4_rotate(angle, axis)` — rotation
+- [x] `mat4_scale(x, y, z)` — scale
 
 ### v1.5.5.2 - Quaternion
 - [ ] `quat(x, y, z, w)` — quaternion creation
