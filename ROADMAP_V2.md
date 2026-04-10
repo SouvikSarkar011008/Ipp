@@ -55,21 +55,23 @@
 | **v1.5.4.4** | ✅ DONE | Medium Features (.bg, .jobs, .plot, .async) |
 | **v1.5.4.5** | ✅ DONE | Advanced Features (.serve, .compare, REPL server) |
 | **v1.5.4.6** | ✅ DONE | Expert Features (Plugins, ML autocomplete) |
-| **v1.5.4.7** | ✅ DONE | Performance Optimizations (Bytecode Cache, .cache command) |
-| **v1.5.5.0** | ✅ DONE | 3D Math Basics (vec4, mat4, multiply) |
-| **v1.5.5.1** | ✅ DONE | Matrix Operations (perspective, look_at, transform) |
-| **v1.5.5.2** | ✅ DONE | Quaternion (create, slerp, to_mat4) |
-| **v1.5.5.3** | ✅ DONE | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
-| **v1.5.5.4** | ✅ DONE | Basic Renderer (3D->2D projection) |
-| **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) - moved to v1.5.8 |
-| **v1.5.7** | 📋 PLANNED | 3D Visualization (Wireframe rendering via canvas) |
-| **v1.5.8** | 📋 PLANNED | Performance & Profiling (Memory tools, cache) |
-| **v1.5.9** | 📋 PLANNED | Error Handling & Debugging (Stack traces, debug mode) |
-| **v1.5.10** | 📋 PLANNED | Standard Library Additions (More builtins) |
-| **v1.5.11** | 📋 PLANNED | Module System (Import/export improvements) |
-| **v1.5.12** | 📋 PLANNED | Documentation & Testing (Complete test suite) |
-| **v1.5.13** | 📋 PLANNED | Final Polish (Optimization, cleanup) |
+| **v1.5.5** | ✅ DONE | 3D Rendering + Scene Graph |
+| **v1.5.6** | ✅ DONE | 3D Primitives (mesh_cube, mesh_sphere, mesh_plane) |
+| **v1.5.7** | ✅ DONE | 3D Visualization (wireframe, point cloud) |
+| **v1.5.8** | ✅ DONE | Performance & Profiling + Full OpenGL |
+| **v1.5.9** | ✅ DONE | Error Handling & Debugging |
+| **v1.5.10** | ✅ DONE | Standard Library Additions |
+| **v1.5.11** | ✅ DONE | Module System |
+| **v1.5.12** | ✅ DONE | Documentation & Testing |
+| **v1.5.13** | ✅ DONE | Final Polish |
+| **v1.5.14** | 🔄 IN PROGRESS | Critical Bug Fixes (List Slicing, Optional Chaining, Property Assignment) |
+| **v1.5.15** | 📋 PLANNED | Syntax Additions (Lambda, Enum, Match fixes) |
+| **v1.5.16** | 📋 PLANNED | VM/Performance (Fix for-loop, .cache, WASM runtime) |
+| **v1.5.17** | 📋 PLANNED | Missing Features (HTML templates, f-strings, list comprehensions) |
+| **v1.5.18** | 📋 PLANNED | Polish (Unicode fixes, OpenGL shaders, async completion) |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
+| **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
+| **v2.0.0** | 📋 PLANNED | Package Manager + Full Ecosystem + Game Engine |
 
 ---
 
@@ -573,95 +575,94 @@
 
 ---
 
-## v1.5.4.6 — Expert Features ✅ DONE
-- [x] **REPL plugins** — Load external Python plugin modules
-- [x] **ML-based autocomplete** — AI-powered code suggestions (optional dependency)
+## v1.5.4.6 — Expert Features 📋 PLANNED
+- [ ] **REPL plugins** — Load external Python plugin modules
+- [ ] **ML-based autocomplete** — AI-powered code suggestions (optional dependency)
 
 ---
 
-## v1.5.4.7 — Performance Optimizations ✅ DONE
-- [x] **Bytecode cache** — Compile Ipp to .ipc files for faster loading
-- [x] **.cache command** — Manually compile and cache bytecode
-- [x] **Auto-cache loading** — .ipc files load automatically when available
+## v1.5.5 — 3D Rendering + Scene Graph 📋 PLANNED
+### 3D Math
+- [ ] `mat4()` — 4x4 matrix operations
+- [ ] `vec4()` — 4D vector
+- [ ] `quat()` — quaternion operations (slerp, rotate)
+- [ ] `perspective(fov, aspect, near, far)` — perspective matrix
+- [ ] `look_at(eye, target, up)` — view matrix
+### Scene Graph
+- [ ] `Scene()` — scene container
+- [ ] `Node()` — scene node with transform
+- [ ] `Camera(fov, aspect)` — camera node
+- [ ] `Mesh(vertices, indices)` — mesh node
+- [ ] `Light(type, color, intensity)` — light node
+- [ ] `scene.render()` — render scene
+---
+
+## v1.5.14 — Critical Bug Fixes 🔴 IN PROGRESS
+
+Based on audit2.md findings - Critical bugs that break basic functionality:
+
+### Core Language Fixes
+- [ ] List Slicing — Add `lst[start:end]` syntax support
+- [ ] Optional Chaining — Fix lexer to handle `?.` operator
+- [ ] Class Property Assignment — Allow `obj.prop = value` for all instances
+- [ ] add `append()` function for lists
+
+### Standard Library Fixes
+- [ ] JSON Parse — Fix string escaping with escaped quotes
+- [ ] Fix interpreter return value capture (all functions return None)
+
+### Testing
+- [ ] Test all fixed features with real code
+- [ ] Ensure backward compatibility
 
 ---
 
-## v1.5.5 — 3D Rendering + Scene Graph
+## v1.5.15 — Syntax Additions 📋 PLANNED
 
-### v1.5.5.0 - 3D Math Basics (vec4, mat4) ✅ DONE
-- [x] `vec4(x, y, z, w)` — 4D vector
-- [x] `mat4()` — 4x4 matrix (identity)
-- [x] `mat4_identity()` — create identity matrix
-- [x] `mat4_multiply(a, b)` — matrix multiplication
+### Language Features
+- [ ] Lambda syntax — Add `fn => x` or `=>` shorthand
+- [ ] Enum syntax — Fix parsing for `enum Color { RED, GREEN }`
+- [ ] Match statement — Support multi-line cases
+- [ ] Type hints — Basic `def f(x: int) -> int` support
 
-### v1.5.5.1 - Matrix Operations ✅ DONE
-- [x] `mat4_perspective(fov, aspect, near, far)` — perspective matrix
-- [x] `mat4_look_at(eye, target, up)` — view matrix
-- [x] `mat4_translate(x, y, z)` — translation
-- [x] `mat4_rotate(angle, axis)` — rotation
-- [x] `mat4_scale(x, y, z)` — scale
+---
 
-### v1.5.5.2 - Quaternion
-- [x] `quat(x, y, z, w)` — quaternion creation
-- [x] `quat_from_axis_angle(axis, angle)` — from axis-angle
-- [x] `quat_multiply(a, b)` — quaternion multiplication
-- [x] `quat_slerp(a, b, t)` — spherical interpolation
-- [x] `quat_to_mat4(q)` — convert to rotation matrix
+## v1.5.16 — VM/Performance 📋 PLANNED
 
-### v1.5.5.3 - Scene Graph (Classes) ✅ DONE
-- [x] `Scene()` — scene container
-- [x] `Node()` — scene node with transform (position, rotation, scale)
-- [x] `Camera(fov, aspect, near, far)` — camera node
-- [x] `Mesh(vertices, indices)` — mesh node
-- [x] `Light(type, color, intensity)` — light node
-- [x] `scene.add(node)` — add node to scene
+### VM Fixes
+- [ ] Fix for-loop bug in VM mode (returns 0 instead of correct value)
+- [ ] Add 3D functions to VM mode
 
-### v1.5.5.4 - Basic Renderer ✅ DONE
-- [x] `scene.render()` — basic render (3D->2D projection)
-- [x] `scene.render_to_canvas()` — get 2D screen coordinates
+### New Features
+- [ ] Implement `.cache` command for bytecode caching
+- [ ] Add WASM runtime `wasm_run()` function
 
-### v1.5.5.5 - OpenGL Renderer [OPTIONAL - MOVED TO v1.5.8]
-- [ ] OpenGL-based renderer
-- [ ] Shader support
-- [ ] Smooth shading
+### Performance
+- [ ] Improve interpreter return value handling
 
-### v1.5.7 - 3D Visualization
-- [ ] Wireframe rendering via canvas
-- [ ] Point cloud rendering
-- [ ] Line rendering for edges
+---
 
-### v1.5.8 - Performance & Profiling + OpenGL
-- [ ] Memory profiling tools
-- [ ] Bytecode cache improvements
-- [ ] Performance benchmarks
-- [ ] OpenGL-based renderer (optional, requires OpenGL)
-- [ ] Shader support
-- [ ] Smooth shading
+## v1.5.17 — Missing Features 📋 PLANNED
 
-### v1.5.9 - Error Handling & Debugging
-- [ ] Better stack traces
-- [ ] Debug mode with breakpoints
-- [ ] Error location highlighting
+### New Features
+- [ ] HTML template functions (html_escape, template_render)
+- [ ] f-strings — Add `f"{variable}"` formatted strings
+- [ ] List comprehensions — Add `[x for x in lst]`
+- [ ] Decorators — Add `@decorator` support
 
-### v1.5.10 - Standard Library Additions
-- [ ] More math functions
-- [ ] File system utilities
-- [ ] Date/time functions
+---
 
-### v1.5.11 - Module System
-- [ ] Import/export improvements
-- [ ] Module caching
-- [ ] Package support
+## v1.5.18 — Polish 📋 PLANNED
 
-### v1.5.12 - Documentation & Testing
-- [ ] Complete test coverage
-- [ ] API documentation
-- [ ] Examples/tutorials
+### Bug Fixes
+- [ ] Fix REPL Unicode errors (.alias, .bind, .theme)
+- [ ] Fix OpenGL shader compatibility (PyOpenGL legacy issue)
+- [ ] Add event_loop, future support
 
-### v1.5.13 - Final Polish
-- [ ] Code cleanup
-- [ ] Performance optimization
-- [ ] Bug fixes
+### Completion
+- [ ] Final audit verification
+- [ ] Performance benchmarking
+- [ ] Documentation update
 
 ---
 
