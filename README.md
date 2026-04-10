@@ -514,16 +514,23 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.4.1 | Error Documentation + Error Reference Guide (ERRORS.md) |
 | v1.4.2 | Tutorial Documentation + Getting Started Guide (TUTORIAL.md) |
 | v1.4.3 | PyPI Publishing + `pip install ipp-lang` |
-| v1.5.0 | Async/Await + Coroutines + Event Loop + Additional Builtins (31 new builtins) |
-| v1.5.1 | VSCode Extension + LSP (15 snippets, task runner, LSP server, hover, completion) |
-| v1.5.2a | WASM Backend (Partial - needs more work) |
-| v1.5.2b | Web Playground (Partial - needs more work) |
-| v1.5.3a | 2D Canvas API (Partial - Tkinter works, needs enhancement) |
-| v1.5.3b | WebGL Bindings (Partial - needs browser integration) |
-| v1.5.4.2 | REPL Performance (.bench, .mem, .reload, .checkpoint, .restore, .macro, theme, elif fix) |
-| v1.5.5 - v1.5.13 | 3D Graphics, OpenGL, Error Handling, Standard Library, Module System (Done) |
+| v1.5.0 | Async/Await + Coroutines + Event Loop + 31 New Builtins |
+| v1.5.1 | VSCode Extension + LSP (snippets, task runner, hover, completion) |
+| v1.5.2 | WASM Backend Infrastructure + Web Playground |
+| v1.5.3 | 2D Canvas API (Tkinter) + WebGL Bindings |
+| v1.5.4 | REPL Performance + Advanced Features (.serve, .compare, .cache) |
+| v1.5.5 | 3D Math (vec4, mat4, quat) + Scene Graph (Scene, Node, Camera, Mesh, Light) |
+| v1.5.6 | 3D Primitives (mesh_cube, mesh_sphere, mesh_plane) |
+| v1.5.7 | 3D Visualization (wireframe, point cloud rendering via canvas) |
+| v1.5.8 | Performance & Profiling (memory_info, benchmark, gc_stats) + Full OpenGL |
+| v1.5.9 | Error Handling & Debugging (get_stack_trace, error_info, breakpoints) |
+| v1.5.10 | Standard Library (math_degrees, math_gcd, fs_exists, date_timestamp) |
+| v1.5.11 | Module System (module_cache_info, import_module, list_exports) |
+| v1.5.12 | Documentation & Testing (doc, apidoc, test_report, benchmark_full) |
+| v1.5.13 | Final Polish (cleanup_check, perf_tips, health_check, version_info) |
 | v1.5.14 | Critical Bug Fixes (append, pop, insert, remove, clear + VM global_env fix) |
-| v1.6.0 | C++ Integration + Native Extensions |
+| v1.5.15 | Syntax Additions (Lambda with func keyword, Match expression, Enum, else in match) |
+| v1.6.0 | C++ Integration + Native Extensions (PyBind11) |
 | v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
 | v2.0.0 | Package Manager + Full Ecosystem + Game Engine |
 

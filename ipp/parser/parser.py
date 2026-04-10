@@ -282,7 +282,7 @@ class Parser:
             self.skip_newlines()
             if self.match(TokenType.CASE):
                 pattern = self.expression()
-            elif self.match(TokenType.DEFAULT):
+            elif self.match(TokenType.DEFAULT) or self.match(TokenType.ELSE):
                 pattern = None
             else:
                 break
@@ -293,6 +293,26 @@ class Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after match cases")
         # FIX: BUG-C4 — use 'subject' consistently
         return MatchStmt(subject, cases)
+
+    def match_expression(self):
+        subject = self.expression()
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after match subject")
+        self.skip_newlines()
+        cases = []
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            self.skip_newlines()
+            if self.match(TokenType.CASE):
+                pattern = self.expression()
+            elif self.match(TokenType.DEFAULT) or self.match(TokenType.ELSE):
+                pattern = None
+            else:
+                break
+            self.consume(TokenType.ARROW, "Expect '=>' after case pattern")
+            body = self.block_or_statement()
+            cases.append((pattern, body))
+            self.skip_newlines()
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after match cases")
+        return MatchExpr(subject, cases)
 
     def try_statement(self):
         try_body = self.block_or_statement()
@@ -600,6 +620,10 @@ class Parser:
             if self.check(TokenType.LEFT_PAREN):
                 return self.lambda_expr()
             self.current = saved  # backtrack if it's a named function
+
+        # FIX: Add match as expression (for var x = match y { ... })
+        if self.match(TokenType.MATCH):
+            return self.match_expression()
 
         if self.match(TokenType.IDENTIFIER):
             ident = Identifier(self.previous().lexeme)

@@ -333,6 +333,12 @@ class MatchStmt(ASTNode):
     def accept(self, visitor): return visitor.visit_match_stmt(self)
 
 @dataclass
+class MatchExpr(ASTNode):
+    subject: ASTNode
+    cases: List[tuple]
+    def accept(self, visitor): return visitor.visit_match_expr(self)
+
+@dataclass
 class TryStmt(ASTNode):
     try_body: List[ASTNode]
     catch_var: Optional[str]          # FIX: BUG-C3 — canonical name is catch_var

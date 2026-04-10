@@ -1041,6 +1041,34 @@ class Interpreter:
                     stmt.accept(self)
                 return
 
+    def visit_match_expr(self, node: MatchExpr):
+        subject_value = node.subject.accept(self)
+        
+        for pattern, body in node.cases:
+            if pattern is None:
+                if not body:
+                    return None
+                result = None
+                for stmt in body:
+                    if isinstance(stmt, ExprStmt):
+                        result = stmt.expression.accept(self)
+                    else:
+                        stmt.accept(self)
+                return result
+            
+            pattern_value = pattern.accept(self)
+            if subject_value == pattern_value:
+                if not body:
+                    return None
+                result = None
+                for stmt in body:
+                    if isinstance(stmt, ExprStmt):
+                        result = stmt.expression.accept(self)
+                    else:
+                        stmt.accept(self)
+                return result
+        return None
+
     def visit_try_stmt(self, node: TryStmt):
         error = None
         try:
