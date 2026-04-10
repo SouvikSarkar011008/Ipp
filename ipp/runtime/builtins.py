@@ -1284,10 +1284,10 @@ class SceneNode:
     
     def get_transform(self):
         """Get world transform matrix."""
-        t = mat4_translate(self.position.x, self.position.y, self.position.z)
+        t = ipp_mat4_translate(self.position.x, self.position.y, self.position.z)
         r = self.rotation.to_mat4()
-        s = mat4_scale(self.scale.x, self.scale.y, self.scale.z)
-        return mat4_multiply(mat4_multiply(t, r), s)
+        s = ipp_mat4_scale(self.scale.x, self.scale.y, self.scale.z)
+        return ipp_mat4_multiply(ipp_mat4_multiply(t, r), s)
     
     def look_at(self, target):
         """Make node look at target."""
@@ -1327,10 +1327,10 @@ class Camera(SceneNode):
         self.projection = None
     
     def get_projection(self):
-        return mat4_perspective(self.fov, self.aspect, self.near, self.far)
+        return ipp_mat4_perspective(self.fov, self.aspect, self.near, self.far)
     
     def get_view(self):
-        return mat4_look_at(self.position, self.position + Vector3(0, 0, -1), Vector3(0, 1, 0))
+        return ipp_mat4_look_at(self.position, Vector3(self.position.x, self.position.y, self.position.z - 1), Vector3(0, 1, 0))
     
     def __repr__(self):
         return f"Camera({self.name}, fov={self.fov})"
@@ -1405,8 +1405,48 @@ class Scene:
         return result
     
     def render(self):
-        """Basic rendering info."""
-        return f"Scene: {self.name}, nodes: {len(self.get_all_nodes())}, camera: {self.camera}"
+        """Basic rendering - project 3D to 2D."""
+        if not self.camera:
+            return f"Scene: {self.name}, nodes: {len(self.get_all_nodes())}, no camera"
+        
+        proj = self.camera.get_projection()
+        cam_pos = self.camera.position
+        view = ipp_mat4_look_at(cam_pos, Vector3(cam_pos.x, cam_pos.y, cam_pos.z - 1), Vector3(0, 1, 0))
+        
+        meshes = [n for n in self.get_all_nodes() if isinstance(n, Mesh)]
+        projected = []
+        
+        for mesh in meshes:
+            world_mat = mesh.get_transform()
+            vp = ipp_mat4_multiply(proj, view)
+            mvp = ipp_mat4_multiply(vp, world_mat)
+            
+            for v in mesh.vertices:
+                if isinstance(v, (list, tuple)) and len(v) >= 3:
+                    vec = Vector4(v[0], v[1], v[2], 1)
+                    transformed = mvp.transform_vector(vec)
+                    if transformed.w > 0:
+                        x = (transformed.x / transformed.w + 1) * 0.5
+                        y = (transformed.y / transformed.w + 1) * 0.5
+                        z = transformed.z / transformed.w
+                        projected.append((x, y, z, mesh.name))
+        
+        return {"scene": self.name, "camera": str(self.camera), "projected": projected, "mesh_count": len(meshes)}
+
+    def render_to_canvas(self, canvas_width=800, canvas_height=600):
+        """Render scene to 2D points for canvas drawing."""
+        result = self.render()
+        if isinstance(result, str):
+            return result
+        
+        lines = [f"Scene: {result['scene']}", f"Camera: {result['camera']}", f"Meshes: {result['mesh_count']}", "Projected points:"]
+        
+        for px, py, pz, name in result['projected']:
+            screen_x = int(px * canvas_width)
+            screen_y = int((1 - py) * canvas_height)
+            lines.append(f"  {name}: ({screen_x}, {screen_y}, z={pz:.2f})")
+        
+        return "\n".join(lines)
     
     def __repr__(self):
         return f"Scene({self.name}, nodes={len(self.nodes)})"

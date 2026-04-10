@@ -60,7 +60,7 @@
 | **v1.5.5.1** | ✅ DONE | Matrix Operations (perspective, look_at, transform) |
 | **v1.5.5.2** | ✅ DONE | Quaternion (create, slerp, to_mat4) |
 | **v1.5.5.3** | ✅ DONE | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
-| **v1.5.5.4** | 📋 PLANNED | Basic Renderer (wireframe/projection render) |
+| **v1.5.5.4** | ✅ DONE | Basic Renderer (3D->2D projection) |
 | **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
 | **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
@@ -611,12 +611,11 @@
 - [x] `Light(type, color, intensity)` — light node
 - [x] `scene.add(node)` — add node to scene
 
-### v1.5.5.4 - Scene Graph (Basic Renderer)
-- [ ] `scene.render()` — basic render (simple 3D->2D projection)
-- [ ] `node.look_at(target)` — node looks at target
-- [ ] Basic wireframe or point rendering via canvas
+### v1.5.5.4 - Basic Renderer ✅ DONE
+- [x] `scene.render()` — basic render (3D->2D projection)
+- [x] `scene.render_to_canvas()` — get 2D screen coordinates
 
-### v1.5.5.5 - Scene Graph (OpenGL Renderer) [OPTIONAL]
+### v1.5.5.5 - OpenGL Renderer [OPTIONAL]
 - [ ] OpenGL-based renderer
 - [ ] Shader support
 - [ ] Smooth shading
