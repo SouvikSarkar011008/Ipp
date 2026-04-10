@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.13"
+VERSION = "1.5.14"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -456,25 +456,10 @@ class IppCompleter:
                 cands = self._get_all_candidates()
                 # Exact prefix matches first
                 exact = sorted(c for c in cands if c.startswith(text))
-                
-                # Try ML-based matching if available, otherwise use difflib
-                remaining = [c for c in cands if c not in exact]
-                if remaining:
-                    try:
-                        from sklearn.feature_extraction.text import TfidfVectorizer
-                        from sklearn.metrics.pairwise import cosine_similarity
-                        vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(2, 4))
-                        corpus = [text] + remaining
-                        tfidf = vectorizer.fit_transform(corpus)
-                        sims = cosine_similarity(tfidf[0:1], tfidf[1:])[0]
-                        scored = list(zip(remaining, sims))
-                        scored.sort(key=lambda x: -x[1])
-                        fuzzy = [s[0] for s in scored[:10] if s[1] > 0.1]
-                    except ImportError:
-                        import difflib
-                        fuzzy = difflib.get_close_matches(text, remaining, n=10, cutoff=0.4)
-                
-                self.matches = exact + fuzzy[:10]
+                # Then fuzzy matches using difflib
+                import difflib
+                fuzzy = difflib.get_close_matches(text, [c for c in cands if c not in exact], n=10, cutoff=0.4)
+                self.matches = exact + fuzzy
         
         try:
             return self.matches[state]
@@ -668,7 +653,6 @@ def print_help():
     _section("REPL Tools (v1.3.7)")
     tools = [
         (".load <file>",    "Load and execute file (keeps variables)"),
-        (".cache <file>",   "Compile and cache bytecode (.ipc)"),
         (".save <file>",    "Save command history to file"),
         (".doc <fn>",       "Show builtin documentation"),
         (".time <expr>",    "Benchmark expression"),
@@ -952,6 +936,15 @@ class VMInterpreter:
         self.return_value = None
         self.last_value = None
         self.current_file = None
+        self._global_env = {}  # Simple dict for VM variables
+    
+    @property
+    def global_env(self):
+        """Provide global_env-like interface for REPL compatibility."""
+        class VMEnv:
+            def __init__(self, env_dict):
+                self.values = env_dict
+        return VMEnv(self._global_env)
     
     def run(self, ast):
         from ipp.vm.compiler import compile_ast
@@ -1003,7 +996,10 @@ class InterpreterManager:
     
     @property
     def global_env(self):
-        return self.get_interpreter().interpreter.global_env if self.use_vm else self.get_interpreter().global_env
+        if self.use_vm:
+            return self.get_interpreter().global_env
+        else:
+            return self.get_interpreter().global_env
 
 # ─── Output formatter ─────────────────────────────────────────────────────────
 C_FN_PURPLE = lambda t: _rgb(180, 100, 255, t)  # Purple for <function and >
@@ -1391,26 +1387,6 @@ def run_repl():
                     print(f"  {colour(C_OK, f'Saved {len(_cmd_history)} commands to {filepath}')}")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, f'Failed to save: {e}')}")
-                continue
-
-            # .cache <file> — Compile and cache bytecode (.ipc file)
-            m = re.match(r'\.cache\s+(.+)$', stripped)
-            if m:
-                filepath = m.group(1).strip().strip('"').strip("'")
-                try:
-                    cache_path = filepath + 'c'
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        source = f.read()
-                    tokens = tokenize(source)
-                    ast = parse(tokens)
-                    from ipp.vm.compiler import Compiler
-                    compiler = Compiler()
-                    chunk = compiler.compile(ast)
-                    with open(cache_path, 'wb') as f:
-                        f.write(chunk.serialize())
-                    print(f"  {colour(C_OK, f'Cached bytecode to {cache_path}')}")
-                except Exception as e:
-                    print(f"  {colour(C_ERROR, f'Cache failed: {e}')}")
                 continue
 
             # .doc <function> — Show docstring/help for builtin
@@ -2522,29 +2498,6 @@ func __async_task__() {{
 
 # ─── File runner ──────────────────────────────────────────────────────────────
 def run_file(path: str) -> int:
-    cache_path = path + 'c'
-    use_cache = False
-    
-    try:
-        cache_mtime = os.path.getmtime(cache_path)
-        src_mtime = os.path.getmtime(path)
-        if cache_mtime >= src_mtime:
-            use_cache = True
-    except:
-        pass
-    
-    if use_cache:
-        try:
-            with open(cache_path, 'rb') as f:
-                from ipp.vm.bytecode import Chunk
-                chunk = Chunk.deserialize(f.read())
-            from ipp.vm.vm import VM
-            vm = VM()
-            result = vm.run(chunk)
-            return 0
-        except Exception:
-            use_cache = False
-    
     try:
         with open(path, 'r', encoding='utf-8') as f:
             source = f.read()
