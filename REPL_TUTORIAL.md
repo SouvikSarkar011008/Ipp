@@ -529,10 +529,18 @@ Ipp REPL includes 50+ commands. Here are all of them:
 ```ipp
 .html "<h1>Hello</h1>"  # Preview HTML in browser
 .hist                   # Show last 10 expression results
-.history $_             # Show expression history ($_1, $_2...)
+.history $_             # Show expression history
 ```
 
-### Debugging
+### Medium Features (v1.5.4.4)
+```ipp
+.bg <expr>             # Run expression in background
+.jobs                  # Show background job status
+.plot [1,2,3,4,5]      # Plot data with matplotlib
+.async <expr>          # Run async expression
+```
+
+### Display & Formatting
 ```ipp
 .debug start            # Start step-through debugger
 .debug stop             # Stop debugger

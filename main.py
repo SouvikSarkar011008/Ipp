@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.4.3"
+VERSION = "1.5.4.4"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -669,6 +669,10 @@ def print_help():
         (".table <var>",    "Show list of dicts as table"),
         (".theme <name>",   "Set color theme (dark/light/solarized)"),
         (".html <expr>",    "Preview HTML in browser"),
+        (".plot <data>",   "Plot data with matplotlib"),
+        (".bg <expr>",     "Run in background"),
+        (".jobs",          "Show background jobs"),
+        (".async <expr>",  "Run async expression"),
         ("Tab",             "Auto-complete (builtins, vars, keys)"),
         ("(",               "Signature help when typing"),
     ]
@@ -1174,6 +1178,7 @@ def run_repl():
     _key_bindings = {}  # For .bind
     _checkpoints = []  # For .checkpoint/.restore
     _macros = {}  # For .macro
+    _bg_jobs = []  # For .bg/.jobs
     _PROMPT_FORMAT = "ipp"  # Default prompt format
     _PROMPT_ARROW = "❯" if _UNI else ">>>"  # Default prompt arrow
     _current_dir = os.getcwd()  # Track current directory for .cd
@@ -1740,6 +1745,115 @@ def run_repl():
                         print(f"  {colour(C_OK, '✓ Opened HTML in browser')}")
                     else:
                         print(f"  {colour(C_WARN, 'Expression returned nil')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .plot <data> — Plot data with matplotlib
+            m = re.match(r'\.plot\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    import matplotlib.pyplot as plt
+                    import matplotlib
+                    matplotlib.use('Agg')
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    result = interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    if val is None:
+                        print(f"  {colour(C_WARN, 'Expression returned nil')}")
+                    elif isinstance(val, list):
+                        plt.plot(val)
+                        plt.title('Ipp Data')
+                        plt.xlabel('Index')
+                        plt.ylabel('Value')
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+                            plt.savefig(f.name)
+                            plt.close()
+                            import webbrowser
+                            webbrowser.open('file://' + f.name)
+                        print(f"  {colour(C_OK, '✓ Plot opened in browser')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'Data must be a list')}")
+                except ImportError:
+                    print(f"  {colour(C_WARN, 'matplotlib not installed')}")
+                    print(f"  {colour(DIM, 'Install with: pip install matplotlib')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .bg <expr> — Run in background
+            _bg_jobs = []  # Add this at the top of the file
+            m = re.match(r'\.bg\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                import threading
+                import queue
+                result_queue = queue.Queue()
+                def run_bg():
+                    try:
+                        tokens = tokenize(expr)
+                        ast = parse(tokens)
+                        interp = interp_manager.get_interpreter()
+                        interp.run(ast)
+                        val = interp.return_value if interp.return_value is not None else interp.last_value
+                        result_queue.put(('ok', val))
+                    except Exception as e:
+                        result_queue.put(('error', str(e)))
+                t = threading.Thread(target=run_bg)
+                t.start()
+                job_id = len(_bg_jobs) + 1
+                _bg_jobs.append({'thread': t, 'expr': expr[:30], 'queue': result_queue})
+                print(f"  {colour(C_OK, f'Job #{job_id} started in background')}")
+                continue
+
+            # .jobs — Show background jobs
+            if stripped == '.jobs':
+                if not _bg_jobs:
+                    print(f"  {colour(DIM, '(no background jobs)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Background Jobs:')}")
+                    for i, job in enumerate(_bg_jobs, 1):
+                        if job['thread'].is_alive():
+                            status = colour(C_OK, 'running')
+                        else:
+                            try:
+                                status, val = job['queue'].get_nowait()
+                                status = colour(C_OK, 'done') if status == 'ok' else colour(C_ERROR, 'error')
+                            except:
+                                status = colour(C_WARN, 'unknown')
+                        print(f"  {colour(DIM, f'{i}:')} {job['expr']}... {status}")
+                continue
+
+            # .async <expr> — Run async expression
+            m = re.match(r'\.async\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    from ipp.runtime.builtins import BUILTINS
+                    if 'async_run' in BUILTINS:
+                        async_run_fn = BUILTINS['async_run']
+                        # Create a simple async wrapper
+                        code = f'''
+func __async_task__() {{
+    return {expr}
+}}
+'''
+                        tokens = tokenize(code)
+                        ast = parse(tokens)
+                        interp = interp_manager.get_interpreter()
+                        interp.run(ast)
+                        if hasattr(interp, 'last_value') and interp.last_value:
+                            coro = interp.last_value
+                            result = async_run_fn(coro)
+                            print(f"  {colour(C_OK, 'Async result:')} {format_output(result)}")
+                        else:
+                            print(f"  {colour(C_WARN, 'Expression is not async')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'async_run not available')}")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, str(e))}")
                 continue

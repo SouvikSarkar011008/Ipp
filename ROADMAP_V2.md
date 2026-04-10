@@ -52,7 +52,7 @@
 | **v1.5.3b** | 🔄 PARTIAL | WebGL Bindings (needs browser integration) |
 | **v1.5.4** | ✅ DONE | REPL Performance + Advanced Features (v1.5.4.2) |
 | **v1.5.4.3** | ✅ DONE | Easy Enhancements (.html, .hist, better errors) |
-| **v1.5.4.4** | 📋 PLANNED | Medium Features (Async REPL, Background tasks, Charts) |
+| **v1.5.4.4** | ✅ DONE | Medium Features (.bg, .jobs, .plot, .async) |
 | **v1.5.4.5** | 📋 PLANNED | Advanced Features (REPL server, Code review) |
 | **v1.5.4.6** | 📋 PLANNED | Expert Features (Plugins, ML autocomplete) |
 | **v1.5.5** | 📋 PLANNED | 3D Rendering + Scene Graph |
@@ -549,10 +549,10 @@
 
 ---
 
-## v1.5.4.4 — Medium Features 📋 PLANNED
-- [ ] **Async REPL** — Handle `async/await` natively in REPL
-- [ ] **Background tasks** — Run long tasks in background without blocking REPL
-- [ ] **Plot/charts** — matplotlib integration for data visualization (`plot([1,2,3])`)
+## v1.5.4.4 — Medium Features ✅ DONE
+- [x] **Async REPL** — `.async <expr>` runs async expressions
+- [x] **Background tasks** — `.bg <expr>` runs in background, `.jobs` shows status
+- [x] **Plot/charts** — `.plot <data>` uses matplotlib to plot lists
 
 ---
 
