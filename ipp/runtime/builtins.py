@@ -5,6 +5,7 @@ from ipp.runtime.canvas import (
     ipp_canvas_open, ipp_canvas_rect, ipp_canvas_circle,
     ipp_canvas_line, ipp_canvas_text, ipp_canvas_clear, ipp_canvas_show
 )
+import ipp.runtime.canvas as canvas_module
 
 
 def ipp_print(*args):
@@ -1494,8 +1495,7 @@ class Scene:
     
     def render_wireframe(self, canvas_width=800, canvas_height=600):
         """Render scene as wireframe to canvas."""
-        global _canvas, _canvas_window
-        if not _canvas or not _canvas_window:
+        if not canvas_module._canvas or not canvas_module._canvas_window:
             return "Error: Canvas not open. Call canvas_open() first."
         
         if not self.camera:
@@ -1529,21 +1529,20 @@ class Scene:
                 if i + 2 < len(mesh.indices):
                     i0, i1, i2 = mesh.indices[i], mesh.indices[i+1], mesh.indices[i+2]
                     if i0 < len(projected_verts) and i1 < len(projected_verts) and i2 < len(projected_verts):
-                        _canvas.create_line(projected_verts[i0][0], projected_verts[i0][1],
+                        canvas_module._canvas.create_line(projected_verts[i0][0], projected_verts[i0][1],
                                            projected_verts[i1][0], projected_verts[i1][1], fill=color, width=1)
-                        _canvas.create_line(projected_verts[i1][0], projected_verts[i1][1],
+                        canvas_module._canvas.create_line(projected_verts[i1][0], projected_verts[i1][1],
                                            projected_verts[i2][0], projected_verts[i2][1], fill=color, width=1)
-                        _canvas.create_line(projected_verts[i2][0], projected_verts[i2][1],
+                        canvas_module._canvas.create_line(projected_verts[i2][0], projected_verts[i2][1],
                                            projected_verts[i0][0], projected_verts[i0][1], fill=color, width=1)
             
-            _canvas_window.update()
+            canvas_module._canvas_window.update()
         
         return f"Wireframe rendered: {len(meshes)} mesh(es)"
     
     def render_points(self, canvas_width=800, canvas_height=600, point_size=3):
         """Render scene as point cloud to canvas."""
-        global _canvas, _canvas_window
-        if not _canvas or not _canvas_window:
+        if not canvas_module._canvas or not canvas_module._canvas_window:
             return "Error: Canvas not open. Call canvas_open() first."
         
         if not self.camera:
@@ -1571,7 +1570,7 @@ class Scene:
                     if transformed.w > 0:
                         x = (transformed.x / transformed.w + 1) * 0.5 * canvas_width
                         y = (1 - (transformed.y / transformed.w + 1) * 0.5) * canvas_height
-                        _canvas.create_oval(x - point_size, y - point_size, 
+                        canvas_module._canvas.create_oval(x - point_size, y - point_size, 
                                           x + point_size, y + point_size, 
                                           fill=color, outline=color)
                         total_points += 1
@@ -1927,6 +1926,10 @@ def ipp_opengl_init(window_title="Ipp OpenGL"):
             glfw.terminate()
             return {"error": "Window creation failed", "success": False}
         glfw.make_context_current(window)
+        
+        # Add to global so we can track it
+        canvas_module._glfw_window = window
+        
         return {"success": True, "window": window, "library": "glfw"}
     except ImportError:
         try:
@@ -1936,10 +1939,72 @@ def ipp_opengl_init(window_title="Ipp OpenGL"):
             root.title(window_title)
             canvas = Canvas(root, width=800, height=600, bg="black")
             canvas.pack()
+            
+            # Store globally
+            canvas_module._tk_root = root
+            canvas_module._tk_canvas = canvas
+            
             root.update()
             return {"success": True, "canvas": canvas, "root": root, "library": "tkinter"}
         except ImportError:
             return {"error": "No OpenGL backend (install glfw or tkinter + PyOpenGL)", "success": False}
+
+
+def ipp_opengl_is_init():
+    """Check if OpenGL is initialized"""
+    if hasattr(canvas_module, '_glfw_window') and canvas_module._glfw_window:
+        return True
+    if hasattr(canvas_module, '_tk_root') and canvas_module._tk_root:
+        return True
+    return False
+
+
+def ipp_get_stack_trace():
+    """Get current call stack as list of function names"""
+    import traceback
+    stack = traceback.extract_stack()
+    return [f"{frame.filename}:{frame.lineno} in {frame.name}" for frame in stack[:-2]]
+
+
+def ipp_error_info():
+    """Get detailed error information"""
+    import sys
+    exc = sys.exc_info()
+    if exc[0] is None:
+        return {"error": "No current exception", "type": None, "message": None, "traceback": None}
+    import traceback
+    return {
+        "type": exc[0].__name__ if exc[0] else None,
+        "message": str(exc[1]) if exc[1] else None,
+        "traceback": traceback.format_exc(),
+    }
+
+
+def ipp_set_breakpoint(line, enabled=True):
+    """Set a breakpoint at given line number"""
+    if not hasattr(canvas_module, '_breakpoints'):
+        canvas_module._breakpoints = {}
+    canvas_module._breakpoints[line] = enabled
+    return {"line": line, "enabled": enabled, "breakpoints": list(canvas_module._breakpoints.keys())}
+
+
+def ipp_clear_breakpoints():
+    """Clear all breakpoints"""
+    if hasattr(canvas_module, '_breakpoints'):
+        canvas_module._breakpoints = {}
+    return {"breakpoints": []}
+
+
+def ipp_list_breakpoints():
+    """List all breakpoints"""
+    if hasattr(canvas_module, '_breakpoints'):
+        return {"breakpoints": list(canvas_module._breakpoints.keys())}
+    return {"breakpoints": []}
+
+
+def ipp_eval_context():
+    """Get current evaluation context info"""
+    return {"library": "ipp", "version": "1.5.9", "features": ["error_handling", "debugging", "3d", "opengl"]}
 
 
 def ipp_opengl_clear(r=0, g=0, b=0, a=1):
@@ -3799,6 +3864,13 @@ BUILTINS = {
     "opengl_set_uniform": ipp_opengl_set_uniform,
     "opengl_enable_depth": ipp_opengl_enable_depth,
     "opengl_swap_buffers": ipp_opengl_swap_buffers,
+    "opengl_is_init": ipp_opengl_is_init,
+    "get_stack_trace": ipp_get_stack_trace,
+    "error_info": ipp_error_info,
+    "set_breakpoint": ipp_set_breakpoint,
+    "clear_breakpoints": ipp_clear_breakpoints,
+    "list_breakpoints": ipp_list_breakpoints,
+    "eval_context": ipp_eval_context,
     "split": ipp_split,
     "join": ipp_join,
     "upper": ipp_upper,
