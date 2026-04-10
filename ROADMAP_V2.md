@@ -61,10 +61,15 @@
 | **v1.5.5.2** | ✅ DONE | Quaternion (create, slerp, to_mat4) |
 | **v1.5.5.3** | ✅ DONE | Scene Graph Classes (Scene, Node, Camera, Mesh, Light) |
 | **v1.5.5.4** | ✅ DONE | Basic Renderer (3D->2D projection) |
-| **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) |
+| **v1.5.5.5** | 📋 PLANNED | OpenGL Renderer (optional, requires OpenGL) - moved to v1.5.8 |
+| **v1.5.7** | 📋 PLANNED | 3D Visualization (Wireframe rendering via canvas) |
+| **v1.5.8** | 📋 PLANNED | Performance & Profiling (Memory tools, cache) |
+| **v1.5.9** | 📋 PLANNED | Error Handling & Debugging (Stack traces, debug mode) |
+| **v1.5.10** | 📋 PLANNED | Standard Library Additions (More builtins) |
+| **v1.5.11** | 📋 PLANNED | Module System (Import/export improvements) |
+| **v1.5.12** | 📋 PLANNED | Documentation & Testing (Complete test suite) |
+| **v1.5.13** | 📋 PLANNED | Final Polish (Optimization, cleanup) |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
-| **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
-| **v2.0.0** | 📋 PLANNED | Package Manager + Full Ecosystem + Game Engine |
 
 ---
 
@@ -615,10 +620,49 @@
 - [x] `scene.render()` — basic render (3D->2D projection)
 - [x] `scene.render_to_canvas()` — get 2D screen coordinates
 
-### v1.5.5.5 - OpenGL Renderer [OPTIONAL]
+### v1.5.5.5 - OpenGL Renderer [OPTIONAL - MOVED TO v1.5.8]
 - [ ] OpenGL-based renderer
 - [ ] Shader support
 - [ ] Smooth shading
+
+### v1.5.7 - 3D Visualization
+- [ ] Wireframe rendering via canvas
+- [ ] Point cloud rendering
+- [ ] Line rendering for edges
+
+### v1.5.8 - Performance & Profiling + OpenGL
+- [ ] Memory profiling tools
+- [ ] Bytecode cache improvements
+- [ ] Performance benchmarks
+- [ ] OpenGL-based renderer (optional, requires OpenGL)
+- [ ] Shader support
+- [ ] Smooth shading
+
+### v1.5.9 - Error Handling & Debugging
+- [ ] Better stack traces
+- [ ] Debug mode with breakpoints
+- [ ] Error location highlighting
+
+### v1.5.10 - Standard Library Additions
+- [ ] More math functions
+- [ ] File system utilities
+- [ ] Date/time functions
+
+### v1.5.11 - Module System
+- [ ] Import/export improvements
+- [ ] Module caching
+- [ ] Package support
+
+### v1.5.12 - Documentation & Testing
+- [ ] Complete test coverage
+- [ ] API documentation
+- [ ] Examples/tutorials
+
+### v1.5.13 - Final Polish
+- [ ] Code cleanup
+- [ ] Performance optimization
+- [ ] Bug fixes
+
 ---
 
 ## v1.6.0 — C++ Integration 📋 PLANNED

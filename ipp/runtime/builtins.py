@@ -1492,6 +1492,93 @@ class Scene:
         
         return "\n".join(lines)
     
+    def render_wireframe(self, canvas_width=800, canvas_height=600):
+        """Render scene as wireframe to canvas."""
+        global _canvas, _canvas_window
+        if not _canvas or not _canvas_window:
+            return "Error: Canvas not open. Call canvas_open() first."
+        
+        if not self.camera:
+            return "Error: No camera set. Use scene.set_camera(camera)."
+        
+        proj = self.camera.get_projection()
+        cam_pos = self.camera.position
+        view = ipp_mat4_look_at(cam_pos, Vector3(cam_pos.x, cam_pos.y, cam_pos.z - 1), Vector3(0, 1, 0))
+        
+        meshes = [n for n in self.get_all_nodes() if isinstance(n, Mesh)]
+        
+        colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "gray"]
+        
+        for mi, mesh in enumerate(meshes):
+            color = colors[mi % len(colors)]
+            world_mat = mesh.get_transform()
+            vp = ipp_mat4_multiply(proj, view)
+            mvp = ipp_mat4_multiply(vp, world_mat)
+            
+            projected_verts = []
+            for v in mesh.vertices:
+                if isinstance(v, (list, tuple)) and len(v) >= 3:
+                    vec = Vector4(v[0], v[1], v[2], 1)
+                    transformed = mvp.transform_vector(vec)
+                    if transformed.w > 0:
+                        x = (transformed.x / transformed.w + 1) * 0.5 * canvas_width
+                        y = (1 - (transformed.y / transformed.w + 1) * 0.5) * canvas_height
+                        projected_verts.append((x, y))
+            
+            for i in range(0, len(mesh.indices), 3):
+                if i + 2 < len(mesh.indices):
+                    i0, i1, i2 = mesh.indices[i], mesh.indices[i+1], mesh.indices[i+2]
+                    if i0 < len(projected_verts) and i1 < len(projected_verts) and i2 < len(projected_verts):
+                        _canvas.create_line(projected_verts[i0][0], projected_verts[i0][1],
+                                           projected_verts[i1][0], projected_verts[i1][1], fill=color, width=1)
+                        _canvas.create_line(projected_verts[i1][0], projected_verts[i1][1],
+                                           projected_verts[i2][0], projected_verts[i2][1], fill=color, width=1)
+                        _canvas.create_line(projected_verts[i2][0], projected_verts[i2][1],
+                                           projected_verts[i0][0], projected_verts[i0][1], fill=color, width=1)
+            
+            _canvas_window.update()
+        
+        return f"Wireframe rendered: {len(meshes)} mesh(es)"
+    
+    def render_points(self, canvas_width=800, canvas_height=600, point_size=3):
+        """Render scene as point cloud to canvas."""
+        global _canvas, _canvas_window
+        if not _canvas or not _canvas_window:
+            return "Error: Canvas not open. Call canvas_open() first."
+        
+        if not self.camera:
+            return "Error: No camera set. Use scene.set_camera(camera)."
+        
+        proj = self.camera.get_projection()
+        cam_pos = self.camera.position
+        view = ipp_mat4_look_at(cam_pos, Vector3(cam_pos.x, cam_pos.y, cam_pos.z - 1), Vector3(0, 1, 0))
+        
+        meshes = [n for n in self.get_all_nodes() if isinstance(n, Mesh)]
+        total_points = 0
+        
+        colors = ["red", "blue", "green", "purple", "orange", "cyan"]
+        
+        for mi, mesh in enumerate(meshes):
+            color = colors[mi % len(colors)]
+            world_mat = mesh.get_transform()
+            vp = ipp_mat4_multiply(proj, view)
+            mvp = ipp_mat4_multiply(vp, world_mat)
+            
+            for v in mesh.vertices:
+                if isinstance(v, (list, tuple)) and len(v) >= 3:
+                    vec = Vector4(v[0], v[1], v[2], 1)
+                    transformed = mvp.transform_vector(vec)
+                    if transformed.w > 0:
+                        x = (transformed.x / transformed.w + 1) * 0.5 * canvas_width
+                        y = (1 - (transformed.y / transformed.w + 1) * 0.5) * canvas_height
+                        _canvas.create_oval(x - point_size, y - point_size, 
+                                          x + point_size, y + point_size, 
+                                          fill=color, outline=color)
+                        total_points += 1
+        
+        _canvas_window.update()
+        return f"Point cloud rendered: {total_points} points"
+    
     def __repr__(self):
         return f"Scene({self.name}, nodes={len(self.nodes)})"
 
