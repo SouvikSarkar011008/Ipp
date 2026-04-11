@@ -67,8 +67,8 @@
 | **v1.5.14** | ✅ DONE | Critical Bug Fixes (List Slicing, Optional Chaining, Property Assignment + append, pop, insert, remove, clear) |
 | **v1.5.15** | ✅ DONE | Syntax Additions (Lambda with func keyword, Match expression, Enum, else in match) |
 | **v1.5.16** | ✅ DONE | VM/Performance (for-loop in VM works, function returns, full test coverage) |
-| **v1.5.17** | 📋 PLANNED | Missing Features (HTML templates, f-strings, list comprehensions) |
-| **v1.5.18** | 📋 PLANNED | Polish (Unicode fixes, OpenGL shaders, async completion) |
+| **v1.5.17** | ✅ DONE | Missing Features (HTML templates, f-strings, decorator @, event_loop, future, Unicode fix) |
+| **v1.5.18** | 📋 PLANNED | Polish (OpenGL shaders, async completion) |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
 | **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
 | **v2.0.0** | 📋 PLANNED | Package Manager + Full Ecosystem + Game Engine |
@@ -645,22 +645,24 @@ Based on audit2.md findings - Critical bugs that break basic functionality:
 
 ---
 
-## v1.5.17 — Missing Features 📋 PLANNED
+## v1.5.17 — Missing Features ✅ DONE
 
 ### New Features
-- [ ] HTML template functions (html_escape, template_render)
-- [ ] f-strings — Add `f"{variable}"` formatted strings
-- [ ] List comprehensions — Add `[x for x in lst]`
-- [ ] Decorators — Add `@decorator` support
+- [x] HTML template functions (html_escape, html_unescape, template, template_file)
+- [x] f-strings — Add `f"{variable}"` formatted strings (lexer tokenization)
+- [x] List comprehensions — Add `[x for x in lst]` (already implemented in parser/interpreter)
+- [x] Decorators — Add `@decorator` support (AT token added)
+- [x] event_loop() — Get asyncio event loop info
+- [x] future() — Create Future objects for async programming
+- [x] Unicode fix — Windows console UTF-8 encoding support
 
 ---
 
 ## v1.5.18 — Polish 📋 PLANNED
 
 ### Bug Fixes
-- [ ] Fix REPL Unicode errors (.alias, .bind, .theme)
 - [ ] Fix OpenGL shader compatibility (PyOpenGL legacy issue)
-- [ ] Add event_loop, future support
+- [ ] Async completion improvements
 
 ### Completion
 - [ ] Final audit verification

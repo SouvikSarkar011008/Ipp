@@ -13,6 +13,12 @@ import time
 import signal
 import threading
 
+# Set UTF-8 encoding for Windows compatibility
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ipp.lexer.lexer import tokenize
@@ -67,7 +73,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.16"
+VERSION = "1.5.17"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.

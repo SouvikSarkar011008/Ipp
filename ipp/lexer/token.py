@@ -12,6 +12,9 @@ class TokenType(Enum):
     FALSE = auto()
     NIL = auto()
 
+    # f-strings (v1.5.17)
+    FSTRING = auto()
+
     # Keywords
     VAR = auto()
     LET = auto()
@@ -50,6 +53,9 @@ class TokenType(Enum):
     YIELD = auto()
     ASYNC = auto()
     AWAIT = auto()
+
+    # Decorator (v1.5.17)
+    AT = auto()
 
     # Operators
     PLUS = auto()

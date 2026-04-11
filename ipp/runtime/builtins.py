@@ -40,7 +40,15 @@ def ipp_print(*args):
             output.append(str(arg))
         else:
             output.append(str(arg))
-    print(" ".join(output))
+    text = " ".join(output)
+    # Handle Unicode output on Windows
+    try:
+        print(text)
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        # Fallback: encode with error handling
+        import sys
+        text = text.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+        print(text)
     return None
 
 
@@ -579,6 +587,61 @@ def ipp_is_coroutine(obj):
     return isinstance(obj, IppCoroutine)
 
 
+# v1.5.17 - Event Loop and Future (audit2.md)
+
+class IppFuture:
+    """Represents a future value that may not be ready yet"""
+    def __init__(self):
+        self._value = None
+        self._ready = False
+        self._callbacks = []
+    
+    def resolve(self, value):
+        self._value = value
+        self._ready = True
+        for cb in self._callbacks:
+            cb(value)
+    
+    def is_ready(self):
+        return self._ready
+    
+    def get(self):
+        if self._ready:
+            return self._value
+        raise RuntimeError("Future not ready")
+    
+    def then(self, callback):
+        self._callbacks.append(callback)
+        if self._ready:
+            callback(self._value)
+        return self
+
+
+def ipp_future():
+    """Create a new Future"""
+    return IppFuture()
+
+
+def ipp_event_loop():
+    """Get event loop info"""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        return {
+            "running": loop.is_running(),
+            "closed": loop.is_closed(),
+            "debug": loop.get_debug()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def ipp_sleep_async(seconds):
+    """Async sleep - can be used with async_run"""
+    import asyncio
+    return asyncio.sleep(float(seconds))
+
+
 # v1.5.0 - Additional Builtins
 
 # Random
@@ -829,6 +892,39 @@ def ipp_sub(text, pattern, replacement):
 def ipp_escape(text):
     import re
     return re.escape(str(text))
+
+def ipp_html_escape(text):
+    """Escape HTML special characters"""
+    s = str(text)
+    s = s.replace('&', '&amp;')
+    s = s.replace('<', '&lt;')
+    s = s.replace('>', '&gt;')
+    s = s.replace('"', '&quot;')
+    s = s.replace("'", '&#39;')
+    return s
+
+def ipp_html_unescape(text):
+    """Unescape HTML entities"""
+    s = str(text)
+    s = s.replace('&amp;', '&')
+    s = s.replace('&lt;', '<')
+    s = s.replace('&gt;', '>')
+    s = s.replace('&quot;', '"')
+    s = s.replace('&#39;', "'")
+    return s
+
+def ipp_template(template_str, **kwargs):
+    """Simple template string interpolation"""
+    s = str(template_str)
+    for key, value in kwargs.items():
+        s = s.replace('{{' + key + '}}', str(value))
+    return s
+
+def ipp_template_file(path, **kwargs):
+    """Read and render template file"""
+    with open(path, 'r') as f:
+        content = f.read()
+    return ipp_template(content, **kwargs)
 
 # Path
 def ipp_glob(pattern):
@@ -3618,6 +3714,9 @@ BUILTINS = {
     "async_run": ipp_async_run,
     "create_task": ipp_create_task,
     "is_coroutine": ipp_is_coroutine,
+    "future": ipp_future,
+    "event_loop": ipp_event_loop,
+    "sleep_async": ipp_sleep_async,
     "sleep": ipp_sleep,
     "seed": ipp_seed,
     "reverse": ipp_reverse,
@@ -3649,6 +3748,10 @@ BUILTINS = {
     "find_all": ipp_find_all,
     "sub": ipp_sub,
     "escape": ipp_escape,
+    "html_escape": ipp_html_escape,
+    "html_unescape": ipp_html_unescape,
+    "template": ipp_template,
+    "template_file": ipp_template_file,
     "glob": ipp_glob,
     "pathfind": ipp_pathfind,
     "neighbors": ipp_neighbors,

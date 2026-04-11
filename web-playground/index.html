@@ -9,10 +9,24 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
+        :root {
+            --bg-dark: #1a1b26;
+            --bg-main: #24283b;
+            --bg-light: #414868;
+            --accent: #7aa2f7;
+            --accent-green: #9ece6a;
+            --accent-pink: #bb9af7;
+            --accent-red: #f7768e;
+            --accent-cyan: #7dcfff;
+            --accent-yellow: #e0af68;
+            --text: #c0caf5;
+            --text-dim: #565f89;
+        }
+        
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background: #282a36;
-            color: #f8f8f2;
+            background: var(--bg-dark);
+            color: var(--text);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -20,44 +34,61 @@
         }
         
         header {
-            background: #44475a;
-            padding: 12px 24px;
+            background: var(--bg-main);
+            padding: 10px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 2px solid #6272a4;
+            border-bottom: 2px solid var(--accent);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         
-        .logo { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-        .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #50fa7b, #8be9fd); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #282a36; font-weight: bold; font-size: 14px; }
-        .logo-text { color: #f8f8f2; }
-        .logo-text span { color: #ff79c6; }
-        .version-tag { background: #bd93f9; color: #282a36; padding: 2px 10px; border-radius: 10px; font-size: 11px; margin-left: 8px; font-weight: 600; }
+        .logo { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .logo-icon { 
+            width: 32px; height: 32px; 
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); 
+            border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center; 
+            color: var(--bg-dark); font-weight: bold; font-size: 12px; 
+        }
+        .logo-text { color: var(--text); }
+        .logo-text span { color: var(--accent-pink); }
+        .version-tag { 
+            background: var(--accent-pink); color: var(--bg-dark); 
+            padding: 2px 10px; border-radius: 10px; font-size: 11px; 
+            margin-left: 8px; font-weight: 600; 
+        }
         
-        .toolbar { display: flex; gap: 8px; }
+        .toolbar { display: flex; gap: 6px; }
         
         button {
-            background: #6272a4;
-            color: #f8f8f2;
+            background: var(--bg-light);
+            color: var(--text);
             border: none;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
             transition: all 0.15s;
+            display: flex; align-items: center; gap: 4px;
         }
         
-        button:hover { background: #bd93f9; color: #282a36; }
+        button:hover { background: var(--accent); color: var(--bg-dark); }
         
-        button.run-btn { background: #50fa7b; color: #282a36; font-weight: 700; }
-        button.run-btn:hover { background: #8be9fd; }
-        
+        button.run-btn { background: var(--accent-green); color: var(--bg-dark); font-weight: 700; }
+        button.run-btn:hover { background: var(--accent-cyan); }
+
         .main { flex: 1; display: flex; overflow: hidden; }
         
-        .editor-section { flex: 1; display: flex; flex-direction: column; border-right: 2px solid #44475a; min-width: 0; }
+        .editor-section { flex: 1; display: flex; flex-direction: column; border-right: 2px solid var(--bg-light); min-width: 0; }
         
-        .section-header { background: #44475a; padding: 10px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #8be9fd; border-bottom: 1px solid #6272a4; display: flex; justify-content: space-between; align-items: center; }
+        .section-header { 
+            background: var(--bg-main); padding: 8px 14px; 
+            font-size: 11px; font-weight: 600; text-transform: uppercase; 
+            color: var(--accent-cyan); border-bottom: 1px solid var(--bg-light); 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
         
         .editor-container { flex: 1; position: relative; overflow: hidden; }
         
@@ -65,30 +96,64 @@
             height: 100% !important;
             font-size: 14px;
             font-family: 'Fira Code', 'Consolas', monospace;
-            background: #282a36;
+            background: var(--bg-dark) !important;
         }
         
-        .CodeMirror-gutters { background: #282a36 !important; border-right: 1px solid #44475a !important; }
-        .CodeMirror-linenumber { color: #6272a4 !important; }
+        .CodeMirror-gutters { background: var(--bg-dark) !important; border-right: 1px solid var(--bg-light) !important; }
+        .CodeMirror-linenumber { color: var(--text-dim) !important; }
         
-        .output-section { flex: 1; display: flex; flex-direction: column; min-width: 280px; background: #282a36; }
+        .right-panels { display: flex; flex-direction: column; min-width: 320px; }
         
-        .output-content { flex: 1; padding: 16px; font-family: 'Fira Code', monospace; font-size: 13px; overflow: auto; line-height: 1.5; }
+        .output-section { flex: 1; display: flex; flex-direction: column; background: var(--bg-dark); border-bottom: 2px solid var(--bg-light); }
+        
+        .output-content { 
+            flex: 1; padding: 12px; font-family: 'Fira Code', monospace; 
+            font-size: 12px; overflow: auto; line-height: 1.5; 
+        }
         .output-line { padding: 2px 0; white-space: pre-wrap; }
-        .output-line.error { color: #ff5555; background: rgba(255,85,85,0.15); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
-        .output-line.success { color: #50fa7b; }
-        .output-line.info { color: #8be9fd; font-style: italic; }
-        .output-line.print { color: #f8f8f2; }
+        .output-line.error { color: var(--accent-red); background: rgba(247,118,142,0.15); padding: 6px 10px; border-radius: 4px; margin: 4px 0; }
+        .output-line.success { color: var(--accent-green); }
+        .output-line.info { color: var(--accent-cyan); font-style: italic; }
+        .output-line.print { color: var(--text); }
+        .output-line.warn { color: var(--accent-yellow); }
         
-        .canvas-section { flex: 1; display: flex; flex-direction: column; min-width: 280px; background: #282a36; border-left: 2px solid #44475a; }
-        .canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #1a1a2e; padding: 16px; }
-        .canvas-container canvas { border: 2px solid #6272a4; border-radius: 4px; background: #000; }
+        .canvas-section { flex: 1; display: flex; flex-direction: column; background: var(--bg-dark); }
+        .canvas-container { 
+            flex: 1; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; background: #0d0d12; padding: 12px; 
+        }
+        .canvas-container canvas { 
+            border: 2px solid var(--bg-light); border-radius: 4px; background: #000; 
+            max-width: 100%; max-height: 100%;
+        }
         
-        .status-bar { background: #44475a; color: #f8f8f2; padding: 6px 24px; font-size: 12px; display: flex; justify-content: space-between; border-top: 1px solid #6272a4; }
-        .status-left { display: flex; align-items: center; gap: 16px; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #50fa7b; }
-        .status-dot.error { background: #ff5555; }
-        .status-dot.running { background: #f1fa8c; animation: pulse 0.5s infinite; }
+        .demo-tabs {
+            display: flex;
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--bg-light);
+            overflow-x: auto;
+        }
+        .demo-tab {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .demo-tab:hover { color: var(--text); background: var(--bg-light); }
+        .demo-tab.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+        
+        .status-bar { 
+            background: var(--bg-main); color: var(--text); padding: 5px 20px; 
+            font-size: 11px; display: flex; justify-content: space-between; 
+            border-top: 1px solid var(--bg-light); 
+        }
+        .status-left { display: flex; align-items: center; gap: 12px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); }
+        .status-dot.error { background: var(--accent-red); }
+        .status-dot.running { background: var(--accent-yellow); animation: pulse 0.5s infinite; }
         
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         
@@ -97,8 +162,8 @@
             bottom: 50px;
             left: 50%;
             transform: translateX(-50%) translateY(100px);
-            background: #50fa7b;
-            color: #282a36;
+            background: var(--accent-green);
+            color: var(--bg-dark);
             padding: 10px 20px;
             border-radius: 6px;
             font-size: 13px;
@@ -108,13 +173,58 @@
             z-index: 1000;
         }
         .snackbar.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        .snackbar.error { background: #ff5555; color: #f8f8f2; }
+        .snackbar.error { background: var(--accent-red); color: var(--text); }
         
-        .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6272a4; text-align: center; }
-        .welcome h2 { font-size: 22px; margin-bottom: 10px; color: #f8f8f2; }
-        .welcome p { font-size: 14px; margin-bottom: 16px; }
-        .shortcuts { display: flex; gap: 10px; }
-        .shortcut { background: #44475a; padding: 6px 12px; border-radius: 4px; font-size: 12px; }
+        .welcome { 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 100%; color: var(--text-dim); 
+            text-align: center; 
+        }
+        .welcome h2 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+        .welcome p { font-size: 13px; margin-bottom: 14px; }
+        .shortcuts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .shortcut { background: var(--bg-light); padding: 5px 10px; border-radius: 4px; font-size: 11px; }
+        
+        .loading-overlay {
+            position: absolute; inset: 0;
+            background: rgba(26,27,38,0.9);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 12px;
+            z-index: 100;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--bg-light);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .help-panel {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-main);
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: auto;
+            z-index: 200;
+            display: none;
+        }
+        .help-panel.show { display: block; }
+        .help-panel h3 { color: var(--accent-cyan); margin-bottom: 12px; }
+        .help-panel pre { 
+            background: var(--bg-dark); padding: 10px; 
+            border-radius: 4px; overflow: auto; font-size: 12px; 
+        }
+        .help-close {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; color: var(--text-dim);
+            font-size: 20px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -122,9 +232,10 @@
         <div class="logo">
             <div class="logo-icon">Ip</div>
             <div class="logo-text">Ipp <span>Playground</span></div>
-            <span class="version-tag">v1.5.2b</span>
+            <span class="version-tag">v1.5.16</span>
         </div>
         <div class="toolbar">
+            <button onclick="showHelp()">❓ Help</button>
             <button onclick="loadFile()">📂 Load</button>
             <button onclick="saveFile()">💾 Save</button>
             <button onclick="shareLink()">🔗 Share</button>
@@ -132,6 +243,14 @@
             <button class="run-btn" onclick="runCode()">▶️ Run</button>
         </div>
     </header>
+    
+    <div class="demo-tabs" id="demoTabs">
+        <div class="demo-tab active" onclick="loadDemo('canvas')">🎨 Canvas</div>
+        <div class="demo-tab" onclick="loadDemo('3d')">🌐 3D Scene</div>
+        <div class="demo-tab" onclick="loadDemo('math')">🔢 3D Math</div>
+        <div class="demo-tab" onclick="loadDemo('web')">🌐 Web APIs</div>
+        <div class="demo-tab" onclick="loadDemo('game')">🎮 Game</div>
+    </div>
     
     <div class="main">
         <div class="editor-section">
@@ -144,31 +263,33 @@
             </div>
         </div>
         
-        <div class="output-section">
-            <div class="section-header">
-                <span>📟 Output</span>
-                <button onclick="copyOutput()" style="padding:2px 8px;font-size:11px;background:#6272a4;">Copy</button>
-            </div>
-            <div class="output-content" id="output">
-                <div class="welcome">
-                    <h2>🚀 Welcome to Ipp Playground</h2>
-                    <p>Write your code and press <strong>Ctrl+Enter</strong> to run</p>
-                    <div class="shortcuts">
-                        <span class="shortcut">Ctrl+Enter Run</span>
-                        <span class="shortcut">Ctrl+S Save</span>
-                        <span class="shortcut">Ctrl+O Load</span>
+        <div class="right-panels">
+            <div class="output-section">
+                <div class="section-header">
+                    <span>📟 Output</span>
+                    <button onclick="copyOutput()" style="padding:2px 8px;font-size:10px;background:var(--bg-light);">Copy</button>
+                </div>
+                <div class="output-content" id="output">
+                    <div class="welcome">
+                        <h2>🚀 Welcome to Ipp Playground</h2>
+                        <p>Write your code and press <strong>Ctrl+Enter</strong> to run</p>
+                        <div class="shortcuts">
+                            <span class="shortcut">Ctrl+Enter Run</span>
+                            <span class="shortcut">Ctrl+S Save</span>
+                            <span class="shortcut">Ctrl+O Load</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="canvas-section">
-            <div class="section-header">
-                <span>🎨 Canvas</span>
-                <button onclick="clearCanvas()" style="padding:2px 8px;font-size:11px;background:#6272a4;">Clear</button>
-            </div>
-            <div class="canvas-container">
-                <canvas id="ippCanvas" width="400" height="300"></canvas>
+            
+            <div class="canvas-section">
+                <div class="section-header">
+                    <span>🎨 Canvas / 3D Preview</span>
+                    <button onclick="clearCanvas()" style="padding:2px 8px;font-size:10px;background:var(--bg-light);">Clear</button>
+                </div>
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="ippCanvas" width="400" height="250"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -178,10 +299,21 @@
             <div class="status-dot" id="status-dot"></div>
             <span id="status-text">Ready</span>
         </div>
-        <span>Ipp v1.5.2b | JavaScript Runtime</span>
+        <span>Ipp v1.5.16 | JS Runtime</span>
     </div>
     
     <div id="snackbar" class="snackbar"></div>
+    
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <span>Loading Ipp Runtime...</span>
+    </div>
+    
+    <div class="help-panel" id="helpPanel">
+        <button class="help-close" onclick="hideHelp()">×</button>
+        <h3>📖 Ipp Language Reference</h3>
+        <pre id="helpContent"></pre>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
@@ -190,149 +322,420 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
     
     <script>
-        // Default code
-        const defaultCode = `# Ipp Language Playground v1.5.3a
-# Write your Ipp code here
+        const demos = {
+            canvas: `# Canvas Drawing Demo (v1.5.16)
+canvas.clear("#1a1b26")
 
-# Canvas Drawing Demo
-canvas.clear("white")
+# Draw geometric shapes
+canvas.rect(20, 20, 120, 40, "#7aa2f7")
+canvas.rect(20, 70, 120, 40, "#bb9af7")
 
-# Draw a red rectangle
-canvas.rect(10, 10, 150, 50, "red")
+# Circles with different colors
+canvas.circle(250, 40, 25, "#9ece6a")
+canvas.circle(300, 40, 25, "#e0af68")
+canvas.circle(350, 40, 25, "#f7768e")
 
-# Draw a blue circle
-canvas.circle(200, 80, 30, "blue")
+# Lines
+canvas.line(20, 130, 180, 130, "#7dcfff")
+canvas.line(20, 145, 180, 145, "#7dcfff")
 
-# Draw a green line
-canvas.line(10, 150, 300, 150, "green")
+# Text
+canvas.text(20, 180, "Ipp Playground v1.5.16", "#c0caf5")
+canvas.text(20, 200, "Canvas API - 2D Graphics", "#565f89")
 
-# Draw some text
-canvas.text(50, 120, "Hello Ipp!", "black")
-
-# Print output
 print("Canvas drawing complete!")
-print("Check the Canvas panel on the right!")
+print("Try the 3D Math demo for more!")
+`,
+            math: `# 3D Math Demo (v1.5.16)
+# Simulated 3D math operations
 
-# Variables
-var x = 10
-var y = 20
-print("x + y = " + str(x + y))
-`;
+var v1 = vec4(1, 2, 3, 1)
+var v2 = vec4(4, 5, 6, 1)
+print("vec4 operations:")
 
-var isTrue = true
-if isTrue {
-    print("This is true!")
+# Vector addition
+var v3 = vec4(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2], 1)
+print("v1 + v2 = " + str(v3))
+
+# Vector dot product
+var dot = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
+print("dot(v1, v2) = " + str(dot))
+
+# Vector magnitude
+var mag = sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2])
+print("|v1| = " + str(mag))
+
+# Matrix operations (2x2 demo)
+var m = [[1, 2], [3, 4]]
+print("\\nMatrix operations:")
+print("det(m) = " + str(1*4 - 2*3))
+
+# Quaternion (simulated)
+print("\\nQuaternion: q = (x, y, z, w)")
+var q = [0.5, 0.5, 0.5, 0.5]
+print("q = " + str(q))
+
+print("\\n✅ 3D Math features ready!")
+print("Use render_to_canvas() for 3D rendering!")
+`,
+            '3d': `# 3D Scene Graph Demo (v1.5.16)
+# Simulated 3D rendering
+
+print("Setting up 3D scene...")
+
+# Create scene nodes
+var root = { _type: "scene", name: "root" }
+var camera = { _type: "camera", pos: [0, 5, 10], fov: 60 }
+var mesh = { _type: "mesh", shape: "cube", color: "#7aa2f7" }
+var light = { _type: "light", pos: [5, 10, 5], color: "#ffffff" }
+
+print("Scene graph created:")
+print("  - Root node")
+print("  - Camera at (0, 5, 10)")
+print("  - Cube mesh")
+print("  - Point light at (5, 10, 5)")
+
+# Draw a simple 3D wireframe preview on canvas
+canvas.clear("#0d0d12")
+canvas.line(50, 100, 150, 100, "#7aa2f7")   # top
+canvas.line(50, 180, 150, 180, "#7aa2f7")   # bottom
+canvas.line(50, 100, 50, 180, "#7aa2f7")    # left
+canvas.line(150, 100, 150, 180, "#7aa2f7")  # right
+canvas.line(80, 80, 120, 80, "#bb9af7")     # top-front
+canvas.line(80, 200, 120, 200, "#bb9af7")   # bottom-front
+canvas.line(80, 80, 80, 200, "#bb9af7")     # left-front
+canvas.line(120, 80, 120, 200, "#bb9af7")  # right-front
+
+canvas.text(70, 230, "3D Cube Wireframe", "#565f89")
+
+print("\\n✅ render_to_canvas() available!")
+`,
+            web: `# Web APIs Demo (v1.5.16)
+# Browser API demonstrations
+
+print("=== Web API Features ===")
+
+# JSON handling
+var data = {"name": "Ipp", "version": "1.5.16", "features": ["Canvas", "Web", "3D"]}
+print("JSON: " + str(data))
+print("Access: name=" + data["name"])
+
+# Date/time
+var now = "2026-04-11"
+print("\\nDate: " + now)
+
+# String operations
+var text = "Hello, Ipp World!"
+print("\\nString: " + text)
+print("len: " + str(len(text)))
+print("upper: " + str(text.upper()))
+print("lower: " + str(text.lower()))
+
+# Array methods
+var nums = [5, 2, 8, 1, 9]
+print("\\nArray: " + str(nums))
+print("sorted: " + str(sorted(nums)))
+print("max: " + str(max(nums)))
+print("min: " + str(min(nums)))
+print("sum: " + str(sum(nums)))
+
+# Type checking
+print("\\nType checks:")
+print("type(42) = " + type(42))
+print("type('hi') = " + type("hi"))
+print("type(true) = " + type(true))
+print("type([]) = " + type([]))
+
+print("\\n✅ Web API features working!")
+`,
+            game: `# Game Demo - Simple Animation (v1.5.16)
+
+print("🎮 Ipp Game Engine Demo")
+print("Press Run to see animation!")
+
+# Animation state
+var frame = 0
+var x = 50
+
+func animate() {
+    canvas.clear("#1a1b26")
+    
+    # Draw player
+    canvas.rect(x, 100, 30, 30, "#9ece6a")
+    canvas.circle(x + 15, 90, 8, "#9ece6a")
+    
+    # Draw ground
+    canvas.line(20, 135, 380, 135, "#565f89")
+    canvas.line(20, 136, 380, 136, "#565f89")
+    
+    # Draw score
+    canvas.text(20, 160, "Score: " + str(frame * 10), "#7dcfff")
+    canvas.text(20, 180, "Use arrow keys to move", "#565f89")
+    
+    # Update position
+    x = x + 2
+    if x > 370 { x = 50 }
+    frame = frame + 1
+    
+    print("Frame: " + str(frame))
 }
-`;
 
-        // Initialize CodeMirror editor
-        const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
-            mode: 'ipp',
-            theme: 'dracula',
-            lineNumbers: true,
-            matchBrackets: true,
-            autoCloseBrackets: true,
-            tabSize: 4,
-            indentWithTabs: false,
-            lineWrapping: true,
-            styleActiveLine: true,
-            extraKeys: {
-                'Ctrl-Enter': 'runCode',
-                'Ctrl-S': 'saveFile',
-                'Ctrl-O': 'loadFile'
-            }
-        });
+# Run one frame
+animate()
+print("\\n✅ Game loop ready!")
+print("Use for loops for continuous animation!")
+`
+        };
 
-        // Register Ipp language mode
-        CodeMirror.defineMode('ipp', function() {
-            const keywords = /^(func|class|var|let|if|elif|else|for|while|return|break|continue|import|try|catch|throw|finally|match|case|default|async|await|nil|true|false|yield|this|new|in)\b/;
-            const builtins = /^(print|str|int|float|len|abs|type|range|assert|list|dict|max|min|sum|sorted|reversed|enumerate|zip|map|filter|input|chr|ord|hex|bin|oct|len|hasattr|getattr|setattr|slice)\b/;
-            
-            return {
-                startState: function() { return { inString: false, stringChar: null }; },
-                token: function(stream, state) {
-                    if (stream.eatSpace()) return null;
-                    
-                    // Comments
-                    if (stream.match(/^#.*/)) return 'comment';
-                    
-                    // Strings
-                    if (!state.inString && (stream.match(/^"/) || stream.match(/^'/))) {
-                        state.inString = true;
-                        state.stringChar = stream.string.charAt(stream.pos - 1);
-                        return 'string';
-                    }
-                    if (state.inString) {
-                        while (!stream.eol()) {
-                            const ch = stream.next();
-                            if (ch === state.stringChar && stream.peek() !== state.stringChar) {
-                                state.inString = false;
-                                break;
-                            }
+        const helpContent = `Ipp Language v1.5.16 Reference
+=====================================
+
+📝 VARIABLES
+  var x = 10
+  let y = "hello"
+  
+🔢 DATA TYPES
+  Numbers: 42, 3.14
+  Strings: "hello", 'world'
+  Booleans: true, false
+  Lists: [1, 2, 3]
+  Dicts: {"key": "value"}
+  
+🎯 OPERATORS
+  Arithmetic: + - * / % ** //
+  Comparison: == != < > <= >=
+  Logical: and or not
+  Bitwise: & | ^ ~ << >>
+  
+🔄 CONTROL FLOW
+  if condition { ... }
+  elif condition { ... }
+  else { ... }
+  
+  for i in 0..10 { ... }
+  while condition { ... }
+  
+  match value {
+    case 1 { ... }
+    case 2 { ... }
+    default { ... }
+  }
+  
+📦 FUNCTIONS
+  func add(a, b) {
+    return a + b
+  }
+  
+🏛️ CLASSES
+  class Point {
+    func init(x, y) {
+      this.x = x
+      this.y = y
+    }
+  }
+  
+🖌️ CANVAS API
+  canvas.clear(color)
+  canvas.rect(x, y, w, h, color)
+  canvas.circle(x, y, r, color)
+  canvas.line(x1, y1, x2, y2, color)
+  canvas.text(x, y, text, color)
+  
+🔢 3D MATH (simulated)
+  vec4(x, y, z, w)
+  mat4() - 4x4 matrix
+  quat(x, y, z, w) - quaternion
+  
+🌐 SCENE GRAPH (simulated)
+  Scene(), Node(), Camera()
+  Mesh(), Light()
+  render_to_canvas()
+  
+📚 BUILTINS
+  print(str, int, float, len, abs
+  max, min, sum, sorted, range
+  type, input, chr, ord, hex, bin
+  list, dict, enumerate, zip, map, filter)`;
+
+        const defaultCode = demos.canvas;
+
+        let editor, currentDemo = 'canvas';
+        
+        window.onload = function() {
+            initEditor();
+            initCanvas();
+            loadInitialCode();
+            document.getElementById('loading').style.display = 'none';
+        };
+
+        function initEditor() {
+            editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+                mode: 'ipp',
+                theme: 'dracula',
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                tabSize: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                styleActiveLine: true,
+                extraKeys: {
+                    'Ctrl-Enter': 'runCode',
+                    'Ctrl-S': 'saveFile',
+                    'Ctrl-O': 'loadFile'
+                }
+            });
+
+            CodeMirror.defineMode('ipp', function() {
+                const keywords = /^(func|class|var|let|if|elif|else|for|while|return|break|continue|import|try|catch|throw|finally|match|case|default|async|await|nil|true|false|yield|this|new|in)\b/;
+                const builtins = /^(print|str|int|float|len|abs|type|range|assert|list|dict|max|min|sum|sorted|reversed|enumerate|zip|map|filter|input|chr|ord|hex|bin|oct|hasattr|getattr|setattr|slice|canvas|vec4|mat4|quat|scene|node|camera|mesh|light|render_to_canvas)\b/;
+                
+                return {
+                    startState: function() { return { inString: false, stringChar: null }; },
+                    token: function(stream, state) {
+                        if (stream.eatSpace()) return null;
+                        
+                        if (stream.match(/^#.*/)) return 'comment';
+                        
+                        if (!state.inString && (stream.match(/^"/) || stream.match(/^'/))) {
+                            state.inString = true;
+                            state.stringChar = stream.string.charAt(stream.pos - 1);
+                            return 'string';
                         }
-                        return 'string';
+                        if (state.inString) {
+                            while (!stream.eol()) {
+                                const ch = stream.next();
+                                if (ch === state.stringChar && stream.peek() !== state.stringChar) {
+                                    state.inString = false;
+                                    break;
+                                }
+                            }
+                            return 'string';
+                        }
+                        
+                        if (stream.match(/^\d+\.?\d*/)) return 'number';
+                        
+                        if (stream.match(keywords)) return 'keyword';
+                        if (stream.match(builtins)) return 'builtin';
+                        if (stream.match(/^[a-zA-Z_]\w*/)) return 'variable';
+                        if (stream.match(/^[+\-*/%=<>!&|^~]+/)) return 'operator';
+                        if (stream.match(/^[{}()\[\]:;,.]/)) return 'bracket';
+                        
+                        stream.next();
+                        return null;
                     }
-                    
-                    // Numbers
-                    if (stream.match(/^\d+\.?\d*/)) return 'number';
-                    
-                    // Keywords
-                    if (stream.match(keywords)) return 'keyword';
-                    
-                    // Built-in functions
-                    if (stream.match(builtins)) return 'builtin';
-                    
-                    // Identifiers
-                    if (stream.match(/^[a-zA-Z_]\w*/)) return 'variable';
-                    
-                    // Operators
-                    if (stream.match(/^[+\-*/%=<>!&|^~]+/)) return 'operator';
-                    
-                    // Brackets and punctuation
-                    if (stream.match(/^[{}()\[\]:;,.]/)) return 'bracket';
-                    
-                    stream.next();
-                    return null;
+                };
+            });
+
+            editor.on('cursorActivity', function() {
+                const cursor = editor.getCursor();
+                document.getElementById('cursor-info').textContent = 'Ln ' + (cursor.line + 1) + ', Col ' + (cursor.ch + 1);
+            });
+        }
+
+        function initCanvas() {
+            const canvas = document.getElementById('ippCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            window.canvasAPI = {
+                clear: function(color) {
+                    ctx.fillStyle = color || '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                },
+                rect: function(x, y, w, h, color) {
+                    ctx.fillStyle = color || '#9ece6a';
+                    ctx.fillRect(x, y, w, h);
+                },
+                circle: function(x, y, r, color) {
+                    ctx.fillStyle = color || '#bb9af7';
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                },
+                line: function(x1, y1, x2, y2, color) {
+                    ctx.strokeStyle = color || '#7dcfff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                },
+                text: function(x, y, text, color) {
+                    ctx.fillStyle = color || '#c0caf5';
+                    ctx.font = '14px Fira Code, monospace';
+                    ctx.fillText(text, x, y);
+                },
+                setSize: function(w, h) {
+                    canvas.width = w;
+                    canvas.height = h;
                 }
             };
-        });
+            
+            window.canvasAPI.clear('#1a1b26');
+        }
 
-        // Add custom styling for Ipp tokens
-        const style = document.createElement('style');
-        style.textContent = `
-            .cm-ipp-builtin { color: #50fa7b; font-weight: bold; }
-            .cm-ipp-variable { color: #8be9fd; }
-            .cm-ipp-bracket { color: #f8f8f2; }
-        `;
-        document.head.appendChild(style);
-
-        // Set initial code
-        const initialCode = getInitialCode() || defaultCode;
-        editor.setValue(initialCode);
-
-        // Update cursor info
-        editor.on('cursorActivity', function() {
-            const cursor = editor.getCursor();
-            document.getElementById('cursor-info').textContent = 'Ln ' + (cursor.line + 1) + ', Col ' + (cursor.ch + 1);
-        });
-
-        function getInitialCode() {
+        function loadInitialCode() {
             const params = new URLSearchParams(window.location.search);
             const shared = params.get('code');
             if (shared) {
-                try { return decodeURIComponent(atob(shared)); } catch (e) { console.log('Failed to decode:', e); }
+                try {
+                    editor.setValue(decodeURIComponent(atob(shared)));
+                    showSnackbar('Shared code loaded!');
+                } catch (e) {
+                    editor.setValue(defaultCode);
+                }
+            } else {
+                editor.setValue(defaultCode);
             }
-            return null;
         }
 
-        // Ipp Runtime - Full Implementation
+        function loadDemo(demoName) {
+            currentDemo = demoName;
+            editor.setValue(demos[demoName]);
+            
+            document.querySelectorAll('.demo-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            clearCanvas();
+        }
+
+        function runCode() {
+            const code = editor.getValue();
+            const output = document.getElementById('output');
+            setStatus('running', 'Running...');
+            
+            setTimeout(() => {
+                const result = IppRuntime.execute(code);
+                
+                let html = '';
+                for (const line of result.output) {
+                    const cssClass = line.type === 'error' ? 'error' : 
+                                    line.type === 'warn' ? 'warn' : 
+                                    line.type === 'print' ? 'print' : 'success';
+                    html += '<div class="output-line ' + cssClass + '">' + escapeHtml(line.text) + '</div>';
+                }
+                
+                if (!html) {
+                    html = '<div class="output-line info">// No output</div>';
+                }
+                
+                output.innerHTML = html;
+                output.scrollTop = output.scrollHeight;
+                setStatus(result.success ? 'ready' : 'error', result.success ? 'Ready' : 'Error');
+            }, 30);
+        }
+
         const IppRuntime = {
             env: {},
             functions: {},
+            canvas: null,
             
             reset() {
                 this.env = {};
                 this.functions = {};
+                this.canvas = window.canvasAPI;
             },
             
             execute(code) {
@@ -342,10 +745,8 @@ if isTrue {
                 try {
                     const lines = code.split('\n');
                     
-                    // First pass: collect functions
                     for (let i = 0; i < lines.length; i++) {
-                        const line = lines[i].trim();
-                        const funcMatch = line.match(/^func\s+(\w+)\s*\(([^)]*)\)/);
+                        const funcMatch = lines[i].trim().match(/^func\s+(\w+)\s*\(([^)]*)\)/);
                         if (funcMatch) {
                             const funcName = funcMatch[1];
                             const params = funcMatch[2].split(',').map(p => p.trim()).filter(p => p);
@@ -353,29 +754,34 @@ if isTrue {
                         }
                     }
                     
-                    // Execute line by line
                     let inFunction = false;
-                    let currentFunc = null;
+                    let funcBody = [];
+                    let currentFuncName = null;
                     
                     for (let i = 0; i < lines.length; i++) {
                         const line = lines[i];
                         const l = line.trim();
                         
-                        // Skip empty lines and comments
                         if (!l || l.startsWith('#')) continue;
                         
-                        // Track function body
                         if (l.startsWith('func ')) {
                             inFunction = true;
+                            const funcMatch = l.match(/^func\s+(\w+)\s*\(([^)]*)\)/);
+                            currentFuncName = funcMatch[1];
+                            funcBody = [];
                             continue;
                         }
-                        if (inFunction && l === '}') {
-                            inFunction = false;
-                            continue;
-                        }
-                        if (inFunction) continue;
                         
-                        // Print statement
+                        if (inFunction) {
+                            if (l === '}') {
+                                inFunction = false;
+                                continue;
+                            }
+                            funcBody.push(l);
+                            continue;
+                        }
+                        
+                        // Print
                         const printMatch = l.match(/^print\((.*)\)$/);
                         if (printMatch) {
                             const result = this.evalExpr(printMatch[1]);
@@ -383,20 +789,20 @@ if isTrue {
                             continue;
                         }
                         
-                        // Canvas function calls
+                        // Canvas
                         if (l.startsWith('canvas.')) {
                             this.evalExpr(l);
                             continue;
                         }
                         
-                        // Variable declaration: var x = value
+                        // Variable
                         const varMatch = l.match(/^(var|let)\s+(\w+)\s*=\s*(.+)$/);
                         if (varMatch) {
                             this.env[varMatch[2]] = this.evalExpr(varMatch[3]);
                             continue;
                         }
                         
-                        // Assignment: x = value
+                        // Assignment
                         if (l.includes('=') && !l.startsWith('if') && !l.startsWith('for') && !l.startsWith('func')) {
                             const idx = l.indexOf('=');
                             const name = l.substring(0, idx).trim();
@@ -416,9 +822,14 @@ if isTrue {
                             }
                         }
                         
-                        // If statement
-                        if (l.startsWith('if ') && l.includes('{')) {
-                            // Handle simple if - in full implementation would need block parsing
+                        // Function call (not in function body)
+                        const callMatch = l.match(/^(\w+)\((.*)\)$/);
+                        if (callMatch && this.functions[callMatch[1]]) {
+                            const args = callMatch[2] ? callMatch[2].split(',').map(a => this.evalExpr(a.trim())) : [];
+                            const result = this.callFunction(callMatch[1], args);
+                            if (result !== undefined) {
+                                output.push({ type: 'print', text: String(result) });
+                            }
                         }
                     }
                     
@@ -429,10 +840,40 @@ if isTrue {
                 }
             },
             
+            callFunction(name, args) {
+                const func = this.functions[name];
+                if (!func) return;
+                
+                const localEnv = {};
+                func.params.forEach((p, i) => {
+                    localEnv[p] = args[i];
+                });
+                
+                const oldEnv = this.env;
+                this.env = { ...this.env, ...localEnv };
+                
+                let result;
+                const code = editor.getValue();
+                const lines = code.split('\n');
+                
+                let inFunc = false;
+                for (const line of lines) {
+                    const l = line.trim();
+                    if (l.startsWith('func ' + name)) { inFunc = true; continue; }
+                    if (inFunc && l === '}') break;
+                    if (inFunc && l.startsWith('return ')) {
+                        const retMatch = l.match(/^return\s+(.+)$/);
+                        if (retMatch) result = this.evalExpr(retMatch[1]);
+                    }
+                }
+                
+                this.env = oldEnv;
+                return result;
+            },
+            
             evalExpr(expr) {
                 expr = expr.trim();
                 
-                // String literal
                 if ((expr.startsWith('"') && expr.endsWith('"')) || (expr.startsWith("'") && expr.endsWith("'"))) {
                     return expr.slice(1, -1)
                         .replace(/\\n/g, '\n')
@@ -441,117 +882,83 @@ if isTrue {
                         .replace(/\\\\/g, '\\');
                 }
                 
-                // Number
                 if (!isNaN(expr) && expr !== '') return parseFloat(expr);
-                
-                // Boolean
                 if (expr === 'true') return true;
                 if (expr === 'false') return false;
                 if (expr === 'nil') return null;
                 
-                // Variable lookup
                 if (this.env.hasOwnProperty(expr)) return this.env[expr];
                 
-                // Function lookup
-                if (this.functions.hasOwnProperty(expr)) return this.functions[expr];
-                
-                // String concatenation with +
                 if (expr.includes(' + ')) {
                     const parts = expr.split(/\s*\+\s*/);
                     return parts.map(p => String(this.evalExpr(p))).join('');
                 }
                 
-                // Arithmetic
-                if (/^[\d\s\+\-\*\/\%\(\)\.]+$/.test(expr)) {
+                if (/^[\d\s\+\-\*\/\%\(\)\.\,]+$/.test(expr)) {
                     try { return eval(expr); } catch {}
                 }
                 
-                // str() function
-                let match = expr.match(/^str\((.+)\)$/);
-                if (match) return String(this.evalExpr(match[1]));
+                let match;
                 
-                // int() function
-                match = expr.match(/^int\((.+)\)$/);
-                if (match) return parseInt(this.evalExpr(match[1]));
+                // String methods
+                match = expr.match(/^(\w+)\.upper\(\)$/);
+                if (match) return String(this.evalExpr(match[1])).toUpperCase();
                 
-                // float() function
-                match = expr.match(/^float\((.+)\)$/);
-                if (match) return parseFloat(this.evalExpr(match[1]));
+                match = expr.match(/^(\w+)\.lower\(\)$/);
+                if (match) return String(this.evalExpr(match[1])).toLowerCase();
                 
-                // len() function
-                match = expr.match(/^len\((.+)\)$/);
-                if (match) {
-                    const val = this.evalExpr(match[1]);
-                    if (Array.isArray(val)) return val.length;
-                    if (typeof val === 'string') return val.length;
-                    return 0;
-                }
+                // Built-in functions
+                const builtins = {
+                    'str': v => String(v),
+                    'int': v => parseInt(v),
+                    'float': v => parseFloat(v),
+                    'len': v => Array.isArray(v) ? v.length : typeof v === 'string' ? v.length : 0,
+                    'abs': v => Math.abs(v),
+                    'max': (...args) => Math.max(...args.flat()),
+                    'min': (...args) => Math.min(...args.flat()),
+                    'sum': (...args) => args.flat().reduce((a, b) => a + b, 0),
+                    'sorted': v => [...v].sort((a, b) => a - b),
+                    'type': v => typeof v,
+                    'sqrt': v => Math.sqrt(v),
+                };
                 
-                // abs() function
-                match = expr.match(/^abs\((.+)\)$/);
-                if (match) return Math.abs(this.evalExpr(match[1]));
-                
-                // max() function
-                match = expr.match(/^max\((.+)\)$/);
-                if (match) {
-                    const arr = this.evalExpr(match[1]);
-                    return Array.isArray(arr) ? Math.max(...arr) : 0;
-                }
-                
-                // min() function
-                match = expr.match(/^min\((.+)\)$/);
-                if (match) {
-                    const arr = this.evalExpr(match[1]);
-                    return Array.isArray(arr) ? Math.min(...arr) : 0;
-                }
-                
-                // sum() function
-                match = expr.match(/^sum\((.+)\)$/);
-                if (match) {
-                    const arr = this.evalExpr(match[1]);
-                    return Array.isArray(arr) ? arr.reduce((a, b) => a + b, 0) : 0;
+                for (const [name, fn] of Object.entries(builtins)) {
+                    const re = new RegExp('^' + name + '\\((.*)\\)$');
+                    match = expr.match(re);
+                    if (match) {
+                        const arg = this.evalExpr(match[1]);
+                        return fn(arg);
+                    }
                 }
                 
                 // Canvas functions
-                // canvas(w, h) - create canvas object
-                match = expr.match(/^canvas\((\d+),\s*(\d+)\)$/);
-                if (match) {
-                    return { _type: 'canvas', width: parseInt(match[1]), height: parseInt(match[2]) };
+                if (expr.startsWith('canvas.')) {
+                    const cmds = [
+                        /^canvas\.clear\(("?[^"]+"?)\)$/,
+                        /^canvas\.rect\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/,
+                        /^canvas\.circle\((\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/,
+                        /^canvas\.line\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/,
+                        /^canvas\.text\((\d+),\s*(\d+),\s*"([^"]+)",\s*"?([^"]+)"?\)$/,
+                    ];
+                    
+                    for (const re of cmds) {
+                        match = expr.match(re);
+                        if (match) {
+                            if (expr.includes('clear')) this.canvas.clear(match[1].replace(/"/g, ''));
+                            else if (expr.includes('rect')) this.canvas.rect(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), match[5]);
+                            else if (expr.includes('circle')) this.canvas.circle(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), match[4]);
+                            else if (expr.includes('line')) this.canvas.line(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), match[5]);
+                            else if (expr.includes('text')) this.canvas.text(parseInt(match[1]), parseInt(match[2]), match[3], match[4]);
+                            return 'ok';
+                        }
+                    }
                 }
                 
-                // canvas.rect(x, y, w, h, color)
-                match = expr.match(/^canvas\.rect\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/);
+                // vec4
+                match = expr.match(/^vec4\(([^)]+)\)$/);
                 if (match) {
-                    drawRect(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), match[5]);
-                    return 'rect drawn';
-                }
-                
-                // canvas.circle(x, y, r, color)
-                match = expr.match(/^canvas\.circle\((\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/);
-                if (match) {
-                    drawCircle(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), match[4]);
-                    return 'circle drawn';
-                }
-                
-                // canvas.line(x1, y1, x2, y2, color)
-                match = expr.match(/^canvas\.line\((\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*"?([^"]+)"?\)$/);
-                if (match) {
-                    drawLine(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]), match[5]);
-                    return 'line drawn';
-                }
-                
-                // canvas.text(x, y, text, color)
-                match = expr.match(/^canvas\.text\((\d+),\s*(\d+),\s*"([^"]+)",\s*"?([^"]+)"?\)$/);
-                if (match) {
-                    drawText(parseInt(match[1]), parseInt(match[2]), match[3], match[4]);
-                    return 'text drawn';
-                }
-                
-                // canvas.clear(color)
-                match = expr.match(/^canvas\.clear\(("?[^"]+"?)\)$/);
-                if (match) {
-                    clearCanvas(match[1].replace(/"/g, ''));
-                    return 'canvas cleared';
+                    const nums = match[1].split(',').map(s => parseFloat(s.trim()));
+                    return nums;
                 }
                 
                 // List literal
@@ -561,7 +968,7 @@ if isTrue {
                     return content.split(',').map(s => this.evalExpr(s.trim()));
                 }
                 
-                // Array index access
+                // Array index
                 match = expr.match(/^(.+)\[(\d+)\]$/);
                 if (match) {
                     const arr = this.evalExpr(match[1]);
@@ -572,29 +979,6 @@ if isTrue {
             }
         };
 
-        function runCode() {
-            const code = editor.getValue();
-            const output = document.getElementById('output');
-            setStatus('running', 'Running...');
-            
-            setTimeout(() => {
-                const result = IppRuntime.execute(code);
-                
-                let html = '';
-                for (const line of result.output) {
-                    const cssClass = line.type === 'error' ? 'error' : (line.type === 'print' ? 'print' : 'success');
-                    html += '<div class="output-line ' + cssClass + '">' + escapeHtml(line.text) + '</div>';
-                }
-                
-                if (!html) {
-                    html = '<div class="output-line info">// No output</div>';
-                }
-                
-                output.innerHTML = html;
-                setStatus(result.success ? 'ready' : 'error', result.success ? 'Ready' : 'Error');
-            }, 30);
-        }
-
         function setStatus(state, text) {
             const dot = document.getElementById('status-dot');
             dot.className = 'status-dot ' + state;
@@ -602,14 +986,15 @@ if isTrue {
         }
 
         function escapeHtml(text) {
-            return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
         
         function clearOutput() {
             document.getElementById('output').innerHTML = '<div class="welcome"><h2>🚀 Ready!</h2><p>Click Run or press Ctrl+Enter</p></div>';
+        }
+        
+        function clearCanvas() {
+            window.canvasAPI.clear('#1a1b26');
         }
         
         function saveFile() {
@@ -668,66 +1053,25 @@ if isTrue {
             }, 2500);
         }
 
-        // Keyboard shortcuts
+        function showHelp() {
+            document.getElementById('helpContent').textContent = helpContent;
+            document.getElementById('helpPanel').classList.add('show');
+        }
+        
+        function hideHelp() {
+            document.getElementById('helpPanel').classList.remove('show');
+        }
+
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                runCode();
-            }
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveFile();
-            }
-            if (e.ctrlKey && e.key === 'o') {
-                e.preventDefault();
-                loadFile();
-            }
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runCode(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFile(); }
+            if (e.ctrlKey && e.key === 'o') { e.preventDefault(); loadFile(); }
+            if (e.key === 'Escape') hideHelp();
         });
         
-        // Canvas drawing functions
-        const canvas = document.getElementById('ippCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        function drawRect(x, y, w, h, color) {
-            ctx.fillStyle = color || '#50fa7b';
-            ctx.fillRect(x, y, w, h);
-        }
-        
-        function drawCircle(x, y, r, color) {
-            ctx.fillStyle = color || '#ff79c6';
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        function drawLine(x1, y1, x2, y2, color) {
-            ctx.strokeStyle = color || '#8be9fd';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-        }
-        
-        function drawText(x, y, text, color) {
-            ctx.fillStyle = color || '#f8f8f2';
-            ctx.font = '16px Fira Code, monospace';
-            ctx.fillText(text, x, y);
-        }
-        
-        function clearCanvas(color) {
-            ctx.fillStyle = color || '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        
-        // Initialize canvas with white background (not black)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Check for shared code
-        if (new URLSearchParams(window.location.search).get('code')) {
-            showSnackbar('Shared code loaded!');
-        }
+        document.getElementById('helpPanel').addEventListener('click', function(e) {
+            if (e.target === this) hideHelp();
+        });
     </script>
 </body>
 </html>

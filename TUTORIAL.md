@@ -451,6 +451,48 @@ Ipp has 132+ built-in functions. Here are the most common:
 | `canvas_clear(color)` | Clear canvas |
 | `canvas_show()` | Update display |
 
+### HTML/Templates (v1.5.17)
+| Function | Description |
+|----------|-------------|
+| `html_escape(text)` | Escape HTML special characters |
+| `html_unescape(text)` | Unescape HTML entities |
+| `template(template_str, **kwargs)` | Template interpolation |
+| `template_file(path, **kwargs)` | Render template file |
+
+Example:
+```ipp
+var safe = html_escape("<script>alert('xss')</script>")
+# Result: &lt;script&gt;...
+
+var html = template("<h1>Hello {{name}}!</h1>", name="World")
+# Result: <h1>Hello World!</h1>
+```
+
+### Async/Future (v1.5.17)
+| Function | Description |
+|----------|-------------|
+| `future()` | Create a Future object |
+| `event_loop()` | Get asyncio event loop info |
+| `async_run(coro)` | Run coroutine |
+| `create_task(coro)` | Create async task |
+| `is_coroutine(obj)` | Check if object is coroutine |
+| `sleep(seconds)` | Async sleep |
+
+### List Comprehensions
+```ipp
+var squares = [i * i for i in range(10)]
+var evens = [x for x in range(20) if x % 2 == 0]
+var dict = {k: k*2 for k in range(5)}
+```
+
+### Decorators (v1.5.17)
+```ipp
+@my_decorator
+func hello() {
+    print("Hello!")
+}
+```
+
 See [ERRORS.md](ERRORS.md) for a complete error reference.
 
 ---

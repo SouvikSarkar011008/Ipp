@@ -55,6 +55,8 @@ class Lexer:
             self.add_token(TokenType.RIGHT_BRACKET)
         elif c == ',':
             self.add_token(TokenType.COMMA)
+        elif c == '@':
+            self.add_token(TokenType.AT)
         elif c == '.':
             if self.peek() == '.':
                 self.advance()
@@ -164,6 +166,11 @@ class Lexer:
         # String literals — with escape processing (FIX: BUG-L5)
         elif c == '"' or c == "'":
             self.string(c)
+        
+        # f-strings — check for f" or f' prefix
+        elif c == 'f' and (self.peek() == '"' or self.peek() == "'"):
+            quote_char = self.advance()  # consume the quote
+            self.string(quote_char, is_fstring=True)
 
         # Numbers — with hex/octal/binary support (FIX: BUG-L7)
         elif c == '0' and self.peek() in 'xXoObB':
@@ -246,9 +253,10 @@ class Lexer:
             self.error(f"Invalid numeric literal: {raw}")
         self.add_token(TokenType.NUMBER, literal=value)
 
-    def string(self, quote_char):
+    def string(self, quote_char, is_fstring=False):
         """Lex string with escape sequence processing. FIX: BUG-L5"""
         value_chars = []
+        
         while not self.is_at_end and self.peek() != quote_char:
             ch = self.advance()
             if ch == '\\':
@@ -281,7 +289,8 @@ class Lexer:
 
         self.advance()  # Closing quote
         value = ''.join(value_chars)
-        self.add_token(TokenType.STRING, literal=value)
+        token_type = TokenType.FSTRING if is_fstring else TokenType.STRING
+        self.add_token(token_type, literal=value)
 
     def skip_whitespace(self):
         while not self.is_at_end:
