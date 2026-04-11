@@ -1105,6 +1105,10 @@ class Matrix4:
         return Matrix4(result)
     
     def __mul__(self, other):
+        if isinstance(other, Matrix4):
+            return self.multiply(other)
+        elif isinstance(other, Vector4):
+            return self.transform_vector(other)
         return self.multiply(other)
     
     def transform_vector(self, v):
@@ -1373,8 +1377,56 @@ class Mesh(SceneNode):
         self.indices = indices if indices else []
         self.color = Color(255, 255, 255)
     
+    @staticmethod
+    def cube(size=1):
+        s = size / 2
+        verts = [
+            -s, -s, -s,  s, -s, -s,  s, s, -s,  -s, s, -s,
+            -s, -s, s,   s, -s, s,   s, s, s,   -s, s, s,
+        ]
+        indices = list(range(24))
+        return Mesh("cube", verts, indices)
+    
+    @staticmethod
+    def sphere(radius=1, segments=16, rings=8):
+        verts = []
+        indices = []
+        for i in range(rings + 1):
+            phi = math.pi * i / rings
+            for j in range(segments + 1):
+                theta = 2 * math.pi * j / segments
+                x = radius * math.sin(phi) * math.cos(theta)
+                y = radius * math.cos(phi)
+                z = radius * math.sin(phi) * math.sin(theta)
+                verts.extend([x, y, z])
+        for i in range(rings):
+            for j in range(segments):
+                a = i * (segments + 1) + j
+                b = a + segments + 1
+                indices.extend([a, b, a + 1, b, b + 1, a + 1])
+        return Mesh("sphere", verts, indices)
+    
+    @staticmethod
+    def plane(width=1, height=1):
+        hw, hh = width / 2, height / 2
+        verts = [-hw, 0, -hh, hw, 0, -hh, hw, 0, hh, -hw, 0, hh]
+        indices = [0, 1, 2, 0, 2, 3]
+        return Mesh("plane", verts, indices)
+    
     def __repr__(self):
         return f"Mesh({self.name}, verts={len(self.vertices)}, indices={len(self.indices)})"
+
+
+def ipp_mesh_cube(size=1):
+    return Mesh.cube(size)
+
+
+def ipp_mesh_sphere(radius=1, segments=16, rings=8):
+    return Mesh.sphere(radius, segments, rings)
+
+
+def ipp_mesh_plane(width=1, height=1):
+    return Mesh.plane(width, height)
 
 
 class Light(SceneNode):
@@ -1430,7 +1482,44 @@ class Scene:
         return result
     
     def render(self):
-        return f"Scene: {self.name}, nodes: {len(self.get_all_nodes())}, camera: {self.camera}"
+        """Render scene with camera projection."""
+        if not self.camera:
+            return f"Scene: {self.name}, nodes: {len(self.get_all_nodes())}, no camera"
+        
+        camera = self.camera
+        meshes = [n for n in self.get_all_nodes() if isinstance(n, Mesh)]
+        projected = []
+        
+        for mesh in meshes:
+            transform = mesh.get_transform()
+            view = camera.get_view()
+            proj = camera.get_projection()
+            
+            for i in range(0, len(mesh.vertices), 3):
+                if i+2 < len(mesh.vertices):
+                    v = Vector4(mesh.vertices[i], mesh.vertices[i+1], mesh.vertices[i+2], 1)
+                    transformed = proj * view * transform * v
+                    w = transformed.w if transformed.w != 0 else 1
+                    x = (transformed.x / w + 1) * 0.5
+                    y = (transformed.y / w + 1) * 0.5
+                    z = transformed.w
+                    projected.append((x, y, z, mesh.name))
+        
+        return {"scene": self.name, "camera": str(self.camera), "projected": projected, "mesh_count": len(meshes)}
+
+    def render_to_canvas(self, canvas_width=800, canvas_height=600):
+        result = self.render()
+        if isinstance(result, str):
+            return result
+        
+        lines = [f"Scene: {result['scene']}", f"Camera: {result['camera']}", f"Meshes: {result['mesh_count']}", "Projected points:"]
+        
+        for px, py, pz, name in result['projected']:
+            screen_x = int(px * canvas_width)
+            screen_y = int((1 - py) * canvas_height)
+            lines.append(f"  {name}: ({screen_x}, {screen_y}, z={pz:.2f})")
+        
+        return "\n".join(lines)
     
     def __repr__(self):
         return f"Scene({self.name}, nodes={len(self.nodes)})"
@@ -3404,6 +3493,9 @@ BUILTINS = {
     "camera": ipp_camera,
     "mesh": ipp_mesh,
     "light": ipp_light,
+    "mesh_cube": ipp_mesh_cube,
+    "mesh_sphere": ipp_mesh_sphere,
+    "mesh_plane": ipp_mesh_plane,
     "color": ipp_color,
     "rect": ipp_rect,
     

@@ -410,6 +410,47 @@ Ipp has 132+ built-in functions. Here are the most common:
 | `sqrt(n)`, `pow(a, b)` | Power/roots |
 | `lerp(a, b, t)`, `clamp(v, min, max)` | Game math |
 
+### 3D Math (v1.5.5+)
+| Function | Description |
+|----------|-------------|
+| `vec4(x, y, z, w)` | 4D vector |
+| `vec3(x, y, z)` | 3D vector |
+| `vec2(x, y)` | 2D vector |
+| `mat4()` | 4x4 identity matrix |
+| `mat4_perspective(fov, aspect, near, far)` | Perspective projection |
+| `mat4_look_at(eye, target, up)` | View matrix |
+| `mat4_translate(x, y, z)` | Translation matrix |
+| `mat4_rotate(angle, axis)` | Rotation matrix |
+| `mat4_scale(x, y, z)` | Scale matrix |
+| `quat(x, y, z, w)` | Quaternion |
+| `quat_from_axis_angle(axis, angle)` | Quaternion from axis-angle |
+| `quat_slerp(a, b, t)` | Spherical interpolation |
+
+### Scene Graph (v1.5.5+)
+| Function | Description |
+|----------|-------------|
+| `scene(name)` | Create scene |
+| `node(name)` | Create scene node |
+| `camera(name, fov, aspect, near, far)` | Create camera |
+| `mesh(name, vertices, indices)` | Create mesh |
+| `mesh_cube(size)` | Cube primitive |
+| `mesh_sphere(radius, segments, rings)` | Sphere primitive |
+| `mesh_plane(width, height)` | Plane primitive |
+| `light(name, type, intensity)` | Create light |
+| `scene.add(node)`, `scene.set_camera(cam)` | Scene methods |
+| `scene.render()`, `scene.render_to_canvas(w, h)` | Rendering |
+
+### Canvas 2D
+| Function | Description |
+|----------|-------------|
+| `canvas_open()` | Open canvas window |
+| `canvas_rect(x, y, w, h, color)` | Draw rectangle |
+| `canvas_circle(x, y, r, color)` | Draw circle |
+| `canvas_line(x1, y1, x2, y2, color)` | Draw line |
+| `canvas_text(x, y, text, color)` | Draw text |
+| `canvas_clear(color)` | Clear canvas |
+| `canvas_show()` | Update display |
+
 See [ERRORS.md](ERRORS.md) for a complete error reference.
 
 ---
