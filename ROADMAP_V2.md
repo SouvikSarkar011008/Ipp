@@ -70,7 +70,8 @@
 | **v1.5.17** | ✅ DONE | Missing Features (HTML templates, f-strings, decorator @, event_loop, future, Unicode fix) |
 | **v1.5.18** | ✅ DONE | PyPI Release Polish (version bump, documentation, workflow verification) |
 | **v1.5.19** | ✅ DONE | Polish (OpenGL shaders, async completion) |
-| **v1.5.20** | 📋 PLANNED | Polish (further improvements) |
+| **v1.5.20** | ✅ DONE | Polish (OpenGL restored, data structures verified, version bump) |
+| **v1.5.21** | 📋 PLANNED | Final Audit & Verification |
 | **v1.5.21** | 📋 PLANNED | Final Audit & Verification |
 | **v1.6.0** | 📋 PLANNED | C++ Integration + Native Extensions |
 | **v1.6.1** | 📋 PLANNED | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
