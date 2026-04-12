@@ -370,16 +370,17 @@ class Compiler:
         })
 
         # bounds check: idx < len(list)
+        # FIX: idx first, then len - correct order for LESS
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+        
         self.compile_identifier("len")
         self.chunk.write(OpCode.GET_LOCAL, self.current_line)
         self.chunk.write(list_slot, self.current_line)
         self.chunk.write(OpCode.CALL, self.current_line)
         self.chunk.write(1, self.current_line)
 
-        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
-        self.chunk.write(idx_slot, self.current_line)
-
-        # LESS: len < idx  (i.e. idx >= len → exit)
+        # LESS: idx < len(list)
         self.chunk.write(OpCode.LESS, self.current_line)
         exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
 
