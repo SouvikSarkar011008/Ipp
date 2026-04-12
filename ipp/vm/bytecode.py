@@ -226,6 +226,7 @@ class Chunk:
         self.code: List[int] = []
         self.constants: List[Any] = []
         self.lines: List[int] = []
+        self.const_locals: set = set()  # slot indices of const locals
 
     def write(self, opcode, line: int = 0):
         if isinstance(opcode, OpCode):

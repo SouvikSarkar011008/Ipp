@@ -103,7 +103,11 @@ class Compiler:
         # FIX: BUG-CP2 — define before emitting opcode
         local = Local(name, self.depth, is_const)
         self.locals.append(local)
-        return len(self.locals) - 1
+        slot = len(self.locals) - 1
+        # Record const locals for immutability enforcement
+        if is_const:
+            self.chunk.const_locals.add(slot)
+        return slot
 
     def resolve_local(self, name: str) -> Optional[int]:
         """

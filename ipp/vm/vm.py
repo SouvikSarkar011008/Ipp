@@ -803,6 +803,10 @@ class VM:
         elif opcode == OpCode.SET_LOCAL:
             idx = code[ip + 1]
             slot = frame.stack_base + idx
+            # Check for const local immutability
+            if frame.chunk and hasattr(frame.chunk, 'const_locals') and idx in frame.chunk.const_locals:
+                if slot < len(self.stack) and self.stack[slot] is not None:
+                    raise VMError(f"Cannot reassign immutable 'let' variable")
             if self.stack:
                 while len(self.stack) <= slot:
                     self.stack.append(None)
