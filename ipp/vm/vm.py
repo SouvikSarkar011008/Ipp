@@ -237,24 +237,7 @@ def _call_ipp_method(instance: IppInstance, method) -> Any:
     frame = VMFrame(chunk, closure=closure, function=method, stack_base=base)
     vm.frames.append(frame)
     try:
-        vm.run()
-        result = vm._return_value
-        if result is None and vm.stack:
-            result = vm.stack[-1]
-    except Exception:
-        result = f"<{instance.cls.name} instance>"
-    finally:
-        instance._current_class = None
-    return result if result is not None else f"<{instance.cls.name} instance>"
-    vm = VM()
-    # mark instance as inside its own class so private fields work
-    instance._current_class = instance.cls
-    base = len(vm.stack)
-    vm.stack.append(instance)   # slot 0 = self
-    frame = VMFrame(chunk, closure=closure, function=method, stack_base=base)
-    vm.frames.append(frame)
-    try:
-        vm.run()
+        vm.run(chunk)
         result = vm._return_value
         if result is None and vm.stack:
             result = vm.stack[-1]
@@ -595,13 +578,16 @@ class VM:
         self.call_depth = 0
 
     def run(self, chunk: Chunk = None) -> Any:
+        # If chunk is provided, use it and don't create a new frame if one already exists
         if chunk:
             self.chunk = chunk
         if not self.chunk:
             return None
 
-        frame = VMFrame(self.chunk, stack_base=0)
-        self.frames.append(frame)
+        # Only create new frame if no frames exist (allows _call_ipp_method to work)
+        if not self.frames:
+            frame = VMFrame(self.chunk, stack_base=0)
+            self.frames.append(frame)
 
         while self.running and self.frames:
             frame = self.frames[-1]
@@ -1146,7 +1132,10 @@ class VM:
         elif opcode == OpCode.ADD:
             b, a = self.stack.pop(), self.stack.pop()
             if isinstance(a, str) or isinstance(b, str):
-                self.stack.append(self._intern_string(str(a) + str(b)))
+                # FIX: Don't call str() on IppInstance - causes infinite recursion
+                a_str = str(a) if not isinstance(a, IppInstance) else f"<{a.cls.name} instance>"
+                b_str = str(b) if not isinstance(b, IppInstance) else f"<{b.cls.name} instance>"
+                self.stack.append(self._intern_string(a_str + b_str))
             else:
                 self.stack.append(a + b)
 
