@@ -65,7 +65,7 @@ TESTS = [
     # v1.5.21-25 Emergency Bug Fixes
     ("v1.5.21", "tests/v1_5_21/test_for_in_loop.ipp"),
     ("v1.5.22", "tests/v1_5_22/test_pi_e_constants.ipp"),
-    # ("v1.523", "tests/v1_5_23/test_let_immutable.ipp"),  # let not working in function yet
+    ("v1.5.23", "tests/v1_5_23/test_let_immutable.ipp"),
     ("v1.5.24", "tests/v1_5_24/test_str_method.ipp"),
     ("v1.5.25", "tests/v1_5_25/test_static_methods.ipp"),
     # v1.5.26-27 Emergency Bug Fixes
