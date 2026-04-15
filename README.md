@@ -546,8 +546,38 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.5.26 | Emergency Fixes (continue in while/for loops + VM perf) |
 | v1.5.27 | Emergency Fixes (continue in for-in loops) |
 | v1.5.28 | Emergency Fixes (MultiVarDecl in VM) |
-| v1.6.0 | C++ Integration + Native Extensions (PyBind11) |
-| v1.6.1 | Cross-Platform (iOS, macOS, Linux, Windows Installer) |
+| v1.5.29 | Emergency Fixes (list comprehension) |
+| v1.5.30 | Emergency Fixes (dict comprehension) |
+| v1.5.31 | Emergency Fixes (global cache hash collision) |
+| v1.5.32 | Emergency Fixes (SET_INDEX stack fix) |
+| v1.5.33 | Syntax (do-while) |
+| v1.5.34 | Exception (multiple catch blocks) |
+| v1.5.35 | Syntax (variadic parameters) |
+| v1.5.36 | Syntax (f-strings) |
+| v1.5.37 | Fix (VM import system) |
+| v1.5.38 | Fix (spread operator) |
+| v1.6.0 | Feature (operator overloading) |
+| v1.6.1 | Feature (exception type hierarchy) |
+| v1.6.2 | Feature (decorator execution) |
+| v1.6.3 | Feature (multiple return values) |
+| v1.6.4 | Feature (named function arguments) |
+| v1.6.5 | Feature (property accessors) |
+| v1.6.6 | Feature (signal/event system) |
+| v1.6.7 | Feature (list slicing) |
+| v1.6.8 | Feature (Matrix4x4 + Quaternion) |
+| v1.6.9 | Feature (async/await in VM) |
+| v1.6.10 | Fix (IppSet attribute) |
+| v1.6.11 | Fix (TAIL_CALL crash) |
+| v1.6.12 | Feature (fluent list methods) |
+| v1.6.13 | Feature (string format) |
+| v1.6.14 | Feature (bytecode caching) |
+| v1.6.15 | Feature (static linter) |
+| v1.7.0 | Interpreter (archive) |
+| v1.7.1 | Testing (opcode unit tests) |
+| v1.7.2 | Error Quality (line numbers + call stacks) |
+| v1.7.3 | Package Manager (ippkg) |
+| v1.7.4 | LSP (completion + diagnostics) |
+| v1.7.5 | WASM Backend (real implementation) |
 | v2.0.0 | Package Manager + Full Ecosystem + Game Engine |
 
 ---
