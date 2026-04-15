@@ -344,7 +344,7 @@ assert c.n == 2
 
 ---
 
-### v1.5.26 — Fix: `continue` in While Loop Acts as `break` ✅ DONE
+### v1.5.26 — Fix: `continue` in While Loop Acts as `break` ✅ DONE (v1.5.26)
 
 **Symptom:** `while i<5 { i=i+1; if i==3 { continue }; r=r+i }` gives `r=3` instead of `r=12`. `continue` exits the loop entirely.
 
@@ -413,7 +413,7 @@ assert j == 10      # loop ran to completion
 
 ---
 
-### v1.5.27 — Fix: `continue` in For-In Loop — Back-Patch Deferred Jumps
+### v1.5.27 — Fix: `continue` in For-In Loop — Back-Patch Deferred Jumps ✅ DONE (v1.5.27)
 
 **Symptom:** After v1.5.26, `continue` inside for-in loops may still jump incorrectly because the `continue_target` (the idx++ section) is set AFTER the body is compiled — so `compile_continue` can't emit LOOP immediately.
 
