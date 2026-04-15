@@ -68,6 +68,9 @@ TESTS = [
     # ("v1.523", "tests/v1_5_23/test_let_immutable.ipp"),  # let not working in function yet
     ("v1.5.24", "tests/v1_5_24/test_str_method.ipp"),
     ("v1.5.25", "tests/v1_5_25/test_static_methods.ipp"),
+    # v1.5.26-27 Emergency Bug Fixes
+    ("v1.5.26", "tests/v1_5_26/test_continue_while.ipp"),
+    ("v1.5.27", "tests/v1_5_27/test_continue_for.ipp"),
 ]
 
 def run_test(version, filepath):
