@@ -48,10 +48,11 @@ class IppFunction:
 
 
 class IppClass:
-    def __init__(self, name, methods, superclass=None):
+    def __init__(self, name, methods, superclass=None, static_methods=None):
         self.name = name
         self.methods = methods
         self.superclass = superclass
+        self.static_methods = static_methods or {}
     
     def __repr__(self):
         return f"<class {self.name}>"
@@ -62,6 +63,9 @@ class IppClass:
         if self.superclass:
             return self.superclass.get_method(name)
         return None
+    
+    def get_static_method(self, name):
+        return self.static_methods.get(name)
 
 
 class IppInstance:
@@ -604,6 +608,11 @@ class Interpreter:
             return getattr(obj, node.name)
         if isinstance(obj, IppDict):
             return getattr(obj, node.name)
+        # FIX v1.5.26: Allow static method access on IppClass
+        if isinstance(obj, IppClass):
+            method = obj.get_static_method(node.name)
+            if method:
+                return method
         if hasattr(obj, node.name):
             return getattr(obj, node.name)
         raise RuntimeError(f"Only instances have properties, got {type(obj)}")
@@ -827,8 +836,8 @@ class Interpreter:
         value = None
         if node.initializer:
             value = node.initializer.accept(self)
-        # let is now mutable like var (for beginner-friendliness)
-        self.environment.define(node.name, value, constant=False)
+        # FIX v1.5.26: let is immutable
+        self.environment.define(node.name, value, constant=True)
 
     def visit_function_decl(self, node: FunctionDecl):
         closure = Environment(self.environment)
@@ -887,10 +896,19 @@ class Interpreter:
                 raise RuntimeError(f"Superclass must be a class, got: {node.superclass}")
 
         methods = {}
+        static_methods = {}
+        
         for method_node in node.methods:
             closure = Environment(self.environment)
             params = method_node.parameters
             defaults = getattr(method_node, 'defaults', None) or []
+            
+            # Handle static methods - don't add self param
+            if getattr(method_node, 'is_static', False):
+                func = IppFunction(params, method_node.body, closure, defaults)
+                static_methods[method_node.name] = func
+                continue
+            
             # ALL methods get 'self' as first param (not just init)
             if params and params[0] == "self":
                 pass  # already has self
@@ -902,7 +920,7 @@ class Interpreter:
                 func.is_init = True
             methods[method_node.name] = func
 
-        ipp_class = IppClass(node.name, methods, superclass)
+        ipp_class = IppClass(node.name, methods, superclass, static_methods)
         self.environment.define(node.name, ipp_class, constant=False)
         return None
 

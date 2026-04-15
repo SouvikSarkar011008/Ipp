@@ -422,11 +422,33 @@ class Compiler:
         self.chunk.emit_loop(loop_start, self.current_line)
         self.chunk.patch_jump(exit_jump)
 
+        # Set continue_target now (after body compiled)
+        continue_target = len(self.chunk.code)
+        self.loop_stack[-1]['continue_target'] = continue_target
+
+        # idx += 1
+        self.chunk.write(OpCode.GET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+        self.chunk.add_constant(1, self.current_line)
+        self.chunk.write(OpCode.ADD, self.current_line)
+        self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
+
+        self.chunk.emit_loop(loop_start, self.current_line)
+        self.chunk.patch_jump(exit_jump)
+
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
             self.chunk.patch_jump(brk)
-        for cont in loop_info['continue_jumps']:
-            self.chunk.patch_jump(cont)
+        # FIX v1.5.27: patch continue jumps to idx++ section
+        cont_target = loop_info.get('continue_target')
+        if cont_target:
+            # Re-patch with correct target
+            for orig_cont in loop_info['continue_jumps']:
+                # Need to overwrite the jump offset
+                self.chunk.code[orig_cont] = cont_target & 0xFF
+                self.chunk.code[orig_cont + 1] = (cont_target >> 8) & 0xFF
+                self.chunk.code[orig_cont + 2] = (cont_target >> 16) & 0xFF
 
         self.pop_scope()
 
@@ -546,11 +568,18 @@ class Compiler:
         self.loop_stack[-1]['break_jumps'].append(jump)
 
     def compile_continue(self, node: ContinueStmt = None):
-        # FIX: BUG-M4 — emit unconditional jump; patch AFTER the loop is done
+        # FIX v1.5.26: emit LOOP (backward jump) directly instead of forward JUMP
         if not self.loop_stack:
             self.error("'continue' outside of loop")
-        jump = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
-        self.loop_stack[-1]['continue_jumps'].append(jump)
+        loop_info = self.loop_stack[-1]
+        continue_target = loop_info.get('continue_target')
+        if continue_target is not None:
+            # Direct backward jump - no patching needed
+            self.chunk.emit_loop(continue_target, self.current_line)
+        else:
+            # For-in loop - need to emit forward jump and patch later
+            jump = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
+            self.loop_stack[-1]['continue_jumps'].append(jump)
 
     def compile_try(self, node: TryStmt):
         # Emit TRY with offset to catch block

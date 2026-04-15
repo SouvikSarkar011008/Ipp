@@ -7,6 +7,72 @@ from ipp.runtime.canvas import (
 )
 
 
+class _IppConstant:
+    def __init__(self, value, name):
+        object.__setattr__(self, '_value', value)
+        object.__setattr__(self, '_name', name)
+    
+    def __call__(self):
+        return self._value
+    
+    def __repr__(self):
+        return repr(self._value)
+    
+    def __str__(self):
+        return str(self._value)
+    
+    def __eq__(self, other):
+        return self._value == other
+    
+    def __ne__(self, other):
+        return self._value != other
+    
+    def __lt__(self, other):
+        return self._value < other
+    
+    def __le__(self, other):
+        return self._value <= other
+    
+    def __gt__(self, other):
+        return self._value > other
+    
+    def __ge__(self, other):
+        return self._value >= other
+    
+    def __add__(self, other):
+        return self._value + other
+    
+    def __radd__(self, other):
+        return other + self._value
+    
+    def __sub__(self, other):
+        return self._value - other
+    
+    def __rsub__(self, other):
+        return other - self._value
+    
+    def __mul__(self, other):
+        return self._value * other
+    
+    def __rmul__(self, other):
+        return other * self._value
+    
+    def __truediv__(self, other):
+        return self._value / other
+    
+    def __rtruediv__(self, other):
+        return other / self._value
+    
+    def __pow__(self, other):
+        return self._value ** other
+    
+    def __neg__(self):
+        return -self._value
+    
+    def __pos__(self):
+        return self._value
+
+
 def ipp_print(*args):
     output = []
     for arg in args:
@@ -276,8 +342,9 @@ def ipp_pi():
 def ipp_e():
     return math.e
 
-# FIX v1.5.25: pi and e should be constants, not functions
-# This fixes the PyPI/Interpreter mode where pi was returning a function
+
+# FIX v1.5.26: Keep as functions for backward compat (pi() works)
+# Also defined as constants in BUILTINS dict (pi works)
 
 
 def ipp_input(prompt=""):
@@ -3703,8 +3770,8 @@ BUILTINS = {
     "acos": ipp_acos,
     "atan": ipp_atan,
     "atan2": ipp_atan2,
-    "pi": math.pi,    # FIX v1.5.25: use constant, not function
-    "e": math.e,      # FIX v1.5.25: use constant, not function
+    "pi": _IppConstant(math.pi, "pi"),    # v1.5.26: callable + comparable
+    "e": _IppConstant(math.e, "e"),      # v1.5.26: callable + comparable
     "input": ipp_input,
     "exit": ipp_exit,
     "assert": ipp_assert,
