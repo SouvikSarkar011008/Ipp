@@ -53,7 +53,7 @@ class InlineCache:
     """FIX: BUG-M5 — use _MISS sentinel, not None, to distinguish miss from nil."""
 
     def __init__(self, max_size=2048):
-        self.cache: Dict[int, Any] = {}
+        self.cache: Dict[str, Any] = {}  # FIX v1.5.31: use str not int
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
@@ -754,13 +754,12 @@ class VM:
         elif opcode == OpCode.GET_GLOBAL:
             idx = code[ip + 1]
             name = constants[idx]
-            cache_key = hash(name)
-            cached = self._global_cache.get(cache_key)
-            if cached is not _MISS:              # FIX: BUG-M5
+            cached = self._global_cache.get(name)  # FIX v1.5.31: use name not hash
+            if cached is not _MISS:
                 self.stack.append(cached)
             elif name in self.globals:
                 val = self.globals[name]
-                self._global_cache.set(cache_key, val)
+                self._global_cache.set(name, val)
                 self.stack.append(val)
             else:
                 raise VMError(f"Undefined variable '{name}'")
@@ -774,20 +773,20 @@ class VM:
                 raise VMError(f"Cannot reassign immutable 'let' variable: {name}")
             val = self.stack[-1] if self.stack else None
             self.globals[name] = val
-            self._global_cache.set(hash(name), val)
+            self._global_cache.set(name, val)  # FIX v1.5.31
 
         elif opcode == OpCode.DEFINE_GLOBAL:
             idx = code[ip + 1]
             name = constants[idx]
             val = self.stack.pop() if self.stack else None
             self.globals[name] = val
-            self._global_cache.set(hash(name), val)
+            self._global_cache.set(name, val)  # FIX v1.5.31
 
         elif opcode == OpCode.DELETE_GLOBAL:
             idx = code[ip + 1]
             name = constants[idx]
             self.globals.pop(name, None)
-            self._global_cache.cache.pop(hash(name), None)
+            self._global_cache.cache.pop(name, None)  # FIX v1.5.31
 
         # ── Locals — FIX: BUG-C2 use frame.stack_base ───────────────────
         elif opcode == OpCode.GET_LOCAL:

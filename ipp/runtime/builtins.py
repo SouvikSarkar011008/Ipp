@@ -66,6 +66,12 @@ class _IppConstant:
     def __pow__(self, other):
         return self._value ** other
     
+    def __rpow__(self, other):
+        return other ** self._value
+    
+    def __pow__(self, other):
+        return self._value ** other
+    
     def __neg__(self):
         return -self._value
     
@@ -3770,8 +3776,8 @@ BUILTINS = {
     "acos": ipp_acos,
     "atan": ipp_atan,
     "atan2": ipp_atan2,
-    "pi": _IppConstant(math.pi, "pi"),    # v1.5.26: callable + comparable
-    "e": _IppConstant(math.e, "e"),      # v1.5.26: callable + comparable
+    "pi": math.pi,    # v1.5.31: use float constant
+    "e": math.e,      # v1.5.31: use float constant
     "input": ipp_input,
     "exit": ipp_exit,
     "assert": ipp_assert,

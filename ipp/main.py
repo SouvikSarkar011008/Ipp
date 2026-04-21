@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.5.30"
+VERSION = "1.5.31"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -2059,6 +2059,21 @@ def run_repl():
                 interp.global_env.values[f'$_{idx}'] = val
             except:
                 pass
+        
+        # Handle $_1, $_2 etc. as direct variable access (before tokenization)
+        if re.match(r'^\$_[0-9]+$', stripped):
+            # Direct history reference - get value and print
+            hist_idx = int(stripped[2:])
+            # _last_results is list of (idx, value) tuples, idx starts at 1
+            matching = [v for i, v in _last_results if i == hist_idx]
+            if matching:
+                result_val = matching[0]
+                print(f"  {format_output(result_val)}")
+                _last_result = result_val
+                continue
+            else:
+                print(f"  {colour(C_ERROR, f'No result at index {hist_idx}')}")
+                continue
         
         # Save env snapshot for .undo
         snapshot = dict(interp.global_env.values)
