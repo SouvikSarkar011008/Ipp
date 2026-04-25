@@ -924,10 +924,18 @@ class VM:
             idx = self.stack.pop()
             obj = self.stack.pop()
             if isinstance(obj, list):
-                obj[int(idx)] = value
+                i = int(idx)
+                if -len(obj) <= i < len(obj):
+                    obj[i] = value
+                else:
+                    raise VMError(f"Index {i} out of range (length {len(obj)})")
             elif isinstance(obj, dict):
                 obj[idx] = value
-            self.stack.append(value)
+            elif hasattr(obj, 'elements'):
+                obj.elements[int(idx)] = value
+            elif hasattr(obj, 'data'):
+                obj.data[idx] = value
+            # No push - assignment is a statement, not expression
 
         # ── Jumps — FIX: BUG-C1/BUG-M8 all use read_int (3-byte operands) ─
         elif opcode == OpCode.JUMP:

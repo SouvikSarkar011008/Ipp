@@ -215,6 +215,8 @@ class Parser:
             return self.while_statement()
         if self.match(TokenType.REPEAT):
             return self.do_while_statement()
+        if self.match(TokenType.DO):
+            return self.do_while_statement_c()
         if self.match(TokenType.MATCH):
             return self.match_statement()
         if self.match(TokenType.TRY):
@@ -267,9 +269,16 @@ class Parser:
         return WhileStmt(condition, body)
 
     def do_while_statement(self):
-        self.consume(TokenType.LEFT_BRACE, "Expect '{' after 'repeat'")
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after repeat")
         body = self.block()
         self.consume(TokenType.UNTIL, "Expect 'until' after repeat body")
+        condition = self.expression()
+        return DoWhileStmt(body, condition)
+
+    def do_while_statement_c(self):
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after 'do'")
+        body = self.block()
+        self.consume(TokenType.WHILE, "Expect 'while' after do-body")
         condition = self.expression()
         return DoWhileStmt(body, condition)
 

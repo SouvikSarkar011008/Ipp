@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.5.31-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.5.33-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -551,7 +551,7 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.5.31 | Fixes (global cache hash collision) |
 | v1.5.31 | Emergency Fixes (global cache hash collision) |
 | v1.5.32 | Emergency Fixes (SET_INDEX stack fix) |
-| v1.5.33 | Syntax (do-while) |
+| v1.5.33 | Syntax (do-while) + Interpreter bug fix |
 | v1.5.34 | Exception (multiple catch blocks) |
 | v1.5.35 | Syntax (variadic parameters) |
 | v1.5.36 | Syntax (f-strings) |

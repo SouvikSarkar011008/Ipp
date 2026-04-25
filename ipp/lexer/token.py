@@ -46,6 +46,7 @@ class TokenType(Enum):
     BOOL = auto()
     VOID = auto()
     REPEAT = auto()
+    DO = auto()
     UNTIL = auto()
     THROW = auto()
     WITH = auto()
@@ -156,6 +157,7 @@ KEYWORDS = {
     "finally": TokenType.FINALLY,
     "enum": TokenType.ENUM,
     "repeat": TokenType.REPEAT,
+    "do": TokenType.DO,
     "until": TokenType.UNTIL,
     "throw": TokenType.THROW,
     "with": TokenType.WITH,

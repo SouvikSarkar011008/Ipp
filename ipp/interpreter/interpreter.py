@@ -1201,7 +1201,7 @@ class Interpreter:
                     self.environment = saved_env
                     return
             
-            if node.condition.accept(self):
+            if not node.condition.accept(self):
                 break
         
         self.environment = saved_env

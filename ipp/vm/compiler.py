@@ -515,7 +515,7 @@ class Compiler:
         self.loop_stack.append({
             'start': loop_start,
             'break_jumps': [],
-            'continue_target': None,
+            'continue_target': loop_start,
             'continue_jumps': [],
         })
 
@@ -526,15 +526,10 @@ class Compiler:
         self.loop_stack[-1]['continue_target'] = continue_target
 
         self.compile_expr(node.condition)
-        # jump back to start if condition is true
-        self.chunk.emit_jump(OpCode.JUMP_IF_TRUE_POP, self.current_line)
-        # patch that jump to loop_start — we need a backward jump:
-        # Use LOOP for backward jumps
-        # Actually emit_jump emitted forward jump — we need emit_loop instead
-        # Redo: emit LOOP if condition true
-        # Remove the just-emitted JUMP_IF_TRUE_POP and replace with conditional LOOP
-        # Simpler: emit condition, then LOOP (always), with a prior JUMP_IF_FALSE past the LOOP
+        exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
+
         self.chunk.emit_loop(loop_start, self.current_line)
+        self.chunk.patch_jump(exit_jump)
 
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
