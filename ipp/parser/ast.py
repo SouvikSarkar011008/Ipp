@@ -341,10 +341,8 @@ class MatchExpr(ASTNode):
 @dataclass
 class TryStmt(ASTNode):
     try_body: List[ASTNode]
-    catch_var: Optional[str]          # FIX: BUG-C3 — canonical name is catch_var
-    catch_body: List[ASTNode]
+    catches: List[tuple]           # List of (catch_var, catch_body) - multiple catches
     finally_body: List[ASTNode]
-    catch_types: Optional[List[str]] = None  # optional typed catches
     def accept(self, visitor): return visitor.visit_try_stmt(self)
 
 @dataclass

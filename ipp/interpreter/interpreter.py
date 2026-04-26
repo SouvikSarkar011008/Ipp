@@ -1096,21 +1096,28 @@ class Interpreter:
                 stmt.accept(self)
         except Exception as e:
             error = e
-            if node.catch_body:
-                if node.catch_var:
-                    self.environment.define(node.catch_var, str(e))
-                for stmt in node.catch_body:
-                    if self.return_value is not None:
-                        break
-                    stmt.accept(self)
-        finally:
-            if node.finally_body:
-                for stmt in node.finally_body:
-                    if self.return_value is not None:
-                        break
-                    stmt.accept(self)
         
-        if error and not node.catch_body:
+        # Handle multiple catch blocks
+        if error and node.catches:
+            for catch_var, catch_body in node.catches:
+                if error:
+                    if catch_var:
+                        self.environment.define(catch_var, str(error))
+                    for stmt in catch_body:
+                        if self.return_value is not None:
+                            break
+                        stmt.accept(self)
+                    error = None  # caught
+                    break
+        
+        # Finally block
+        if node.finally_body:
+            for stmt in node.finally_body:
+                if self.return_value is not None:
+                    break
+                stmt.accept(self)
+        
+        if error:
             raise error
 
     def visit_for_stmt(self, node: ForStmt):

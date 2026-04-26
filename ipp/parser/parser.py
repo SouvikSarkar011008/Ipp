@@ -325,17 +325,15 @@ class Parser:
 
     def try_statement(self):
         try_body = self.block_or_statement()
-        catch_var = None
-        catch_body = []
-        if self.match(TokenType.CATCH):
-            if self.check(TokenType.IDENTIFIER):
-                catch_var = self.advance().lexeme
+        catches = []
+        while self.match(TokenType.CATCH):
+            catch_var = self.advance().lexeme if self.check(TokenType.IDENTIFIER) else None
             catch_body = self.block_or_statement()
+            catches.append((catch_var, catch_body))
         finally_body = []
         if self.match(TokenType.FINALLY):
             finally_body = self.block_or_statement()
-        # FIX: BUG-C3 — use catch_var consistently
-        return TryStmt(try_body, catch_var, catch_body, finally_body)
+        return TryStmt(try_body, catches, finally_body)
 
     def with_statement(self):
         var_name = self.consume(TokenType.IDENTIFIER, "Expect variable name after 'with'")

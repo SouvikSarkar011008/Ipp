@@ -603,30 +603,30 @@ class Compiler:
             self.loop_stack[-1]['continue_jumps'].append(jump)
 
     def compile_try(self, node: TryStmt):
-        # Emit TRY with offset to catch block
+        # Emit TRY with offset to first catch
         try_jump = self.chunk.emit_jump(OpCode.TRY, self.current_line)
 
         for stmt in node.try_body:
             self.compile_stmt(stmt)
         self.chunk.write(OpCode.TRY_END, self.current_line)
 
-        # Jump past catch if no exception
+        # Jump past all catches if no exception
         skip_catch = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
         self.chunk.patch_jump(try_jump)
 
-        # Catch block
-        self.push_scope()
-        # FIX: BUG-C3 — use catch_var (not exception_var)
-        if node.catch_var:
-            self.define_local(node.catch_var)
-        for stmt in node.catch_body:
-            self.compile_stmt(stmt)
-        self.chunk.write(OpCode.CATCH_END, self.current_line)
-        self.pop_scope()
+        # Multiple catch blocks
+        for i, (catch_var, catch_body) in enumerate(node.catches):
+            self.push_scope()
+            if catch_var:
+                self.define_local(catch_var)
+            for stmt in catch_body:
+                self.compile_stmt(stmt)
+            self.chunk.write(OpCode.CATCH_END, self.current_line)
+            self.pop_scope()
 
         self.chunk.patch_jump(skip_catch)
 
-        # Finally block — FIX: BUG-V3 — actually emit
+        # Finally block
         if node.finally_body:
             self.chunk.write(OpCode.FINALLY, self.current_line)
             for stmt in node.finally_body:
