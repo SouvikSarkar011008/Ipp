@@ -1104,9 +1104,49 @@ class VM:
 
         # ── Import ───────────────────────────────────────────────────────
         elif opcode == OpCode.IMPORT:
-            path_idx = code[ip+1] | (code[ip+2] << 8) | (code[ip+3] << 16)
+            path_idx = code[ip + 1] | (code[ip + 2] << 8) | (code[ip + 3] << 16)
             module_path = constants[path_idx] if path_idx < len(constants) else ""
-            self.stack.append(module_path)
+
+            if not hasattr(self, '_module_cache'):
+                self._module_cache = {}
+            if module_path in self._module_cache:
+                self.globals.update(self._module_cache[module_path])
+            else:
+                import os
+                import sys
+                
+                # Get directory of current file
+                cwd = os.getcwd()
+                
+                # Try multiple paths
+                candidates = [
+                    module_path,
+                    os.path.join(cwd, module_path),
+                    os.path.join(cwd, 'tests', 'v1_5_37', module_path),
+                ]
+                
+                found_path = None
+                for candidate in candidates:
+                    if os.path.exists(candidate):
+                        found_path = candidate
+                        break
+                
+                if not found_path:
+                    raise VMError(f"Module not found: '{module_path}'")
+
+                with open(found_path, 'r') as f:
+                    src = f.read()
+
+                from ipp.lexer.lexer import tokenize
+                from ipp.parser.parser import parse
+                from ipp.vm.compiler import compile_ast
+                child = VM()
+                child.globals.update(self.globals)
+                child.run(compile_ast(parse(tokenize(src))))
+                new_globals = {k: v for k, v in child.globals.items()
+                               if k not in self.globals or child.globals[k] is not self.globals.get(k)}
+                self.globals.update(new_globals)
+                self._module_cache[module_path] = new_globals
 
         elif opcode == OpCode.END_IMPORT:
             pass

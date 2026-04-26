@@ -80,6 +80,7 @@ TESTS = [
     ("v1.5.34", "tests/v1_5_34/test_multi_catch.ipp"),
     ("v1.5.35", "tests/v1_5_35/test_variadic.ipp"),
     ("v1.5.36", "tests/v1_5_36/test_fstrings.ipp"),
+    ("v1.5.37", "tests/v1_5_37/test_import.ipp"),
 ]
 
 def run_test(version, filepath):
