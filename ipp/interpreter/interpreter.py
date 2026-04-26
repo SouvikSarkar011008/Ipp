@@ -649,6 +649,13 @@ class Interpreter:
                 result.append(elem.accept(self))
         return IppList(result)
 
+    def visit_fstring_expr(self, node: FStringExpr):
+        parts = []
+        for seg in node.segments:
+            val = seg.accept(self)
+            parts.append(str(val))
+        return ''.join(parts)
+
     def visit_list_comprehension(self, node: ListComprehension):
         result = []
         iterable = node.iterator.accept(self)

@@ -143,6 +143,11 @@ class ListLiteral(ASTNode):
     def accept(self, visitor): return visitor.visit_list_literal(self)
 
 @dataclass
+class FStringExpr(ASTNode):
+    segments: List[ASTNode]
+    def accept(self, visitor): return visitor.visit_fstring_expr(self)
+
+@dataclass
 class LambdaExpr(ASTNode):
     parameters: List[str]
     body: List[ASTNode]

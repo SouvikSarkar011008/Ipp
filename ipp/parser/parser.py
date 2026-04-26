@@ -603,6 +603,8 @@ class Parser:
             return NumberLiteral(self.previous().literal)
         if self.match(TokenType.STRING):
             return StringLiteral(self.previous().literal)
+        if self.match(TokenType.FSTRING):
+            return self._parse_fstring(self.previous().literal)
         if self.match(TokenType.TRUE):
             return BooleanLiteral(True)
         if self.match(TokenType.FALSE):
@@ -677,6 +679,35 @@ class Parser:
             return self.dict_literal()
 
         self.error(f"Unexpected token: {self.peek()}")
+
+    def _parse_fstring(self, raw: str) -> 'FStringExpr':
+        segments, i, buf = [], 0, []
+        while i < len(raw):
+            if raw[i] == '{' and i + 1 < len(raw) and raw[i + 1] != '{':
+                if buf:
+                    segments.append(StringLiteral(''.join(buf)))
+                    buf = []
+                j, depth = i + 1, 1
+                while j < len(raw) and depth:
+                    if raw[j] == '{':
+                        depth += 1
+                    elif raw[j] == '}':
+                        depth -= 1
+                    j += 1
+                inner_text = raw[i + 1:j - 1]
+                from ipp.lexer.lexer import tokenize as lex
+                inner_ast = Parser(lex(inner_text)).expression()
+                segments.append(inner_ast)
+                i = j
+            elif raw[i:i + 2] in ('{{', '}}'):
+                buf.append(raw[i])
+                i += 2
+            else:
+                buf.append(raw[i])
+                i += 1
+        if buf:
+            segments.append(StringLiteral(''.join(buf)))
+        return FStringExpr(segments)
 
     def lambda_expr(self):
         """func(params) => expr or func(params) { body }  — FIX: BUG-P4"""

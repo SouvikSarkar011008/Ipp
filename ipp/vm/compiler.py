@@ -663,6 +663,15 @@ class Compiler:
             self.chunk.add_constant(node.value, self.current_line)
         elif isinstance(node, StringLiteral):
             self.chunk.add_constant(node.value, self.current_line)
+        elif isinstance(node, FStringExpr):
+            for seg in node.segments:
+                self.compile_expr(seg)
+                self.compile_identifier("str")
+                self.chunk.write(OpCode.SWAP, self.current_line)
+                self.chunk.write(OpCode.CALL, self.current_line)
+                self.chunk.write(1, self.current_line)
+            self.chunk.write(OpCode.CONCAT_COUNT, self.current_line)
+            self.chunk.write(len(node.segments), self.current_line)
         elif isinstance(node, BooleanLiteral):
             self.chunk.write(OpCode.TRUE if node.value else OpCode.FALSE, self.current_line)
         elif isinstance(node, NilLiteral):
