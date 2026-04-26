@@ -516,21 +516,34 @@ class Interpreter:
             num_params = len(func.parameters)
             num_args = len(args)
             
+            # Check for variadic parameter
+            variadic_idx = None
+            for i, p in enumerate(func.parameters):
+                if p.startswith("..."):
+                    variadic_idx = i
+                    break
+            
             for i in range(param_start, num_params):
                 param = func.parameters[i]
-                # args = [self, x, y, ...] so args[i] aligns directly with parameters[i]
-                arg_idx = i
                 
-                if arg_idx < num_args:
-                    # Use provided argument
-                    new_env.define(param, args[arg_idx])
-                elif defaults and i < len(defaults) and defaults[i] is not None:
-                    # Use default value
-                    default_val = defaults[i].accept(self)
-                    new_env.define(param, default_val)
+                if variadic_idx is not None and i == variadic_idx:
+                    # Variadic: collect all remaining args
+                    param_name = param[3:]  # remove "..."
+                    arg_idx = i - param_start
+                    if arg_idx < num_args:
+                        extra_args = args[arg_idx:]
+                    else:
+                        extra_args = []
+                    new_env.define(param_name, IppList(extra_args))
                 else:
-                    # No argument, no default - error
-                    raise RuntimeError(f"Missing required argument: {param}")
+                    arg_idx = i
+                    if arg_idx < num_args:
+                        new_env.define(param, args[arg_idx])
+                    elif defaults and i < len(defaults) and defaults[i] is not None:
+                        default_val = defaults[i].accept(self)
+                        new_env.define(param, default_val)
+                    else:
+                        raise RuntimeError(f"Missing required argument: {param}")
 
             saved_env = self.environment
             saved_return = self.return_value

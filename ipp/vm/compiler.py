@@ -26,13 +26,14 @@ class FunctionProto:
       - is_local=True  → capture slot `index` from the enclosing frame's locals
       - is_local=False → inherit upvalue `index` from the enclosing closure
     """
-    __slots__ = ('chunk', 'upvalue_descs', 'name')
+    __slots__ = ('chunk', 'upvalue_descs', 'name', 'variadic_param')
 
     def __init__(self, chunk: Chunk, upvalue_descs: List[Tuple[bool, int]],
-                 name: str = '<fn>'):
+                 name: str = '<fn>', variadic_param: str = None):
         self.chunk = chunk
         self.upvalue_descs = upvalue_descs
         self.name = name
+        self.variadic_param = variadic_param  # name of variadic param if any
 
     def __repr__(self):
         return f"<proto {self.name} upvalues={self.upvalue_descs}>"
@@ -253,8 +254,13 @@ class Compiler:
         if is_method:
             sub.define_local("self")
 
+        variadic_param = None
         for param in node.parameters:
-            sub.define_local(param)
+            if param.startswith("..."):
+                variadic_param = param[3:]
+                sub.define_local(variadic_param)
+            else:
+                sub.define_local(param)
 
         for stmt in node.body:
             sub.compile_stmt(stmt)
@@ -266,8 +272,7 @@ class Compiler:
             sub.chunk.write(OpCode.RETURN_VAL, self.current_line)
 
         func_chunk = sub.chunk
-        # FIX BUG-NEW-M5: store FunctionProto so VM can capture upvalues at runtime
-        proto = FunctionProto(func_chunk, sub.upvalues, name=node.name)
+        proto = FunctionProto(func_chunk, sub.upvalues, name=node.name, variadic_param=variadic_param)
         idx = len(self.chunk.constants)
         self.chunk.constants.append(proto)
         self.chunk.write(OpCode.CLOSURE, self.current_line)

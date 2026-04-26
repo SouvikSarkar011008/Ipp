@@ -163,9 +163,11 @@ class Parser:
 
         if not self.check(TokenType.RIGHT_PAREN):
             self.skip_newlines()
+            is_variadic = False
             while True:
+                is_variadic = self.match(TokenType.TRIPLE_DOT)
                 p = self.consume(TokenType.IDENTIFIER, "Expect parameter name").lexeme
-                parameters.append(p)
+                parameters.append("..." + p if is_variadic else p)
                 # FIX: BUG-P3 — parse parameter type annotations
                 pt = None
                 if self.match(TokenType.COLON):
@@ -176,6 +178,8 @@ class Parser:
                 if self.match(TokenType.EQUAL):
                     default_val = self.expression()
                 defaults.append(default_val)
+                if is_variadic:
+                    break  # variadic must be last
                 if not self.match(TokenType.COMMA):
                     break
                 self.skip_newlines()

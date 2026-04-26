@@ -1398,10 +1398,13 @@ class VM:
 
         if isinstance(callee, Closure):
             chunk = callee.chunk
+            proto = getattr(callee, 'proto', None)
         elif isinstance(callee, IppFunction):
             chunk = callee.chunk
+            proto = getattr(callee, 'proto', None)
         elif isinstance(callee, Chunk):
             chunk = callee
+            proto = None
         else:
             raise VMError(f"Cannot call {type(callee).__name__}")
 
@@ -1410,9 +1413,23 @@ class VM:
             return
 
         # FIX: BUG-M7 — push args onto stack BEFORE creating frame
+        # Handle variadic: pack excess args into list
+        variadic_param = getattr(proto, 'variadic_param', None) if proto else None
+        expected_args = len(chunk.locals) if hasattr(chunk, 'locals') else 0
+        
         base = len(self.stack)
-        for a in args:
-            self.stack.append(a)
+        if variadic_param and len(args) > (expected_args - 1):
+            # Pack excess args into a list
+            normal_count = expected_args - 1
+            for i, a in enumerate(args):
+                if i < normal_count:
+                    self.stack.append(a)
+                elif i == normal_count:
+                    # Collect remaining into list
+                    self.stack.append(IppList(list(args[normal_count:])))
+        else:
+            for a in args:
+                self.stack.append(a)
 
         new_frame = VMFrame(chunk,
                             closure=callee if isinstance(callee, Closure) else None,
