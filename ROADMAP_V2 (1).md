@@ -1066,6 +1066,8 @@ assert e == [1, 2, 3, 4]
 
 **Design:** When ADD/SUBTRACT/MULTIPLY/DIVIDE/NEGATE/EQUAL encounter an IppInstance, dispatch to `__add__`/`__sub__`/`__mul__`/`__div__`/`__neg__`/`__eq__`. Update stdlib Vector2, Vector3 to use these.
 
+**Status:** ✅ Interpreter (complete), ⚠️ VM (partial - needs more testing)
+
 **Test:**
 ```ipp
 class Vec2 {
