@@ -278,7 +278,17 @@ class Compiler:
         self.chunk.write(OpCode.CLOSURE, self.current_line)
         self.chunk.write(idx, self.current_line)
 
-        if self.depth > 0:
+        # v1.6.2 - apply decorator if present
+        if node.decorator:
+            self.compile_expr(node.decorator)
+            self.chunk.write(OpCode.CALL, self.current_line)
+            self.chunk.write(1, self.current_line)  # call with 1 arg (the function)
+            self.chunk.write(OpCode.SET_GLOBAL, self.current_line)
+            cidx = len(self.chunk.constants)
+            self.chunk.constants.append(node.name)
+            self.chunk.write(cidx, self.current_line)
+            self.chunk.lines.append(self.current_line)
+        elif self.depth > 0:
             self.define_local(node.name)
         else:
             self.chunk.write(OpCode.DEFINE_GLOBAL, self.current_line)

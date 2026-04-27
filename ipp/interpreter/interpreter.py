@@ -870,6 +870,12 @@ class Interpreter:
         else:
             func = IppFunction(node.parameters, node.body, closure, defaults)
         
+        # v1.6.2 - apply decorator if present
+        if node.decorator:
+            decorator_fn = self.execute(node.decorator)
+            if hasattr(decorator_fn, 'call'):
+                func = decorator_fn.call([func], {})
+        
         self.environment.define(node.name, func, constant=False)
     
     def _check_for_yield(self, body):

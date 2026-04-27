@@ -24,12 +24,19 @@ class Parser:
     # ─── Declarations ────────────────────────────────────────────────────────
 
     def declaration(self):
+        # v1.6.2 - decorator support
+        decorator = None
+        if self.match(TokenType.AT):
+            decorator = self.expression()
+            self.skip_newlines()
         if self.match(TokenType.VAR):
             return self.var_declaration()
         if self.match(TokenType.LET):
             return self.let_declaration()
         if self.match(TokenType.FUNC):
-            return self.function_declaration()
+            func_decl = self.function_declaration()
+            func_decl.decorator = decorator
+            return func_decl
         if self.match(TokenType.CLASS):
             return self.class_declaration()
         if self.match(TokenType.ENUM):

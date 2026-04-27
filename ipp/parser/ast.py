@@ -260,6 +260,7 @@ class FunctionDecl(ASTNode):
     defaults: Optional[List[Optional['ASTNode']]] = None  # Default values
     return_type: Optional[str] = None
     is_static: bool = False
+    decorator: Optional['ASTNode'] = None  # v1.6.2 - decorator expression
     def accept(self, visitor): return visitor.visit_function_decl(self)
 
 @dataclass
