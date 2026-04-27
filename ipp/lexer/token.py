@@ -51,6 +51,7 @@ class TokenType(Enum):
     THROW = auto()
     WITH = auto()
     STATIC = auto()
+    PROP = auto()  # v1.6.5 property accessor
     YIELD = auto()
     ASYNC = auto()
     AWAIT = auto()
@@ -162,6 +163,7 @@ KEYWORDS = {
     "throw": TokenType.THROW,
     "with": TokenType.WITH,
     "static": TokenType.STATIC,
+    "prop": TokenType.PROP,  # v1.6.5 - property accessor
     "this": TokenType.SELF,      # alias for self
     "and": TokenType.AND,          # 'and' keyword → dedicated AND token
     "or": TokenType.OR,            # 'or' keyword  → dedicated OR token

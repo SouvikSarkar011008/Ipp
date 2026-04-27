@@ -48,11 +48,12 @@ class IppFunction:
 
 
 class IppClass:
-    def __init__(self, name, methods, superclass=None, static_methods=None):
+    def __init__(self, name, methods, superclass=None, static_methods=None, properties=None):
         self.name = name
         self.methods = methods
         self.superclass = superclass
         self.static_methods = static_methods or {}
+        self.properties = properties or {}
     
     def __repr__(self):
         return f"<class {self.name}>"
@@ -66,6 +67,13 @@ class IppClass:
     
     def get_static_method(self, name):
         return self.static_methods.get(name)
+    
+    def get_property(self, name):
+        if name in self.properties:
+            return self.properties[name]
+        if self.superclass:
+            return self.superclass.get_property(name)
+        return None
 
 
 class IppInstance:
@@ -97,16 +105,66 @@ class IppInstance:
     def get(self, name):
         if name in self.fields:
             return self.fields[name]
+        prop = self.ipp_class.get_property(name)
+        if prop and prop.getter:
+            return self._execute_property_getter(prop)
         method = self.ipp_class.get_method(name)
         if method:
             return BoundMethod(self, method)
         raise AttributeError(f"'{self.ipp_class.name}' object has no attribute '{name}'")
     
+    def _execute_property_getter(self, prop):
+        new_env = Environment(prop.getter.closure)
+        new_env.define("self", self, constant=False)
+        interp = _ipp_get_interpreter()
+        if interp:
+            saved = interp.environment
+            saved_ret = interp.return_value
+            interp.environment = new_env
+            interp.return_value = None
+            try:
+                for stmt in prop.getter.body:
+                    stmt.accept(interp)
+                return interp.return_value
+            finally:
+                interp.environment = saved
+                interp.return_value = saved_ret
+        return None
+    
     def set(self, name, value):
+        prop = self.ipp_class.get_property(name)
+        if prop and prop.setter:
+            self._execute_property_setter(prop, value)
+            return
         self.fields[name] = value
+    
+    def _execute_property_setter(self, prop, value):
+        new_env = Environment(prop.setter.closure)
+        new_env.define("self", self, constant=False)
+        new_env.define("v", value, constant=False)
+        interp = _ipp_get_interpreter()
+        if interp:
+            saved = interp.environment
+            saved_ret = interp.return_value
+            interp.environment = new_env
+            interp.return_value = None
+            try:
+                for stmt in prop.setter.body:
+                    stmt.accept(interp)
+            finally:
+                interp.environment = saved
+                interp.return_value = saved_ret
     
     def get_method(self, name):
         return self.ipp_class.get_method(name)
+
+
+class IppProperty:
+    def __init__(self, name, getter, setter, closure):
+        self.name = name
+        self.getter = getter
+        self.setter = setter
+        self.closure = closure
 
 
 class IppEnum:
@@ -923,30 +981,34 @@ class Interpreter:
 
         methods = {}
         static_methods = {}
+        properties = {}
         
         for method_node in node.methods:
             closure = Environment(self.environment)
             params = method_node.parameters
             defaults = getattr(method_node, 'defaults', None) or []
             
-            # Handle static methods - don't add self param
             if getattr(method_node, 'is_static', False):
                 func = IppFunction(params, method_node.body, closure, defaults)
                 static_methods[method_node.name] = func
                 continue
             
-            # ALL methods get 'self' as first param (not just init)
             if params and params[0] == "self":
-                pass  # already has self
+                pass
             else:
                 params = ["self"] + list(params)
-                defaults = [None] + list(defaults)  # self has no default
+                defaults = [None] + list(defaults)
             func = IppFunction(params, method_node.body, closure, defaults)
             if method_node.name == "init":
                 func.is_init = True
             methods[method_node.name] = func
+        
+        for prop_node in getattr(node, 'properties', []):
+            closure = Environment(self.environment)
+            prop = IppProperty(prop_node.name, prop_node.getter, prop_node.setter, closure)
+            properties[prop_node.name] = prop
 
-        ipp_class = IppClass(node.name, methods, superclass, static_methods)
+        ipp_class = IppClass(node.name, methods, superclass, static_methods, properties)
         self.environment.define(node.name, ipp_class, constant=False)
         return None
 

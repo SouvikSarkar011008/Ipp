@@ -48,20 +48,23 @@ class Parser:
     def class_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect class name")
         
-        # FIX: BUG-M6 — parse optional superclass
         superclass = None
         if self.match(TokenType.COLON):
             sup = self.consume(TokenType.IDENTIFIER, "Expect superclass name")
             superclass = sup.lexeme
 
         methods = []
+        properties = []
         self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body")
         self.skip_newlines()
 
         while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
             self.skip_newlines()
             is_static = self.match(TokenType.STATIC)
-            if self.match(TokenType.FUNC):
+            if self.match(TokenType.PROP):
+                prop = self.property_declaration()
+                properties.append(prop)
+            elif self.match(TokenType.FUNC):
                 method = self.function_declaration(is_static=is_static)
                 methods.append(method)
             else:
@@ -69,7 +72,36 @@ class Parser:
             self.skip_newlines()
 
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body")
-        return ClassDecl(name.lexeme, methods, superclass)
+        return ClassDecl(name.lexeme, methods, superclass, properties)
+
+    def property_declaration(self):
+        name = self.consume(TokenType.IDENTIFIER, "Expect property name")
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after property name")
+        
+        getter = None
+        setter = None
+        
+        while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
+            self.skip_newlines()
+            # Check for get/set as identifiers
+            if self.match(TokenType.IDENTIFIER):
+                kw = self.previous().lexeme
+                if kw == "get":
+                    self.consume(TokenType.LEFT_BRACE, "Expect '{' after get")
+                    getter = self.block()
+                    self.consume(TokenType.RIGHT_BRACE, "Expect '}' after getter")
+                elif kw == "set":
+                    self.consume(TokenType.LEFT_BRACE, "Expect '{' after set")
+                    setter = self.block()
+                    self.consume(TokenType.RIGHT_BRACE, "Expect '}' after setter")
+                else:
+                    break
+            else:
+                break
+            self.skip_newlines()
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after property")
+        return PropDecl(name.lexeme, getter, setter)
 
     def enum_declaration(self):
         name_token = self.consume(TokenType.IDENTIFIER, "Expect enum name")

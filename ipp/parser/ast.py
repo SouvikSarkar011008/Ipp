@@ -274,8 +274,16 @@ class ImportDecl(ASTNode):
 class ClassDecl(ASTNode):
     name: str
     methods: List[ASTNode]
-    superclass: Optional[str] = None    # FIX: BUG-M6 — add superclass field
+    superclass: Optional[str] = None
+    properties: List['PropDecl'] = field(default_factory=list)
     def accept(self, visitor): return visitor.visit_class_decl(self)
+
+@dataclass
+class PropDecl(ASTNode):
+    name: str
+    getter: Optional[List[ASTNode]] = None
+    setter: Optional[List[ASTNode]] = None
+    def accept(self, visitor): return visitor.visit_prop_decl(self)
 
 @dataclass
 class IfStmt(ASTNode):
