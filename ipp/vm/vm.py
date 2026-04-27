@@ -1217,7 +1217,7 @@ class VM:
                 method = a.cls.get_method('__add__')
                 if method:
                     bound = BoundMethod(a, method)
-                    result = self._call_method(a, bound, [b])
+                    result = self._call_method(a, bound, [b], None)
                     self.stack.append(result)
                 else:
                     self.stack.append(a + b)
@@ -1230,7 +1230,7 @@ class VM:
                 method = a.cls.get_method('__sub__')
                 if method:
                     bound = BoundMethod(a, method)
-                    result = self._call_method(a, bound, [b])
+                    result = self._call_method(a, bound, [b], None)
                     self.stack.append(result)
                 else:
                     self.stack.append(a - b)
@@ -1243,7 +1243,7 @@ class VM:
                 method = a.cls.get_method('__mul__')
                 if method:
                     bound = BoundMethod(a, method)
-                    result = self._call_method(a, bound, [b])
+                    result = self._call_method(a, bound, [b], None)
                     self.stack.append(result)
                 else:
                     self.stack.append(a * b)
@@ -1257,7 +1257,7 @@ class VM:
                 method = a.cls.get_method('__div__')
                 if method:
                     bound = BoundMethod(a, method)
-                    result = self._call_method(a, bound, [b])
+                    result = self._call_method(a, bound, [b], None)
                     self.stack.append(result)
                 else:
                     self.stack.append(a / b)
@@ -1529,6 +1529,12 @@ class VM:
         if self.call_depth > self.max_depth:
             self.call_depth -= 1
             raise VMError(f"Maximum recursion depth ({self.max_depth}) exceeded")
+        
+        # Handle BoundMethod
+        if isinstance(method, BoundMethod):
+            instance = method.instance
+            method = method.method
+        
         if isinstance(method, Chunk):
             chunk = method
             closure = None
