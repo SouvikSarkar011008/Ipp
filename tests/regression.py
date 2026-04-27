@@ -90,6 +90,7 @@ TESTS = [
     ("v1.6.5", "tests/v1_6_5/test_property.ipp"),
     ("v1.6.6", "tests/v1_6_6/test_signal.ipp"),
     ("v1.6.7", "tests/v1_6_7/test_slicing.ipp"),
+    ("v1.6.8", "tests/v1_6_8/test_matrix.ipp"),
 ]
 
 def run_test(version, filepath):
