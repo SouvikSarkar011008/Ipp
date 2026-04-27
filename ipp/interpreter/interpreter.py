@@ -273,6 +273,32 @@ class IppList:
     def insert(self, index, item):
         self.elements.insert(index, item)
     
+    # v1.6.12 - fluent list methods
+    def map(self, fn):
+        result = []
+        for elem in self.elements:
+            result.append(fn(elem))
+        return result
+    
+    def filter(self, fn):
+        result = []
+        for elem in self.elements:
+            if fn(elem):
+                result.append(elem)
+        return result
+    
+    def reduce(self, fn, init):
+        acc = init
+        for elem in self.elements:
+            acc = fn(acc, elem)
+        return acc
+    
+    def sort(self):
+        self.elements.sort()
+    
+    def reverse(self):
+        self.elements.reverse()
+    
     def remove(self, item):
         self.elements.remove(item)
 

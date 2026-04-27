@@ -94,6 +94,7 @@ TESTS = [
     ("v1.6.9", "tests/v1_6_9/test_async.ipp"),
     ("v1.6.10", "tests/v1_6_10/test_set.ipp"),
     ("v1.6.11", "tests/v1_6_11/test_tailcall.ipp"),
+    ("v1.6.12", "tests/v1_6_12/test_fluent.ipp"),
 ]
 
 def run_test(version, filepath):
