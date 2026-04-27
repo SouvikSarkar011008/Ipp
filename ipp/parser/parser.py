@@ -375,6 +375,15 @@ class Parser:
         if not self.check(TokenType.NEWLINE) and not self.check(TokenType.EOF) and \
            not self.check(TokenType.RIGHT_BRACE):
             value = self.expression()
+            # v1.6.3 - handle multiple return values: return a, b, c
+            values = [value]
+            while self.match(TokenType.COMMA):
+                self.skip_newlines()
+                values.append(self.expression())
+            if len(values) > 1:
+                list_lit = ListLiteral(values)
+                list_lit.line = values[0].line
+                value = list_lit
         return ReturnStmt(value)
 
     def block(self):

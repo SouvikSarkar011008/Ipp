@@ -85,6 +85,7 @@ TESTS = [
     ("v1.6.0", "tests/v1_6_0/test_operator_overload.ipp"),
     ("v1.6.1", "tests/v1_6_1/test_exception_types.ipp"),
     ("v1.6.2", "tests/v1_6_2/test_decorator.ipp"),
+    ("v1.6.3", "tests/v1_6_3/test_multi_return.ipp"),
 ]
 
 def run_test(version, filepath):
