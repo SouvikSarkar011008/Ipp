@@ -82,6 +82,7 @@ TESTS = [
     ("v1.5.36", "tests/v1_5_36/test_fstrings.ipp"),
     ("v1.5.37", "tests/v1_5_37/test_import.ipp"),
     ("v1.5.38", "tests/v1_5_38/test_spread.ipp"),
+    ("v1.6.0", "tests/v1_6_0/test_operator_overload.ipp"),
 ]
 
 def run_test(version, filepath):

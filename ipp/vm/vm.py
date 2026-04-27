@@ -1208,26 +1208,61 @@ class VM:
         # ── Arithmetic ───────────────────────────────────────────────────
         elif opcode == OpCode.ADD:
             b, a = self.stack.pop(), self.stack.pop()
+            # FIX: Don't call str() on IppInstance - causes infinite recursion
             if isinstance(a, str) or isinstance(b, str):
-                # FIX: Don't call str() on IppInstance - causes infinite recursion
                 a_str = str(a) if not isinstance(a, IppInstance) else f"<{a.cls.name} instance>"
                 b_str = str(b) if not isinstance(b, IppInstance) else f"<{b.cls.name} instance>"
                 self.stack.append(self._intern_string(a_str + b_str))
+            elif isinstance(a, IppInstance):
+                method = a.cls.get_method('__add__')
+                if method:
+                    bound = BoundMethod(a, method)
+                    result = self._call_method(a, bound, [b])
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a + b)
             else:
                 self.stack.append(a + b)
 
         elif opcode == OpCode.SUBTRACT:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a - b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__sub__')
+                if method:
+                    bound = BoundMethod(a, method)
+                    result = self._call_method(a, bound, [b])
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a - b)
+            else:
+                self.stack.append(a - b)
 
         elif opcode == OpCode.MULTIPLY:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a * b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__mul__')
+                if method:
+                    bound = BoundMethod(a, method)
+                    result = self._call_method(a, bound, [b])
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a * b)
+            else:
+                self.stack.append(a * b)
 
         elif opcode == OpCode.DIVIDE:
             b, a = self.stack.pop(), self.stack.pop()
             if b == 0: raise VMError("Division by zero")
-            self.stack.append(a / b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__div__')
+                if method:
+                    bound = BoundMethod(a, method)
+                    result = self._call_method(a, bound, [b])
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a / b)
+            else:
+                self.stack.append(a / b)
 
         elif opcode == OpCode.MODULO:
             b, a = self.stack.pop(), self.stack.pop()
