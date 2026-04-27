@@ -4059,4 +4059,6 @@ BUILTINS = {
     "signal": lambda name: _IppSignal(name),
     "connect": lambda sig, handler: sig.connect(handler) if hasattr(sig, 'connect') else None,
     "emit": lambda sig, *args: sig.emit(*args) if hasattr(sig, 'emit') else None,
+    # List Slicing (v1.6.7)
+    "slice": lambda lst, start=None, end=None, step=None: lst[start:end:step] if isinstance(lst, list) else lst,
 }
