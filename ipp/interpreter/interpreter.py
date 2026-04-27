@@ -1117,18 +1117,33 @@ class Interpreter:
         except Exception as e:
             error = e
         
-        # Handle multiple catch blocks
+        # Handle multiple catch blocks with types
         if error and node.catches:
-            for catch_var, catch_body in node.catches:
+            error_str = str(error)
+            for catch_type, catch_var, catch_body in node.catches:
                 if error:
-                    if catch_var:
-                        self.environment.define(catch_var, str(error))
-                    for stmt in catch_body:
-                        if self.return_value is not None:
+                    # Check if typed catch matches
+                    if catch_type:
+                        # Check if error matches the type (error_str starts with TypeName:)
+                        if error_str.startswith(catch_type + ":"):
+                            if catch_var:
+                                self.environment.define(catch_var, error_str)
+                            for stmt in catch_body:
+                                if self.return_value is not None:
+                                    break
+                                stmt.accept(self)
+                            error = None  # caught
                             break
-                        stmt.accept(self)
-                    error = None  # caught
-                    break
+                    else:
+                        # Untyped catch - catches all
+                        if catch_var:
+                            self.environment.define(catch_var, error_str)
+                        for stmt in catch_body:
+                            if self.return_value is not None:
+                                break
+                            stmt.accept(self)
+                        error = None  # caught
+                        break
         
         # Finally block
         if node.finally_body:

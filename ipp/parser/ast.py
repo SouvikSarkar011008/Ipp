@@ -346,7 +346,7 @@ class MatchExpr(ASTNode):
 @dataclass
 class TryStmt(ASTNode):
     try_body: List[ASTNode]
-    catches: List[tuple]           # List of (catch_var, catch_body) - multiple catches
+    catches: List[tuple]           # List of (catch_type, catch_var, catch_body) - typed catches
     finally_body: List[ASTNode]
     def accept(self, visitor): return visitor.visit_try_stmt(self)
 

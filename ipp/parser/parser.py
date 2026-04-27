@@ -331,9 +331,24 @@ class Parser:
         try_body = self.block_or_statement()
         catches = []
         while self.match(TokenType.CATCH):
-            catch_var = self.advance().lexeme if self.check(TokenType.IDENTIFIER) else None
+            # Check for typed catch: catch TypeName var
+            catch_type = None
+            catch_var = None
+            if self.check(TokenType.IDENTIFIER):
+                # Look ahead to see if there's another identifier after this
+                # If so, first one is type, second is variable
+                saved = self.current
+                self.advance()
+                if self.check(TokenType.IDENTIFIER):
+                    catch_type = self.previous().lexeme
+                    catch_var = self.advance().lexeme
+                else:
+                    # Single identifier is the variable name
+                    self.current = saved
+                    catch_var = self.advance().lexeme if self.check(TokenType.IDENTIFIER) else None
+            
             catch_body = self.block_or_statement()
-            catches.append((catch_var, catch_body))
+            catches.append((catch_type, catch_var, catch_body))
         finally_body = []
         if self.match(TokenType.FINALLY):
             finally_body = self.block_or_statement()
