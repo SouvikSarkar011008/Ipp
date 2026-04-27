@@ -71,8 +71,8 @@ print(log10(100))
 
 # ====== Constants ======
 print("\n--- Constants ---")
-print(pi())
-print(e())
+print(pi)
+print(e)
 
 # ====== Random ======
 print("\n--- Random ---")
