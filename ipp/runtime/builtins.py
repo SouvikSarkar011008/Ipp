@@ -7,6 +7,23 @@ from ipp.runtime.canvas import (
 )
 
 
+class _IppSignal:
+    def __init__(self, name):
+        self.name = name
+        self.handlers = []
+    
+    def connect(self, handler):
+        self.handlers.append(handler)
+    
+    def emit(self, *args):
+        for handler in self.handlers:
+            if callable(handler):
+                handler(*args)
+    
+    def __repr__(self):
+        return f"Signal({self.name})"
+
+
 class _IppConstant:
     def __init__(self, value, name):
         object.__setattr__(self, '_value', value)
@@ -4038,4 +4055,8 @@ BUILTINS = {
     "canvas_show": ipp_canvas_show,
     # WASM Runtime (v1.5.16)
     "wasm_run": ipp_wasm_run,
+    # Signal/Event System (v1.6.6)
+    "signal": lambda name: _IppSignal(name),
+    "connect": lambda sig, handler: sig.connect(handler) if hasattr(sig, 'connect') else None,
+    "emit": lambda sig, *args: sig.emit(*args) if hasattr(sig, 'emit') else None,
 }

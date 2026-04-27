@@ -88,6 +88,7 @@ TESTS = [
     ("v1.6.3", "tests/v1_6_3/test_multi_return.ipp"),
     ("v1.6.4", "tests/v1_6_4/test_named_args.ipp"),
     ("v1.6.5", "tests/v1_6_5/test_property.ipp"),
+    ("v1.6.6", "tests/v1_6_6/test_signal.ipp"),
 ]
 
 def run_test(version, filepath):

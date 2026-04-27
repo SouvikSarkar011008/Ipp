@@ -167,6 +167,23 @@ class IppProperty:
         self.closure = closure
 
 
+class IppSignal:  # v1.6.6 signal/event
+    def __init__(self, name):
+        self.name = name
+        self.handlers = []
+    
+    def connect(self, handler):
+        self.handlers.append(handler)
+    
+    def emit(self, *args):
+        for handler in self.handlers:
+            if callable(handler):
+                handler(*args)
+    
+    def __repr__(self):
+        return f"Signal({self.name})"
+
+
 class IppEnum:
     def __init__(self, name, values):
         self.name = name
