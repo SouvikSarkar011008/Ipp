@@ -1161,6 +1161,16 @@ class VM:
                 items = []
             self.stack.append(list(items))
 
+        elif opcode == OpCode.LIST_APPEND:
+            val = self.stack.pop()
+            self.stack[-1].append(val)
+
+        elif opcode == OpCode.LIST_EXTEND:
+            iterable = self.stack.pop()
+            lst = self.stack[-1]
+            if hasattr(iterable, '__iter__') and not isinstance(iterable, (str, dict)):
+                lst.extend(list(iterable))
+
         elif opcode == OpCode.DICT:
             count = code[ip + 1]
             d = {}

@@ -117,6 +117,8 @@ class OpCode(IntEnum):
 
     # Collections
     LIST = 74
+    LIST_APPEND = 85     # Append single element to list
+    LIST_EXTEND = 86     # Extend list with iterable
     DICT = 75
     TUPLE = 76
     SPREAD = 77

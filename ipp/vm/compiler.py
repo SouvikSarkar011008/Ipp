@@ -922,15 +922,26 @@ class Compiler:
         self.chunk.write(OpCode.NIL, self.current_line)
 
     def compile_list(self, node: ListLiteral):
-        for elem in node.elements:
-            if isinstance(elem, SpreadExpr):
-                self.compile_expr(elem.iterable)
-                self.chunk.write(OpCode.SPREAD, self.current_line)
-            else:
+        # Check for spread in elements
+        has_spread = any(isinstance(e, SpreadExpr) for e in node.elements)
+        
+        if not has_spread:
+            # Fast path: no spread, fixed count
+            for elem in node.elements:
                 self.compile_expr(elem)
-        # FIX: BUG-C6 — LIST opcode with clean stack semantics
-        self.chunk.write(OpCode.LIST, self.current_line)
-        self.chunk.write(len(node.elements), self.current_line)
+            self.chunk.write(OpCode.LIST, self.current_line)
+            self.chunk.write(len(node.elements), self.current_line)
+        else:
+            # Spread path: build empty list, extend/append each element
+            self.chunk.write(OpCode.LIST, self.current_line)
+            self.chunk.write(0, self.current_line)  # empty list on stack
+            for elem in node.elements:
+                if isinstance(elem, SpreadExpr):
+                    self.compile_expr(elem.iterable)
+                    self.chunk.write(OpCode.LIST_EXTEND, self.current_line)
+                else:
+                    self.compile_expr(elem)
+                    self.chunk.write(OpCode.LIST_APPEND, self.current_line)
 
     def compile_dict(self, node: DictLiteral):
         for key, value in node.entries:
