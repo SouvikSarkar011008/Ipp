@@ -1489,10 +1489,33 @@ class VM:
 
     def _call(self, callee, args, return_frame: VMFrame):
         """Push a new call frame for callee with given args."""
-        if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod)):
+        # FIX: Handle method_descriptor for str.format etc
+        if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod, type(str.format))):
             # built-in Python callable
+            # Check for named arguments (pushed as name, value pairs on stack)
+            # Only extract if the "key" looks like an identifier (no braces {})
+            kwargs = {}
+            if args and len(args) >= 2:
+                for i in range(0, len(args), 2):
+                    if i + 1 < len(args) and isinstance(args[i], str):
+                        key = args[i]
+                        # Only treat as kwarg if it looks like an identifier (no braces)
+                        if '{' not in key and '}' not in key:
+                            kwargs[key] = args[i + 1]
+            # Remove named arg pairs from positional args
+            if kwargs:
+                new_args = []
+                used = set()
+                for i in range(0, len(args), 2):
+                    if i + 1 < len(args) and isinstance(args[i], str) and '{' not in args[i] and '}' not in args[i]:
+                        used.add(i)
+                        used.add(i + 1)
+                for j in range(len(args)):
+                    if j not in used:
+                        new_args.append(args[j])
+                args = tuple(new_args)
             try:
-                result = callee(*args)
+                result = callee(*args, **kwargs) if kwargs else callee(*args)
             except VMError:
                 raise
             except Exception as e:

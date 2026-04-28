@@ -933,12 +933,20 @@ class Compiler:
             self.compile_expr(arg)
         total_args = len(node.arguments)
         # FIX BUG-5: also push named args in the order they appear
-        # The VM passes them positionally; _merge_named_args in interpreter
-        # handles reordering, but for the VM path we push them as-is.
+        # Push as pairs: (name_string, value) on stack, then CALL knows to convert
+        # The format() builtin will handle extracting kwargs from stack
         if hasattr(node, 'named_arguments') and node.named_arguments:
             for named in node.named_arguments:
+                # Push name as constant
+                self.chunk.write(OpCode.CONSTANT, self.current_line)
+                name_idx = len(self.chunk.constants)
+                self.chunk.constants.append(named.name)
+                self.chunk.write(name_idx, self.current_line)
+                self.chunk.lines.append(self.current_line)
+                # Push value
                 self.compile_expr(named.value)
-                total_args += 1
+                # Named args take 2 slots (name + value)
+                total_args += 2
         self.chunk.write(OpCode.CALL, self.current_line)
         self.chunk.write(total_args, self.current_line)
 
