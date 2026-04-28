@@ -26,14 +26,15 @@ class FunctionProto:
       - is_local=True  → capture slot `index` from the enclosing frame's locals
       - is_local=False → inherit upvalue `index` from the enclosing closure
     """
-    __slots__ = ('chunk', 'upvalue_descs', 'name', 'variadic_param')
+    __slots__ = ('chunk', 'upvalue_descs', 'name', 'variadic_param', 'is_async')
 
     def __init__(self, chunk: Chunk, upvalue_descs: List[Tuple[bool, int]],
-                 name: str = '<fn>', variadic_param: str = None):
+                 name: str = '<fn>', variadic_param: str = None, is_async: bool = False):
         self.chunk = chunk
         self.upvalue_descs = upvalue_descs
         self.name = name
-        self.variadic_param = variadic_param  # name of variadic param if any
+        self.variadic_param = variadic_param
+        self.is_async = is_async
 
     def __repr__(self):
         return f"<proto {self.name} upvalues={self.upvalue_descs}>"
@@ -138,6 +139,8 @@ class Compiler:
             self.compile_multi_var_decl(node)
         elif isinstance(node, FunctionDecl):
             self.compile_function(node)
+        elif isinstance(node, AsyncFuncDecl):
+            self.compile_function(node, is_async=True)
         elif isinstance(node, ClassDecl):
             self.compile_class(node)
         elif isinstance(node, ImportDecl):
@@ -245,7 +248,7 @@ class Compiler:
 
     # ─── Function compilation ─────────────────────────────────────────────────
 
-    def compile_function(self, node: FunctionDecl, is_method: bool = False):
+    def compile_function(self, node: FunctionDecl, is_method: bool = False, is_async: bool = False):
         """Compile a function into a sub-Chunk, push as constant."""
         sub = Compiler(parent=self)
         sub.depth = 1
@@ -272,30 +275,45 @@ class Compiler:
             sub.chunk.write(OpCode.RETURN_VAL, self.current_line)
 
         func_chunk = sub.chunk
-        proto = FunctionProto(func_chunk, sub.upvalues, name=node.name, variadic_param=variadic_param)
+        proto = FunctionProto(func_chunk, sub.upvalues, name=node.name, variadic_param=variadic_param, is_async=is_async)
         idx = len(self.chunk.constants)
         self.chunk.constants.append(proto)
-        self.chunk.write(OpCode.CLOSURE, self.current_line)
-        self.chunk.write(idx, self.current_line)
-
-        # v1.6.2 - apply decorator if present
-        if node.decorator:
-            self.compile_expr(node.decorator)
-            self.chunk.write(OpCode.CALL, self.current_line)
-            self.chunk.write(1, self.current_line)  # call with 1 arg (the function)
-            self.chunk.write(OpCode.SET_GLOBAL, self.current_line)
-            cidx = len(self.chunk.constants)
-            self.chunk.constants.append(node.name)
-            self.chunk.write(cidx, self.current_line)
-            self.chunk.lines.append(self.current_line)
-        elif self.depth > 0:
-            self.define_local(node.name)
-        else:
+        
+        # Handle decorators - AsyncFuncDecl may not have this attribute
+        decorator = getattr(node, 'decorator', None)
+        if decorator:
+            # First define global with original closure
+            self.chunk.write(OpCode.CLOSURE, self.current_line)
+            self.chunk.write(idx, self.current_line)
             self.chunk.write(OpCode.DEFINE_GLOBAL, self.current_line)
-            cidx = len(self.chunk.constants)
+            func_name_idx = len(self.chunk.constants)
             self.chunk.constants.append(node.name)
-            self.chunk.write(cidx, self.current_line)
+            self.chunk.write(func_name_idx, self.current_line)
             self.chunk.lines.append(self.current_line)
+            # Now compile decorator call with decorated function
+            self.compile_expr(node.decorator)
+            # Get the global we just defined
+            self.chunk.write(OpCode.GET_GLOBAL, self.current_line)
+            self.chunk.write(func_name_idx, self.current_line)
+            self.chunk.lines.append(self.current_line)
+            # Call: decorator(function)
+            self.chunk.write(OpCode.CALL, self.current_line)
+            self.chunk.write(1, self.current_line)
+            # Update global with result
+            self.chunk.write(OpCode.SET_GLOBAL, self.current_line)
+            self.chunk.write(func_name_idx, self.current_line)
+            self.chunk.lines.append(self.current_line)
+        else:
+            self.chunk.write(OpCode.CLOSURE, self.current_line)
+            self.chunk.write(idx, self.current_line)
+            if self.depth > 0:
+                self.define_local(node.name)
+            else:
+                self.chunk.write(OpCode.DEFINE_GLOBAL, self.current_line)
+                cidx = len(self.chunk.constants)
+                self.chunk.constants.append(node.name)
+                self.chunk.write(cidx, self.current_line)
+                self.chunk.lines.append(self.current_line)
 
     def compile_class(self, node: ClassDecl):
         self.chunk.write(OpCode.CLASS, self.current_line)
@@ -629,11 +647,19 @@ class Compiler:
         skip_catch = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
         self.chunk.patch_jump(try_jump)
 
-        # Multiple catch blocks
-        for i, (catch_var, catch_body) in enumerate(node.catches):
+        # Multiple catch blocks - v1.6.1: catches is list of (catch_type, catch_var, catch_body)
+        for i, catch_info in enumerate(node.catches):
+            catch_type = catch_info[0] if len(catch_info) > 0 else None
+            catch_var = catch_info[1] if len(catch_info) > 1 else None
+            catch_body = catch_info[2] if len(catch_info) > 2 else []
             self.push_scope()
+            slot = None
             if catch_var:
-                self.define_local(catch_var)
+                slot = self.define_local(catch_var)
+                # Store caught exception (pushed by _handle_exception) into local
+                self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+                self.chunk.write(slot, self.current_line)
+                self.chunk.lines.append(self.current_line)
             for stmt in catch_body:
                 self.compile_stmt(stmt)
             self.chunk.write(OpCode.CATCH_END, self.current_line)

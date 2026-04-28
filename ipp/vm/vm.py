@@ -5,6 +5,49 @@ import math
 import time
 import sys
 import os
+import random
+
+
+class _IppSignal:
+    def __init__(self, name):
+        self.name = name
+        self.handlers = []
+    
+    def connect(self, handler):
+        self.handlers.append(handler)
+    
+    def emit(self, *args):
+        for handler in self.handlers:
+            if callable(handler):
+                handler(*args)
+    
+    def __repr__(self):
+        return f"Signal({self.name})"
+
+
+class _Vec4:
+    def __init__(self, x=0, y=0, z=0, w=1):
+        self.x, self.y, self.z, self.w = x, y, z, w
+    def __repr__(self):
+        return f"vec4({self.x}, {self.y}, {self.z}, {self.w})"
+
+
+class _Mat4:
+    def __init__(self, m=None):
+        if m is None:
+            self.m = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+        else:
+            self.m = list(m)
+    def __repr__(self):
+        return f"Matrix4([{', '.join(str(x) for x in self.m[:4])}, ...])"
+
+
+class _Quat:
+    def __init__(self, x=0, y=0, z=0, w=1):
+        self.x, self.y, self.z, self.w = x, y, z, w
+    def __repr__(self):
+        return f"quat({self.x}, {self.y}, {self.z}, {self.w})"
+
 
 # ─── Sentinel for cache misses (FIX: BUG-M5) ─────────────────────────────────
 _MISS = object()
@@ -360,6 +403,7 @@ class VM:
             'sqrt': math.sqrt,
             'pow': pow,
             'append': lambda lst, item: lst.append(item),
+            'slice': lambda lst, start, end=None: lst[start:end] if end is not None else lst[start:],
             'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
             'log': math.log, 'log10': math.log10,
             'floor': math.floor, 'ceil': math.ceil,
@@ -384,6 +428,7 @@ class VM:
             'exit': sys.exit,
             'assert': self._builtin_assert,
             # String functions
+            'format': lambda s, *args, **kwargs: s.format(*args) if args else s.format(**kwargs) if kwargs else s,
             'upper': str.upper,
             'lower': str.lower,
             'strip': str.strip,
@@ -436,6 +481,17 @@ class VM:
             'uuid4': lambda: str(__import__('uuid').uuid4()),
             'uuid1': lambda: str(__import__('uuid').uuid1()),
             'uuid_nil': lambda: '00000000-0000-0000-0000-000000000000',
+            # Signals (v1.6.6)
+            'signal': lambda name: _IppSignal(name),
+            'connect': lambda sig, handler: sig.connect(handler) if hasattr(sig, 'connect') else None,
+            'emit': lambda sig, *args: sig.emit(*args) if hasattr(sig, 'emit') else None,
+            # Mathematics (v1.6.8) - simplified placeholder versions
+            'vec4': lambda x=0, y=0, z=0, w=1: _Vec4(x, y, z, w),
+            'mat4': lambda: _Mat4(),
+            'mat4_identity': lambda: _Mat4(),
+            'quat': lambda x=0, y=0, z=0, w=1: _Quat(x, y, z, w),
+            # Async (v1.6.9)
+            'async_run': lambda fn, *args: fn(*args) if callable(fn) else None,
             # OS
             'os_platform': lambda: os.name,
             'os_cwd': os.getcwd,
@@ -706,8 +762,8 @@ class VM:
             self.frames.pop()
         if not self.frames:
             raise exc
-        frame = self.frames[-1]
-        frame.ip = handler.target_ip
+        # Update the frame reference to use the correct frame after pop
+        return handler.target_ip
 
     def _execute(self, opcode: OpCode, frame: VMFrame) -> Any:
         code = frame.chunk.code
@@ -1356,7 +1412,8 @@ class VM:
             msg = self.stack.pop() if self.stack else "Unknown error"
             exc = VMError(str(msg))
             if self.exception_handlers:
-                self._handle_exception(exc, frame)
+                target_ip = self._handle_exception(exc, frame)
+                frame.ip = target_ip  # Update current frame's ip
                 return _SUSPEND
             raise exc
 
@@ -1368,9 +1425,9 @@ class VM:
             self.exception_handlers.append(handler)
 
         elif opcode == OpCode.TRY_END:
-            # normal completion — discard handler
-            if self.exception_handlers:
-                self.exception_handlers.pop()
+            # Normal completion only - don't pop if we're in exception path
+            # (the handler will be popped by catch block)
+            pass
 
         elif opcode == OpCode.CATCH:
             pass  # catch block entry; exception value already on stack

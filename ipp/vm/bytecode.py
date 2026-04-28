@@ -137,14 +137,14 @@ class OpCode(IntEnum):
     TRY = 83          # 3-byte operand: offset to catch block
     TRY_END = 84
     CATCH = 85        # 3-byte operand: offset past catch
-    CATCH_END = 86
+    CATCH_END = 89    # was 86 (conflict with LIST_EXTEND)
     FINALLY = 87
     END_FINALLY = 88
-    EXCEPTION = 89    # push current exception value
+    EXCEPTION = 90    # was 89
 
     # With statement
-    WITH_ENTER = 90
-    WITH_EXIT = 91
+    WITH_ENTER = 91
+    WITH_EXIT = 92
 
     # Loop control (resolved by compiler to JUMPs; these are fallback stubs)
     BREAK = 92
