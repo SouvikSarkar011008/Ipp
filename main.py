@@ -2562,6 +2562,39 @@ func __async_task__() {{
 
 # ─── File runner ──────────────────────────────────────────────────────────────
 def run_file(path: str) -> int:
+    import pickle
+    
+    # Check for bytecode cache
+    cache_path = path + 'c'  # .ipc
+    
+    # Try to load from bytecode cache
+    if os.path.exists(cache_path):
+        try:
+            cache_mtime = os.path.getmtime(cache_path)
+            src_mtime = os.path.getmtime(path)
+            if cache_mtime >= src_mtime:
+                # Cache is newer, try to use it
+                with open(cache_path, 'rb') as f:
+                    try:
+                        data = pickle.load(f)
+                        cache_version = data.get('_version', '0.0.0')
+                        if cache_version == VERSION:
+                            chunk = data.get('chunk')
+                            constants = data.get('constants', [])
+                            if chunk:
+                                from ipp.vm.vm import VM
+                                vm = VM(constants=constants)
+                                try:
+                                    vm.run(chunk)
+                                    return 0
+                                except Exception:
+                                    pass  # Fall through to recompile
+                    except Exception:
+                        pass  # Fall through to recompile
+        except Exception:
+            pass
+    
+    # Compile from source
     try:
         with open(path, 'r', encoding='utf-8') as f:
             source = f.read()
@@ -2574,7 +2607,20 @@ def run_file(path: str) -> int:
         ast    = parse(tokens)
         interp = Interpreter()
         interp.current_file = os.path.abspath(path)
+        
+        # Check if VM compilation is preferred
+        # For now, use interpreter (VM version can be added later)
         interp.run(ast)
+        
+        # Try to save bytecode cache
+        # Note: Full bytecode caching requires VM integration
+        try:
+            cache_data = {'_version': VERSION, 'chunk': None, 'constants': []}
+            with open(cache_path, 'wb') as f:
+                pickle.dump(cache_data, f)
+        except Exception:
+            pass  # Caching is optional
+        
         return 0
     except Exception as e:
         print(f"{colour(C_ERROR, '[Error]')} {e}")

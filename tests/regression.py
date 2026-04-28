@@ -96,6 +96,7 @@ TESTS = [
     ("v1.6.11", "tests/v1_6_11/test_tailcall.ipp"),
     ("v1.6.12", "tests/v1_6_12/test_fluent.ipp"),
     ("v1.6.13", "tests/v1_6_13/test_string_format.ipp"),
+    ("v1.6.14", "tests/v1_6_14/test_bytecode_cache.ipp"),
 ]
 
 def run_test(version, filepath):
