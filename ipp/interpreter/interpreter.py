@@ -527,9 +527,12 @@ class Interpreter:
             named_args[named_arg.name] = named_arg.value.accept(self)
         
         if callable(callee):
-            # For Python callables, merge positional and named args
+            # For Python callables, support both positional and named args
             if named_args:
-                raise RuntimeError("Named arguments not supported for built-in functions")
+                try:
+                    return callee(*args, **named_args)
+                except TypeError:
+                    return callee(*args)
             return callee(*args)
 
         # FIX: IppList returned from a builtin (e.g. items(d)) is not callable

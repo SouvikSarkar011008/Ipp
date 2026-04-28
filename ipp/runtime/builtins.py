@@ -3750,7 +3750,18 @@ def ipp_scanf(format_str):
     return results
 
 
+def ipp_format(format_str, *args, **kwargs):
+    """String format method - v1.6.13"""
+    if args or kwargs:
+        try:
+            return format_str.format(*args, **kwargs)
+        except (AttributeError, KeyError, ValueError):
+            return str(format_str)
+    return str(format_str)
+
+
 BUILTINS = {
+    "format": ipp_format,
     "print": ipp_print,
     "printf": ipp_printf,
     "sprintf": ipp_sprintf,

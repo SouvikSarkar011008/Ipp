@@ -1490,7 +1490,7 @@ class VM:
     def _call(self, callee, args, return_frame: VMFrame):
         """Push a new call frame for callee with given args."""
         # FIX: Handle method_descriptor and builtin_function_or_method for string methods
-        if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod)):
+        if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod, type(str.format))):
             # built-in Python callable - extract named arguments (pushed as name, value pairs)
             # Only extract if the "key" looks like an identifier (no braces {})
             kwargs = {}
