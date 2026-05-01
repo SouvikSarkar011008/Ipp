@@ -2637,7 +2637,7 @@ def check_file(path: str) -> int:
         print(f"{colour(C_ERROR, '✗')} {e}")
         return 1
 
-def lint_file(path: str) -> int:
+def lint_file(path: str, warn_as_error: bool = False) -> int:
     issues = []
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -2646,11 +2646,58 @@ def lint_file(path: str) -> int:
         print(f"{colour(C_ERROR, '[Error]')} File not found: {path}")
         return 1
 
-    for i, line in enumerate(src.split('\n'), 1):
+    lines = src.split('\n')
+    
+    # Track variables for unused variable detection
+    defined_vars = set()
+    used_vars = set()
+    
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        
+        # Skip comments and empty lines
+        if stripped.startswith('#') or stripped.startswith('//') or not stripped:
+            continue
+        
+        # Line length check
         if len(line.rstrip()) > 120:
             issues.append(f"line {i}: line too long ({len(line.rstrip())} > 120)")
+        
+        # Tab check
         if '\t' in line:
             issues.append(f"line {i}: use spaces not tabs")
+        
+        # Trailing whitespace
+        if line.rstrip() != line:
+            issues.append(f"line {i}: trailing whitespace")
+        
+        # Check for debug statements left in code
+        if 'print(' in stripped and 'debug' in stripped.lower():
+            issues.append(f"line {i}: possible debug print statement")
+        
+        # Check for TODO/FIXME
+        if 'TODO' in stripped or 'FIXME' in stripped:
+            issues.append(f"line {i}: contains TODO/FIXME comment")
+        
+        # Detect variable assignments for unused variable check
+        import re
+        var_match = re.match(r'var\s+(\w+)', stripped)
+        if var_match:
+            defined_vars.add(var_match.group(1))
+        
+        # Check for usage of undefined variables
+        # This is a simple heuristic - look for variable-like tokens
+        for var in re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b', stripped):
+            if var not in ['var', 'func', 'class', 'if', 'else', 'for', 'while', 'return', 'try', 'catch', 'in', 'and', 'or', 'not', 'true', 'false', 'nil']:
+                used_vars.add(var)
+    
+    # Check for unused variables
+    unused = defined_vars - used_vars
+    if unused:
+        for var in sorted(unused):
+            issues.append(f"unused variable: {var}")
+    
+    # Syntax check
     try:
         tokenize(src); parse(tokenize(src))
     except Exception as e:
@@ -2660,25 +2707,85 @@ def lint_file(path: str) -> int:
         for iss in issues:
             print(f"  {colour(C_WARN, '⚠')} {iss}")
         print(f"\n{colour(C_ERROR, '✗')} {len(issues)} issue(s)")
+        if warn_as_error:
+            return 1
+    else:
+        print(f"{colour(C_OK, '✓')} No issues: {path}")
+    return 0 if not issues else (1 if not warn_as_error else 1)
+
+def format_file(path: str) -> int:
+    """Format Ipp source file"""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            src = f.read()
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} File not found: {path}")
         return 1
-    print(f"{colour(C_OK, '✓')} No issues: {path}")
-    return 0
+    
+    formatted = src
+    
+    # Add spaces around operators (but be careful with strings)
+    import re
+    
+    # Split into lines for careful processing
+    lines = formatted.split('\n')
+    new_lines = []
+    
+    for line in lines:
+        # Skip comments
+        if line.strip().startswith('#') or line.strip().startswith('//'):
+            new_lines.append(line)
+            continue
+        
+        # Skip strings (simple heuristic - if line has unbalanced quotes)
+        if '"' in line or "'" in line:
+            new_lines.append(line)
+            continue
+        
+        # Add spaces around operators (careful with +=, -=, etc.)
+        line = re.sub(r'(\w)([=+\-*/<>!&|^%])', r'\1 \2', line)
+        line = re.sub(r'([=+\-*/<>!&|^%])(\w)', r'\1 \2', line)
+        
+        # Add spaces around braces
+        line = re.sub(r'(\w)\{', r'\1 {', line)
+        line = re.sub(r'\}(\w)', r'} \1', line)
+        
+        # Fix double spaces
+        line = re.sub(r'  +', ' ', line)
+        
+        new_lines.append(line)
+    
+    formatted = '\n'.join(new_lines)
+    
+    # Show diff
+    if formatted != src:
+        print(f"{colour(C_OK, '✓')} Formatted: {path}")
+        # Write back
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(formatted)
+        return 0
+    else:
+        print(f"{colour(C_OK, '✓')} Already formatted: {path}")
+        return 0
 
 def print_usage():
     print(f"\n{BOLD('Ipp')} v{VERSION} — A scripting language for game development\n")
     print(f"{BOLD('Usage:')}  python main.py [command] [file]\n")
     cmds = [
-        ("<file>",    "Run a script"),
-        ("run <f>",   "Run a script"),
-        ("check <f>", "Syntax check"),
-        ("lint <f>",  "Lint code"),
-        ("repl",      "Start REPL (default)"),
-        ("lsp",       "Start LSP server"),
-        ("wasm <f>",  "Compile to WASM"),
+        ("<file>",      "Run a script"),
+        ("run <f>",     "Run a script"),
+        ("check <f>",   "Syntax check only"),
+        ("lint <f>",    "Lint code (static analysis)"),
+        ("fmt <f>",     "Format code"),
+        ("--warn-as-error", "Treat warnings as errors"),
+        ("--no-warn",   "Suppress all warnings"),
+        ("repl",        "Start REPL (default)"),
+        ("lsp",         "Start LSP server"),
+        ("wasm <f>",    "Compile to WASM"),
     ]
     print(BOLD("Commands:"))
     for c, d in cmds:
-        print(f"  {colour(C_CMD, c.ljust(14))} {d}")
+        print(f"  {colour(C_CMD, c.ljust(20))} {d}")
     print()
 
 def main():
@@ -2687,6 +2794,14 @@ def main():
         run_repl(); return 0
 
     cmd = args[0]
+    
+    # Handle global flags
+    warn_as_error = '--warn-as-error' in args
+    no_warn = '--no-warn' in args
+    
+    # Remove global flags from args for command processing
+    args = [a for a in args if not a.startswith('--')]
+    
     if cmd in ('--help', '-h'):
         print_usage(); return 0
     if cmd in ('--version', '-v'):
@@ -2716,7 +2831,12 @@ def main():
     if cmd == 'check' and len(args) >= 2:
         return check_file(args[1])
     if cmd == 'lint' and len(args) >= 2:
-        return lint_file(args[1])
+        if no_warn:
+            print(f"{colour(C_OK, '✓')} No issues: {args[1]}")
+            return 0
+        return lint_file(args[1], warn_as_error)
+    if cmd == 'fmt' and len(args) >= 2:
+        return format_file(args[1])
     if not cmd.startswith('-'):
         return run_file(cmd)
 
