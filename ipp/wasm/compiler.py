@@ -195,6 +195,55 @@ class WASMEmitter:
     def i32_trunc_f64_s(self):
         return "(i32.trunc_f64_s)"
     
+    # ============ f32 Operations (v1.7.5) ============
+    def f32_const(self, value):
+        return f"(f32.const {value})"
+    
+    def f32_add(self):
+        return "(f32.add)"
+    
+    def f32_sub(self):
+        return "(f32.sub)"
+    
+    def f32_mul(self):
+        return "(f32.mul)"
+    
+    def f32_div(self):
+        return "(f32.div)"
+    
+    def f32_neg(self):
+        return "(f32.neg)"
+    
+    def f32_abs(self):
+        return "(f32.abs)"
+    
+    def f32_sqrt(self):
+        return "(f32.sqrt)"
+    
+    def f32_ceil(self):
+        return "(f32.ceil)"
+    
+    def f32_floor(self):
+        return "(f32.floor)"
+    
+    def f32_trunc(self):
+        return "(f32.trunc)"
+    
+    def f32_demote_f64(self):
+        return "(f32.demote_f64)"
+    
+    def f32_convert_i32_s(self):
+        return "(f32.convert_i32_s)"
+    
+    def f32_eq(self):
+        return "(f32.eq)"
+    
+    def f32_lt(self):
+        return "(f32.lt)"
+    
+    def f32_gt(self):
+        return "(f32.gt)"
+    
     # ============ Control Flow ============
     def local_get(self, index):
         return f"(local.get {index})"
@@ -389,7 +438,7 @@ def main():
     args = sys.argv[1:]
     
     if not args or args[0] in ('--help', '-h'):
-        print("Ipp WASM Compiler v1.5.2a")
+        print("Ipp WASM Compiler v1.7.5")
         print()
         print("Usage:")
         print("  python main.py wasm <input.ipp> [output.wat]")
@@ -398,6 +447,13 @@ def main():
         print("Options:")
         print("  <input.ipp>    Input Ipp source file")
         print("  [output.wat]   Output WASM text file (default: input.wat)")
+        print()
+        print("Features:")
+        print("  - i32, i64, f32, f64 operations")
+        print("  - Function calls and recursion")
+        print("  - Control flow (if/else, loops)")
+        print("  - Local variables")
+        print("  - Memory management")
         print()
         print("Example:")
         print("  python main.py wasm program.ipp program.wat")
