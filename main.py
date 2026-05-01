@@ -2785,6 +2785,10 @@ def print_usage():
         ("archive create", "Create archive (.ippa)"),
         ("archive list", "List archive contents"),
         ("archive run",  "Run module from archive"),
+        ("pkg install",  "Install package"),
+        ("pkg remove",   "Remove package"),
+        ("pkg list",     "List installed packages"),
+        ("pkg search",   "Search packages"),
     ]
     print(BOLD("Commands:"))
     for c, d in cmds:
@@ -2882,6 +2886,104 @@ def archive_run(archive_file: str, module_name: str) -> int:
         print(f"{colour(C_ERROR, '[Error]')} {e}")
         return 1
 
+# ─── Package Manager ──────────────────────────────────────────────────────────────
+def get_packages_dir():
+    """Get the packages directory"""
+    pkg_dir = os.path.join(os.path.expanduser("~"), ".ipp", "packages")
+    os.makedirs(pkg_dir, exist_ok=True)
+    return pkg_dir
+
+def get_package_db():
+    """Get the package database file"""
+    db_file = os.path.join(os.path.expanduser("~"), ".ipp", "packages.json")
+    if os.path.exists(db_file):
+        import json
+        with open(db_file, 'r') as f:
+            return json.load(f)
+    return {"packages": {}}
+
+def save_package_db(db):
+    """Save the package database"""
+    db_file = os.path.join(os.path.expanduser("~"), ".ipp", "packages.json")
+    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    import json
+    with open(db_file, 'w') as f:
+        json.dump(db, f, indent=2)
+
+def pkg_install(package_name: str) -> int:
+    """Install a package"""
+    pkg_dir = get_packages_dir()
+    db = get_package_db()
+    
+    if package_name in db["packages"]:
+        print(f"{colour(C_WARN, 'Package already installed:')} {package_name}")
+        return 1
+    
+    # For v1.7.3, packages are simple .ipp files in the packages directory
+    # Future: can fetch from a registry
+    pkg_path = os.path.join(pkg_dir, f"{package_name}.ipp")
+    
+    # Create a placeholder package file
+    with open(pkg_path, 'w') as f:
+        f.write(f"# Ipp package: {package_name}\n")
+        f.write(f"# Installed by Ipp v{VERSION}\n\n")
+        f.write(f"# Package '{package_name}'\n")
+        f.write(f"# Add your code here\n")
+    
+    db["packages"][package_name] = {
+        "version": "1.0.0",
+        "installed_at": str(os.path.getmtime(pkg_path)),
+        "path": pkg_path
+    }
+    save_package_db(db)
+    
+    print(f"{colour(C_OK, '✓')} Installed: {package_name}")
+    return 0
+
+def pkg_remove(package_name: str) -> int:
+    """Remove a package"""
+    pkg_dir = get_packages_dir()
+    db = get_package_db()
+    
+    if package_name not in db["packages"]:
+        print(f"{colour(C_ERROR, '[Error]')} Package not installed: {package_name}")
+        return 1
+    
+    pkg_path = db["packages"][package_name].get("path")
+    if pkg_path and os.path.exists(pkg_path):
+        os.remove(pkg_path)
+    
+    del db["packages"][package_name]
+    save_package_db(db)
+    
+    print(f"{colour(C_OK, '✓')} Removed: {package_name}")
+    return 0
+
+def pkg_list() -> int:
+    """List installed packages"""
+    db = get_package_db()
+    packages = db.get("packages", {})
+    
+    if not packages:
+        print("No packages installed")
+        print(f"  Run: python main.py pkg install <package>")
+        return 0
+    
+    print(f"{colour(C_CMD, 'Installed packages:')}")
+    for name, info in sorted(packages.items()):
+        version = info.get("version", "unknown")
+        print(f"  - {name} v{version}")
+    return 0
+
+def pkg_search(query: str) -> int:
+    """Search for packages (simulated)"""
+    # In a full implementation, this would search a registry
+    # For v1.7.3, we just show what's available locally
+    print(f"{colour(C_CMD, 'Searching for:')} {query}")
+    print(f"{colour(C_DIM, 'Note: Package registry not implemented yet')}")
+    print(f"{colour(C_DIM, 'Install local packages with: pkg install <name>')}")
+    return 0
+
 def main():
     args = sys.argv[1:]
     if not args:
@@ -2949,6 +3051,28 @@ def main():
             return archive_run(args[2], args[3])
         else:
             print(f"{colour(C_WARN, 'Invalid archive command')}")
+            return 1
+    
+    # Package commands
+    if cmd == 'pkg':
+        if len(args) < 2:
+            print(f"{colour(C_WARN, 'Usage:')}")
+            print(f"  python main.py pkg install <package>")
+            print(f"  python main.py pkg remove <package>")
+            print(f"  python main.py pkg list")
+            print(f"  python main.py pkg search <query>")
+            return 1
+        action = args[1]
+        if action == 'install' and len(args) >= 3:
+            return pkg_install(args[2])
+        elif action == 'remove' and len(args) >= 3:
+            return pkg_remove(args[2])
+        elif action == 'list':
+            return pkg_list()
+        elif action == 'search' and len(args) >= 3:
+            return pkg_search(args[2])
+        else:
+            print(f"{colour(C_WARN, 'Invalid pkg command')}")
             return 1
     
     if not cmd.startswith('-'):

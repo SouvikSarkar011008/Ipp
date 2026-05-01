@@ -101,6 +101,7 @@ TESTS = [
     ("v1.7.0", "tests/v1_7_0/test_archive.ipp"),
     ("v1.7.1", "tests/v1_7_1/test_opcodes.py"),
     ("v1.7.2", "tests/v1_7_2/test_error_quality.ipp"),
+    ("v1.7.3", "tests/v1_7_3/test_package_manager.ipp"),
 ]
 
 def run_test(version, filepath):
