@@ -99,7 +99,7 @@ TESTS = [
     ("v1.6.14", "tests/v1_6_14/test_bytecode_cache.ipp"),
     ("v1.6.15", "tests/v1_6_15/test_linter.ipp"),
     ("v1.7.0", "tests/v1_7_0/test_archive.ipp"),
-    ("v1.7.1", "tests/v1_7_1/test_opcodes.py"),
+    ("v1.7.1", "tests/v1_7_1/test_opcodes.ipp"),
     ("v1.7.2", "tests/v1_7_2/test_error_quality.ipp"),
     ("v1.7.3", "tests/v1_7_3/test_package_manager.ipp"),
 ]
