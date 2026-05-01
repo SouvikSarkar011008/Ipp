@@ -18,7 +18,7 @@ class Environment:
             return self.values[name]
         if self.parent:
             return self.parent.get(name)
-        raise RuntimeError(f"Undefined variable: {name}")
+        raise RuntimeError(f"Undefined variable: '{name}'")
     
     def assign(self, name: str, value: Any):
         if name in self.values:
@@ -29,7 +29,7 @@ class Environment:
         if self.parent:
             self.parent.assign(name, value)
             return
-        raise RuntimeError(f"Undefined variable: {name}")
+        raise RuntimeError(f"Undefined variable: '{name}'")
     
     def has(self, name: str) -> bool:
         return name in self.values or (self.parent and self.parent.has(name))
@@ -361,8 +361,38 @@ class Interpreter:
             error_msg = str(e)
             if "Error at line" not in error_msg:
                 stack_info = " -> ".join(self.call_stack) if self.call_stack else "main"
-                raise RuntimeError(f"Error at line {self.current_line} in {stack_info}: {e}")
+                file_info = f" in {self.current_file}" if self.current_file else ""
+                raise RuntimeError(f"Error at line {self.current_line}{file_info} in {stack_info}: {e}")
             raise
+
+    def _get_suggestion(self, name: str, known_names: list) -> str:
+        """Suggest similar names for typos"""
+        if not known_names:
+            return ""
+        
+        # Simple Levenshtein-like suggestion
+        def similarity(a, b):
+            if a == b:
+                return 1.0
+            if a in b or b in a:
+                return 0.8
+            # Check first character match
+            if a and b and a[0] == b[0]:
+                return 0.5
+            return 0.0
+        
+        best_match = None
+        best_score = 0
+        
+        for known in known_names:
+            score = similarity(name.lower(), known.lower())
+            if score > best_score and score > 0.3:
+                best_score = score
+                best_match = known
+        
+        if best_match:
+            return f". Did you mean '{best_match}'?"
+        return ""
 
     def run_safe(self, program: Program):
         try:
@@ -452,7 +482,7 @@ class Interpreter:
             return left * right
         elif node.operator == "/":
             if right == 0:
-                raise RuntimeError("Division by zero")
+                raise RuntimeError("Division by zero: cannot divide by 0")
             if _ipp_has_method(left, '__truediv__'):
                 return _ipp_call_method(left, '__truediv__', right)
             return left / right
@@ -572,7 +602,7 @@ class Interpreter:
             merged_args = self._merge_named_args(callee.method, [callee.instance] + args, named_args)
             return self.call_function(callee.method, merged_args)
         
-        raise RuntimeError(f"Cannot call {type(callee)}")
+        raise RuntimeError(f"Cannot call '{type(callee).__name__}'. Expected function, class, or method.")
     
     def _merge_named_args(self, func, positional_args, named_args):
         """Merge positional and named arguments into a final argument list. FIX: BUG-NEW-M4"""
@@ -691,9 +721,9 @@ class Interpreter:
                 return obj[index]
             if isinstance(index, float) and index.is_integer():
                 return obj[int(index)]
-            raise RuntimeError("String index must be integer")
+            raise RuntimeError(f"String index must be integer, got {type(index).__name__}")
         
-        raise RuntimeError(f"Cannot index {type(obj)}")
+        raise RuntimeError(f"Cannot index '{type(obj).__name__}'. Only list, dict, string support indexing.")
     
     def visit_index_set_expr(self, node: IndexSetExpr):
         obj = node.object.accept(self)
@@ -706,12 +736,12 @@ class Interpreter:
             if isinstance(index, int):
                 obj.elements[index] = value
                 return value
-            raise RuntimeError("List index must be integer")
+            raise RuntimeError(f"List index must be integer, got {type(index).__name__}")
         if isinstance(obj, IppDict):
             obj.set(index, value)
             return value
         
-        raise RuntimeError(f"Cannot set index on {type(obj)}")
+        raise RuntimeError(f"Cannot set index on '{type(obj).__name__}'. Only list and dict support index assignment.")
     
     def visit_get_expr(self, node: GetExpr):
         obj = node.object.accept(self)
