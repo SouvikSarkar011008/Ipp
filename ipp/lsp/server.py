@@ -147,37 +147,134 @@ class IppLanguageServer:
         return references
     
     def get_completions(self, uri: str, position: Dict) -> List[Dict]:
-        """Get completions at position."""
+        """Get completions at position with enhanced context awareness."""
         completions = []
         
+        # Get the line content before cursor
+        doc = self.documents.get(uri, {})
+        content = doc.get("content", "")
+        line_num = position.get("line", 0)
+        line_content = content.split("\n")[line_num] if line_num < len(content.split("\n")) else ""
+        char_pos = position.get("character", 0)
+        
+        # Determine completion context
+        before_cursor = line_content[:char_pos] if char_pos <= len(line_content) else ""
+        
+        # Context: after dot (.) -> show methods/properties
+        if before_cursor.rstrip().endswith("."):
+            # Get the object before the dot
+            obj_match = before_cursor[:-1].split()[-1] if before_cursor[:-1].split() else ""
+            
+            # Common method completions for built-in types
+            if obj_match in ["str", "String", '"', "'"]:
+                string_methods = ["upper", "lower", "split", "join", "replace", "strip", "startswith", "endswith", "find", "count", "format"]
+                for m in string_methods:
+                    completions.append({
+                        "label": m,
+                        "kind": 6,  # Function
+                        "detail": "string method"
+                    })
+            elif obj_match in ["list", "List", "["]:
+                list_methods = ["append", "pop", "push", "shift", "len", "slice", "sort", "reverse", "find", "filter", "map"]
+                for m in list_methods:
+                    completions.append({
+                        "label": m,
+                        "kind": 6,
+                        "detail": "list method"
+                    })
+            elif obj_match in ["dict", "Dict", "{"]:
+                dict_methods = ["keys", "values", "items", "get", "set", "has", "remove"]
+                for m in dict_methods:
+                    completions.append({
+                        "label": m,
+                        "kind": 6,
+                        "detail": "dict method"
+                    })
+            return completions
+        
+        # Context: after keyword -> show relevant options
+        tokens_before = before_cursor.split()
+        if tokens_before:
+            last_token = tokens_before[-1].lower()
+            
+            # After 'func' -> function template
+            if last_token == "func":
+                completions.append({
+                    "label": "func name(params) { }",
+                    "kind": 15,  # Snippet
+                    "insertText": "func ${1:name}(${2:params}) {\n\t$0\n}",
+                    "detail": "Function definition"
+                })
+            
+            # After 'class' -> class template
+            elif last_token == "class":
+                completions.append({
+                    "label": "class Name { }",
+                    "kind": 15,
+                    "insertText": "class ${1:Name} {\n\tfunc init(${2:params}) {\n\t\t$0\n\t}\n}",
+                    "detail": "Class definition"
+                })
+            
+            # After 'for' -> for loop template
+            elif last_token == "for":
+                completions.append({
+                    "label": "for var in range { }",
+                    "kind": 15,
+                    "insertText": "for ${1:var} in ${2:range} {\n\t$0\n}",
+                    "detail": "For loop"
+                })
+            
+            # After 'if' -> if statement template
+            elif last_token == "if":
+                completions.append({
+                    "label": "if condition { }",
+                    "kind": 15,
+                    "insertText": "if ${1:condition} {\n\t$0\n}",
+                    "detail": "If statement"
+                })
+            
+            # After 'try' -> try/catch template
+            elif last_token == "try":
+                completions.append({
+                    "label": "try { } catch e { }",
+                    "kind": 15,
+                    "insertText": "try {\n\t$0\n} catch ${1:e} {\n\t\n}",
+                    "detail": "Try/catch block"
+                })
+        
+        # Standard keyword completions
         keywords = ["var", "let", "func", "class", "if", "else", "elif", "for", "while",
                     "return", "break", "continue", "import", "try", "catch", "throw",
-                    "finally", "match", "case", "default", "async", "await", "nil", "true", "false"]
+                    "finally", "match", "case", "default", "async", "await", "nil", "true", "false",
+                    "and", "or", "not", "in", "is"]
         
         for kw in keywords:
             completions.append({
                 "label": kw,
                 "kind": 14,  # Keyword
-                "insertText": kw
+                "insertText": kw,
+                "detail": "keyword"
             })
         
+        # Builtin function completions
         try:
             from ipp.runtime.builtins import BUILTINS
-            for name in BUILTINS:
+            for name, fn in BUILTINS.items():
                 completions.append({
                     "label": name,
                     "kind": 6,  # Function
-                    "detail": "Ipp builtin"
+                    "detail": fn.__doc__.split("\n")[0] if fn.__doc__ else "Ipp builtin"
                 })
         except ImportError:
             pass
         
+        # Symbol completions from current file
         for sym in self.symbols.get(uri, []):
             kind_map = {12: 6, 6: 7, 5: 5}
             completions.append({
                 "label": sym["name"],
                 "kind": kind_map.get(sym["kind"], 1),
-                "detail": sym.get("containerName", "")
+                "detail": sym.get("containerName", "") or "local"
             })
         
         return completions
