@@ -2782,11 +2782,105 @@ def print_usage():
         ("repl",        "Start REPL (default)"),
         ("lsp",         "Start LSP server"),
         ("wasm <f>",    "Compile to WASM"),
+        ("archive create", "Create archive (.ippa)"),
+        ("archive list", "List archive contents"),
+        ("archive run",  "Run module from archive"),
     ]
     print(BOLD("Commands:"))
     for c, d in cmds:
         print(f"  {colour(C_CMD, c.ljust(20))} {d}")
     print()
+
+# ─── Archive Commands ──────────────────────────────────────────────────────────────
+def archive_create(output_file: str, source_files: list) -> int:
+    """Create an archive (.ippa) from multiple .ipp files"""
+    import json
+    archive = {
+        '_version': VERSION,
+        '_type': 'ipp_archive',
+        'files': {}
+    }
+    
+    for src_file in source_files:
+        try:
+            with open(src_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # Use filename without extension as module name
+            name = os.path.splitext(os.path.basename(src_file))[0]
+            archive['files'][name] = content
+            print(f"  Added: {name}")
+        except FileNotFoundError:
+            print(f"{colour(C_ERROR, '[Error]')} File not found: {src_file}")
+            return 1
+        except Exception as e:
+            print(f"{colour(C_ERROR, '[Error]')} {e}")
+            return 1
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(archive, f, indent=2)
+        print(f"{colour(C_OK, '✓')} Archive created: {output_file} ({len(archive['files'])} files)")
+        return 0
+    except Exception as e:
+        print(f"{colour(C_ERROR, '[Error]')} {e}")
+        return 1
+
+def archive_list(archive_file: str) -> int:
+    """List files in an archive"""
+    import json
+    try:
+        with open(archive_file, 'r', encoding='utf-8') as f:
+            archive = json.load(f)
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} Archive not found: {archive_file}")
+        return 1
+    except json.JSONDecodeError as e:
+        print(f"{colour(C_ERROR, '[Error]')} Invalid archive format: {e}")
+        return 1
+    
+    if archive.get('_type') != 'ipp_archive':
+        print(f"{colour(C_ERROR, '[Error]')} Not an Ipp archive")
+        return 1
+    
+    print(f"{colour(C_CMD, 'Archive:')} {archive_file}")
+    print(f"{colour(C_CMD, 'Version:')} {archive.get('_version', 'unknown')}")
+    print(f"{colour(C_CMD, 'Files:')}")
+    for name in sorted(archive.get('files', {}).keys()):
+        size = len(archive['files'][name])
+        print(f"  - {name} ({size} bytes)")
+    return 0
+
+def archive_run(archive_file: str, module_name: str) -> int:
+    """Run a module from an archive"""
+    import json
+    try:
+        with open(archive_file, 'r', encoding='utf-8') as f:
+            archive = json.load(f)
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} Archive not found: {archive_file}")
+        return 1
+    
+    if archive.get('_type') != 'ipp_archive':
+        print(f"{colour(C_ERROR, '[Error]')} Not an Ipp archive")
+        return 1
+    
+    files = archive.get('files', {})
+    if module_name not in files:
+        print(f"{colour(C_ERROR, '[Error]')} Module not found: {module_name}")
+        print(f"  Available: {', '.join(sorted(files.keys()))}")
+        return 1
+    
+    source = files[module_name]
+    try:
+        tokens = tokenize(source)
+        ast = parse(tokens)
+        interp = Interpreter()
+        interp.current_file = f"{archive_file}:{module_name}"
+        interp.run(ast)
+        return 0
+    except Exception as e:
+        print(f"{colour(C_ERROR, '[Error]')} {e}")
+        return 1
 
 def main():
     args = sys.argv[1:]
@@ -2837,6 +2931,26 @@ def main():
         return lint_file(args[1], warn_as_error)
     if cmd == 'fmt' and len(args) >= 2:
         return format_file(args[1])
+    
+    # Archive commands
+    if cmd == 'archive':
+        if len(args) < 2:
+            print(f"{colour(C_WARN, 'Usage:')}")
+            print(f"  python main.py archive create <output.ippa> <file1.ipp> <file2.ipp> ...")
+            print(f"  python main.py archive list <archive.ippa>")
+            print(f"  python main.py archive run <archive.ippa> <module>")
+            return 1
+        action = args[1]
+        if action == 'create' and len(args) >= 4:
+            return archive_create(args[2], args[3:])
+        elif action == 'list' and len(args) >= 3:
+            return archive_list(args[2])
+        elif action == 'run' and len(args) >= 4:
+            return archive_run(args[2], args[3])
+        else:
+            print(f"{colour(C_WARN, 'Invalid archive command')}")
+            return 1
+    
     if not cmd.startswith('-'):
         return run_file(cmd)
 
