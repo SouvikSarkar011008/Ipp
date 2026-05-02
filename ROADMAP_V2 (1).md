@@ -387,7 +387,7 @@ assert v.x == 1 and v.y == 2
 
 ---
 
-### v1.7.8 — Fix: Explicit `self` Parameter Is Silently Accepted (BUG-003)
+### v1.7.8 — Fix: Explicit `self` Parameter Is Silently Accepted (BUG-003) ✅ DONE
 
 **User impact:** `func __init__(self, name)` → `SyntaxError: Expect parameter name`. Python, GDScript, Java, C++ all put `self`/`this` explicitly. Every user will try this.
 

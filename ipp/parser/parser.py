@@ -206,6 +206,15 @@ class Parser:
         param_types = []
         defaults = []
 
+        # FIX v1.7.8: Silently consume 'self' if it is the first parameter
+        # (self is always implicit in Ipp — this just avoids crashing users
+        #  who come from Python/GDScript/Java conventions)
+        if self.check(TokenType.SELF):
+            self.advance()                          # consume 'self'
+            if self.check(TokenType.COMMA):
+                self.advance()                      # consume the comma after 'self'
+            # Do NOT add 'self' to params list — it is already slot 0 in the VM
+
         if not self.check(TokenType.RIGHT_PAREN):
             self.skip_newlines()
             is_variadic = False
