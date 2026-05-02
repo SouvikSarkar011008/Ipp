@@ -1489,6 +1489,22 @@ class VM:
 
     def _call(self, callee, args, return_frame: VMFrame):
         """Push a new call frame for callee with given args."""
+        # FIX v1.7.6.2: Special case for dict.get - don't treat first arg as kwarg
+        if hasattr(callee, '__self__') and isinstance(callee.__self__, dict) and hasattr(callee, '__name__') and callee.__name__ == 'get':
+            try:
+                if len(args) == 1:
+                    result = callee(args[0])
+                elif len(args) == 2:
+                    result = callee(args[0], args[1])
+                else:
+                    raise VMError("dict.get() takes 1 or 2 arguments")
+                self.stack.append(result)
+                return
+            except VMError:
+                raise
+            except Exception as e:
+                raise VMError(str(e))
+        
         # FIX: Handle method_descriptor and builtin_function_or_method for string methods
         if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod, type(str.format))):
             # built-in Python callable - extract named arguments (pushed as name, value pairs)

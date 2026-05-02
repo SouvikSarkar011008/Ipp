@@ -169,7 +169,7 @@ print(nil)
 
 ---
 
-### v1.7.6.2 — Fix: `dict.get(key, default)` with String Key (BUG-005 subset)
+### v1.7.6.2 — Fix: `dict.get(key, default)` with String Key (BUG-005 subset) ✅ DONE
 
 **User impact:** `d.get("missing", 0)` crashes because `"missing"` is treated as a kwarg key. This is the same root cause as BUG-005 but isolated to `dict.get` which is a very common safe-access pattern.
 
