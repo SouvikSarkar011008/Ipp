@@ -1,5 +1,5 @@
 # Ipp Language — Full Technical Audit v3 (Definitive Edition)
-> **Version audited:** `1.7.6` (pyproject.toml updated to `1.7.6`, runtime VERSION constant updated to `1.7.6`)
+> **Version audited:** `1.7.6.1` (pyproject.toml updated to `1.7.6.1`, runtime VERSION constant updated to `1.7.6.1`)
 > **Audit method:** 140+ `.ipp` test files run through the VM; 60+ targeted micro-tests written fresh; benchmarks measured
 > **Previous audit:** `new_audit.md` — auditor note: several "fixed" claims in that audit were NOT verified against the VM
 > **Auditor stance:** Ruthless, specific. A test that passes the interpreter but not the VM is BROKEN. A test file that claims "PASSED" without asserting the correct values is MISLEADING.
@@ -8,6 +8,7 @@
 ---
 
 ## CRITICAL PREFACE: THE SEMICOLON PROBLEM ✅ FIXED in v1.7.6
+## PRINT MULTIARG FIX ✅ FIXED in v1.7.6.1
 
 **Semicolons (`;`) now silently ignored in lexer.** This was fixed in v1.7.6. Previously crashed with `SyntaxError: Unexpected character: ';'`.
 

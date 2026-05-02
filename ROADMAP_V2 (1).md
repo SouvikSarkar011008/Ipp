@@ -130,7 +130,7 @@ assert result == 15
 
 ---
 
-### v1.7.6.1 — Fix: `print("label:", value)` Stops Crashing (BUG-021)
+### v1.7.6.1 — Fix: `print("label:", value)` Stops Crashing (BUG-021) ✅ DONE
 
 **User impact:** `print("Testing:", x)` → `VMError: got an unexpected keyword argument 'Testing:'`. This is the most common print pattern in any language. It breaks 34 of the 140 existing test files. The same kwarg-heuristic bug as BUG-005, but isolated to print specifically.
 
