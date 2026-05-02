@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.7.8-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.7.8.1-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -585,6 +585,7 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.7.7 | Fix (extends keyword for inheritance) |
 | v1.7.7.1 | Fix (super.method() calls in subclasses) |
 | v1.7.8 | Fix (explicit self parameter accepted) |
+| v1.7.8.1 | Fix (__str__ used by print and str) |
 | v2.0.0 | C Extension (VM foundation) |
 
 ---

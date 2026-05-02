@@ -463,7 +463,7 @@ assert lc.get() == 3
 
 ---
 
-### v1.7.8.1 — Fix: `__str__` Used Automatically by `print()` and `str()`
+### v1.7.8.1 — Fix: `__str__` Used Automatically by `print()` and `str()` ✅ DONE
 
 **User impact:** `print(my_obj)` should call `__str__()` on the object. Currently `print()` on an Ipp instance prints `<ClassName instance>` regardless of whether `__str__` is defined.
 
