@@ -291,7 +291,7 @@ assert f.speak() == "Nemo blub"
 
 ---
 
-### v1.7.7.1 — Fix: `super.method()` Calls Work in Subclasses
+### v1.7.7.1 — Fix: `super.method()` Calls Work in Subclasses ✅ DONE
 
 **User impact:** After `extends` works, users immediately try `super.init()` to call the parent constructor. Without this, inheritance is only useful for method override — the parent's `init` can never be called.
 
