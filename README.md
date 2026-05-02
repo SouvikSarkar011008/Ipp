@@ -2,11 +2,11 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-2.0.0-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.7.6-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
-<img src="https://img.shields.io/badge/tests-37%20passing-brightgreen.svg" alt="Tests">
+<img src="https://img.shields.io/badge/tests-106%20passing-brightgreen.svg" alt="Tests">
 <img src="https://img.shields.io/badge/status-stable-green.svg" alt="Status">
 
 **A beginner-friendly scripting language for game development.**  
@@ -579,7 +579,8 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.7.3 | Package Manager (ippkg) |
 | v1.7.4 | LSP (completion + diagnostics) |
 | v1.7.5 | WASM Backend (real implementation) |
-| v2.0.0 | Package Manager + Full Ecosystem + Game Engine |
+| v1.7.6 | Fix (semicolons silently ignored) |
+| v2.0.0 | C Extension (VM foundation) |
 
 ---
 

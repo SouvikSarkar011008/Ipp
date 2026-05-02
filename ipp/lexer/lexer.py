@@ -55,6 +55,8 @@ class Lexer:
             self.add_token(TokenType.RIGHT_BRACKET)
         elif c == ',':
             self.add_token(TokenType.COMMA)
+        elif c == ';':
+            pass  # silently treat semicolon as statement separator (whitespace)
         elif c == '@':
             self.add_token(TokenType.AT)
         elif c == '.':

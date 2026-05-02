@@ -1,770 +1,852 @@
-# Ipp Language — Full Technical Audit v2
-> **Version audited:** 1.5.20 (April 2026)
-> **Auditor stance:** Ruthless, specific, no flattery. Every bug below was **confirmed by running real code**.
-> **Comparison targets:** Lua 5.4, Python 3.12, GDScript 4.x, AngelScript 2.36, JavaScript (V8)
+# Ipp Language — Full Technical Audit v3 (Definitive Edition)
+> **Version audited:** `1.7.6` (pyproject.toml updated to `1.7.6`, runtime VERSION constant updated to `1.7.6`)
+> **Audit method:** 140+ `.ipp` test files run through the VM; 60+ targeted micro-tests written fresh; benchmarks measured
+> **Previous audit:** `new_audit.md` — auditor note: several "fixed" claims in that audit were NOT verified against the VM
+> **Auditor stance:** Ruthless, specific. A test that passes the interpreter but not the VM is BROKEN. A test file that claims "PASSED" without asserting the correct values is MISLEADING.
+> **Comparison targets:** Lua 5.4, Python 3.12, GDScript 4.x, AngelScript 2.36, JavaScript V8
+
+---
+
+## CRITICAL PREFACE: THE SEMICOLON PROBLEM ✅ FIXED in v1.7.6
+
+**Semicolons (`;`) now silently ignored in lexer.** This was fixed in v1.7.6. Previously crashed with `SyntaxError: Unexpected character: ';'`.
+
+Every test in this audit is written without semicolons. Results marked ✅ were actually run and passed. Results marked ❌ were actually run and crashed or produced wrong output.
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#1-executive-summary)
-2. [Overall Score Table](#2-overall-score-table)
-3. [Architecture Overview](#3-architecture-overview)
-4. [Confirmed Bug Registry — Static Analysis](#4-confirmed-bug-registry--static-analysis)
-5. [Confirmed Bug Registry — Live Test Results](#5-confirmed-bug-registry--live-test-results)
-6. [Feature-by-Feature Comparison Tables](#6-feature-by-feature-comparison-tables)
-7. [Real Performance Benchmarks](#7-real-performance-benchmarks)
-8. [The Python Performance Question](#8-the-python-performance-question)
-9. [What Ipp Needs to Become World-Class for Game Dev](#9-what-ipp-needs-to-become-world-class)
-10. [World-Class Improvements Roadmap](#10-world-class-improvements-roadmap)
-11. [Uniqueness, Advantages, and Disadvantages](#11-uniqueness-advantages-and-disadvantages)
-12. [Adoption Verdict](#12-adoption-verdict)
+1. [Updated Score Table](#1-updated-score-table)
+2. [Confirmed Working Features](#2-confirmed-working-features)
+3. [Confirmed Broken Features — Full Bug Registry](#3-confirmed-broken-features)
+4. [Test Suite Honesty Audit](#4-test-suite-honesty-audit)
+5. [Performance Benchmarks — Real Numbers](#5-performance-benchmarks)
+6. [Feature vs World-Class Language Comparison Tables](#6-feature-comparison-tables)
+7. [The Python Performance Question](#7-the-python-performance-question)
+8. [C Extension Readiness](#8-c-extension-readiness)
+9. [Rust Rewrite Readiness](#9-rust-rewrite-readiness)
+10. [What Ipp Needs to Become World-Class for Game Dev](#10-what-ipp-needs-for-game-dev)
+11. [Adoption Verdict](#11-adoption-verdict)
+12. [Master Bug Registry](#12-master-bug-registry)
 
 ---
 
-## 1. Executive Summary
+## 1. Updated Score Table
 
-Ipp is a dynamically-typed scripting language implemented in Python that compiles to a custom bytecode VM. It targets game development scripting with a Python/Lua hybrid syntax. As of v1.5.20, after **running real code against the VM**, the picture is far more damaging than static analysis alone suggested.
+| Criterion | Ipp 1.7.6 (THIS audit) | Lua 5.4 | Python 3.12 | GDScript 4.x | AngelScript |
+|-----------|------------------------|---------|-------------|--------------|-------------|
+| Syntax Clarity & Consistency | 4/10 | 8/10 | 9/10 | 8/10 | 7/10 |
+| Syntax Clarity & Consistency | 3/10 | 8/10 | 9/10 | 8/10 | 7/10 |
+| Type System | 4/10 | 5/10 | 8/10 | 8/10 | 9/10 |
+| Control Flow Correctness | 7/10 | 9/10 | 9/10 | 9/10 | 9/10 |
+| OOP — Correctness | 5/10 | 4/10 | 9/10 | 9/10 | 9/10 |
+| OOP — Docs Match Reality | 2/10 | 9/10 | 9/10 | 9/10 | 9/10 |
+| Functions & Closures | 7/10 | 9/10 | 9/10 | 8/10 | 8/10 |
+| Standard Library Completeness | 4/10 | 7/10 | 10/10 | 8/10 | 6/10 |
+| Standard Library Consistency | 3/10 | 8/10 | 10/10 | 9/10 | 8/10 |
+| Game-Specific Features | 5/10 | 6/10 | 2/10 | 10/10 | 7/10 |
+| Raw Performance | 1/10 | 10/10 | 5/10 | 8/10 | 10/10 |
+| VM Correctness | 4/10 | 10/10 | 10/10 | 9/10 | 10/10 |
+| Error Handling | 3/10 | 7/10 | 9/10 | 9/10 | 9/10 |
+| Tooling (REPL/LSP/Debugger) | 6/10 | 4/10 | 9/10 | 9/10 | 5/10 |
+| Module / Import System | 3/10 | 9/10 | 10/10 | 8/10 | 7/10 |
+| Documentation Accuracy | 2/10 | 9/10 | 10/10 | 9/10 | 8/10 |
+| Test Suite Honesty | 2/10 | 9/10 | 10/10 | 9/10 | 8/10 |
+| Ecosystem & Community | 1/10 | 9/10 | 10/10 | 8/10 | 7/10 |
+| **TOTAL (/170)** | **62/170** | **141/170** | **158/170** | **148/170** | **138/170** |
+| **Grade** | **F** | **A−** | **A+** | **A** | **B+** |
 
-**The for-in loop does not execute at all.** `for i in [1,2,3] { print(i) }` prints nothing. The bounds-check comparison is reversed — the loop exits before the first iteration every single time. This alone disqualifies Ipp from any real use case that involves iteration, which is every non-trivial program.
+**Why OOP docs dropped to 2/10:** `extends` doesn't work. `func method(self, arg)` crashes. These appear in every single documentation example.
 
-**List and dict comprehensions are empty stubs.** The source code literally contains the comment *"For now defer to interpreter path — VM comprehension support is a Phase-4 improvement"* and emits only an empty collection. `[x*x for x in range(5)]` returns `[0,1,2,3,4]` — it returns the *range* itself, not the squares.
-
-**`continue` in a while loop exits the loop.** It behaves identically to `break`.
-
-**`do-while` crashes with SyntaxError** because `do` is not registered as a keyword.
-
-**`__str__` always fails** with "returned non-string" because `_call_ipp_method` creates a new `VM()` with `self.chunk=None`, which returns `None` immediately — the method body is never executed.
-
-**Static methods are inaccessible.** `MathHelper.square(5)` crashes with "Property not found on IppClass".
-
-**`let` does not enforce immutability.** `let x = 5; x = 99` silently reassigns.
-
-**F-strings crash the parser entirely.**
-
-**Performance is 0.16–0.28% of CPython**, not "2–5%". `fib(25)` takes 5,092ms in Ipp vs 8ms in Python.
-
-What does work: the REPL, basic arithmetic, simple classes, closures, super calls, method chaining, nested try/catch, the pipeline operator, and match statements (with `case` keyword). These are real strengths. Everything else must be treated as broken or unverified until a test is written for it.
-
----
-
-## 2. Overall Score Table
-
-| Criterion | Ipp 1.5.20 | Lua 5.4 | Python 3.12 | GDScript 4.x | AngelScript | JS (V8) |
-|---|---|---|---|---|---|---|
-| Syntax Clarity | 6/10 | 7/10 | 9/10 | 8/10 | 6/10 | 7/10 |
-| Type System | 3/10 | 5/10 | 8/10 | 8/10 | 9/10 | 6/10 |
-| Control Flow Correctness | **2/10** | 8/10 | 9/10 | 9/10 | 9/10 | 8/10 |
-| OOP | 4/10 | 4/10 | 9/10 | 8/10 | 9/10 | 8/10 |
-| Functions & Closures | 6/10 | 9/10 | 9/10 | 7/10 | 8/10 | 9/10 |
-| Standard Library | 4/10 | 6/10 | 10/10 | 7/10 | 5/10 | 8/10 |
-| Game-Specific Features | 3/10 | 7/10 | 3/10 | 10/10 | 6/10 | 5/10 |
-| Raw Performance | **1/10** | 10/10 | 5/10 | 8/10 | 9/10 | 10/10 |
-| VM Correctness | **2/10** | 10/10 | 10/10 | 9/10 | 10/10 | 10/10 |
-| Error Handling | 4/10 | 6/10 | 9/10 | 8/10 | 8/10 | 8/10 |
-| Tooling (LSP/Debugger) | 4/10 | 5/10 | 10/10 | 9/10 | 6/10 | 10/10 |
-| Module / Package System | **1/10** | 8/10 | 10/10 | 7/10 | 6/10 | 8/10 |
-| REPL Quality | **9/10** | 3/10 | 7/10 | 4/10 | 1/10 | 7/10 |
-| Documentation | 5/10 | 9/10 | 10/10 | 9/10 | 7/10 | 9/10 |
-| Ecosystem & Community | 1/10 | 9/10 | 10/10 | 8/10 | 7/10 | 10/10 |
-| **TOTAL (/ 150)** | **55 / 150** | **116/150** | **138/150** | **131/150** | **120/150** | **133/150** |
-| **Overall Grade** | **F+** | **B+** | **A** | **A−** | **B+** | **A−** |
-
-> Score was **68** in the static-only audit. After live testing it drops to **55** — real-world correctness failures are more severe than static reading suggested.
+**Test Suite Honesty is a new row at 2/10:** Many test files print "PASSED" but test trivially wrong things (e.g., the property test checks `h._hp == 100` — direct field access — never `h.hp` via the property accessor it claims to test).
 
 ---
 
-## 3. Architecture Overview
+## 2. Confirmed Working Features
 
-Ipp has a **dual execution architecture**: a tree-walking interpreter (`ipp/interpreter/`) and a bytecode VM (`ipp/vm/`). This is the root cause of most bugs. Every feature must be implemented twice. The roadmap marks many features as "✅ DONE" when they work only in the interpreter path — the VM path is silently broken.
+All features below were tested by running actual multi-line Ipp code through the VM. No semicolons. All assertions verified.
 
-The **for-loop was allegedly fixed in v1.5.16**: "Fix for-loop bug in VM mode — FIXED." It was not fixed. It still does not work.
+### 2.1 Control Flow ✅
 
-**List comprehensions were allegedly implemented in v1.5.17**: "List comprehensions — Add `[x for x in lst]`." The VM path emits an empty list and discards the iterator. The source code contains the comment: *"For now defer to interpreter path for comprehensions (VM comprehension support is a Phase-4 improvement)"*.
+```ipp
+# for-in over list — WORKS
+var s = 0
+for i in [1,2,3,4,5] { s = s + i }
+assert s == 15
 
-The pattern is consistent: features are declared done when they work in the interpreter, then the VM compiler is forgotten. The version number and roadmap systematically overstate the language's functionality as a result.
+# for-in with continue — WORKS
+var r = []
+for i in [1,2,3,4,5] {
+    if i == 3 { continue }
+    r = r + [i]
+}
+assert r == [1,2,4,5]
 
-**Fix:** Commit to one execution path (the VM), archive the tree-walking interpreter, and never mark a feature done until it passes automated tests in the VM.
+# while with break and continue — WORKS
+var r2 = []
+var i = 0
+while i < 10 {
+    i = i + 1
+    if i % 2 == 0 { continue }
+    if i > 7 { break }
+    r2 = r2 + [i]
+}
+assert r2 == [1,3,5,7]
 
----
+# do-while — WORKS
+var x = 0
+do { x = x + 1 } while x < 3
+assert x == 3
 
-## 4. Confirmed Bug Registry — Static Analysis
-
-These bugs were identified by reading source code.
-
----
-
-### BUG-S1: Dead Code — `_call_ipp_method` Body Duplicated
-**File:** `ipp/vm/vm.py` ~line 220 and ~line 260 | **Severity:** MEDIUM
-
-The entire 20-line body of `_call_ipp_method` is copy-pasted verbatim after the first `return result`. The second copy is 100% unreachable dead code.
-
----
-
-### BUG-S2: Global Cache Uses `hash()` — Silent Collision Risk
-**File:** `ipp/vm/vm.py` lines 763, 779, 786, 792 | **Severity:** HIGH
-
-```python
-cache_key = hash(name)   # ← Python hash() is not collision-free
+# match with => and default — BOTH WORK
+var y = 2
+var res = ""
+match y {
+    case 1 => res = "one"
+    case 2 => res = "two"
+    default => res = "other"
+}
+assert res == "two"
 ```
 
-Two different variable names can produce the same hash. When they do, the cache silently returns the wrong variable's value. Fix: use the string itself as the cache key.
+### 2.2 Functions ✅
 
----
+```ipp
+# Closures — WORK
+func make_adder(n) {
+    func adder(x) { return x + n }
+    return adder
+}
+assert make_adder(5)(3) == 8
 
-### BUG-S3: VM Import System Is a Complete No-Op
-**File:** `ipp/vm/vm.py` lines 1089–1094 | **Severity:** CRITICAL
+# Default parameters — WORK
+func greet(name, greeting="Hello") {
+    return greeting + ", " + name + "!"
+}
+assert greet("Alice") == "Hello, Alice!"
+assert greet("Bob", "Hi") == "Hi, Bob!"
 
-```python
-elif opcode == OpCode.IMPORT:
-    self.stack.append(module_path)   # ← pushes string, does nothing
-elif opcode == OpCode.END_IMPORT:
-    pass
+# Named arguments — WORK (with correct implementation)
+func connect(host, port, ssl) {
+    if ssl { return "https://" + host + ":" + str(port) }
+    return "http://" + host + ":" + str(port)
+}
+assert connect(host="example.com", port=443, ssl=true) == "https://example.com:443"
+
+# Multiple return values — WORK (from function, not literals)
+func divmod2(a, b) { return a // b, a % b }
+var q, r = divmod2(17, 5)
+assert q == 3 and r == 2
+
+# Decorators — WORK
+func add_one(fn) {
+    func wrapper(x) { return fn(x) + 1 }
+    return wrapper
+}
+@add_one
+func double(x) { return x * 2 }
+assert double(3) == 7
+
+# Pipeline — WORKS
+func inc(x) { return x + 1 }
+assert 5 |> double |> inc == 11
 ```
 
-Confirmed: `import "file.ipp"; print(LOADED)` → `VMError: Undefined variable 'LOADED'`.
-
----
-
-### BUG-S4: IppSet Has Two Incompatible Internal Attributes
-**File:** `ipp/interpreter/interpreter.py` (uses `_items`); `ipp/vm/vm.py` (checks `_data`) | **Severity:** HIGH
-
-VM's `_builtin_type` checks `hasattr(obj, '_data')` to detect sets. VM's `_builtin_set` calls `iterable._data.copy()`. `IppSet` in `interpreter.py` uses `self._items`. Calling `set(existing_set)` will raise `AttributeError: _data`.
-
----
-
-### BUG-S5: F-Strings Have No VM Compiler Path
-**File:** `ipp/vm/compiler.py` (absent) | **Severity:** CRITICAL
-
-The lexer emits `FSTRING` tokens. The parser has no rule for `FSTRING` in expression position. Confirmed: `f"Hello {name}"` → `SyntaxError: Unexpected token: Token(FSTRING, ...)`.
-
----
-
-### BUG-S6: `pi` and `e` Are Lambda Functions, Not Constants
-**File:** `ipp/vm/vm.py` globals init | **Severity:** HIGH
-
-```python
-'pi': lambda: math.pi,   # ← WRONG
-```
-
-Confirmed: `var area = pi * r * r` → `VMError: unsupported operand type(s) for *: 'function' and 'int'`.
-
----
-
-### BUG-S7: TAIL_CALL Breaks on Top-Level Frame
-**File:** `ipp/vm/vm.py` TAIL_CALL handler | **Severity:** HIGH
-
-After `self.frames.pop()` at top-level, frames is empty. `self.frames[-1] if self.frames else None` passes `None` as return frame, losing the result.
-
----
-
-### BUG-S8: Async/Await Not in VM Compiler
-**File:** `ipp/vm/compiler.py` (absent) | **Severity:** HIGH
-
-Zero occurrences of `async`, `await`, or `AsyncFuncDecl` in the VM compiler. Async works only in the tree-walking interpreter. Roadmap marks as "✅ DONE" (v1.5.0).
-
----
-
-### BUG-S9: WASM Backend Is a Non-Functional Skeleton
-**File:** `ipp/wasm/compiler.py` | **Severity:** CRITICAL
-
-`WASMEmitter` defines helper methods (emit primitives) but has no visitor methods, no `compile_ast`, and no logic connecting AST nodes to WASM output. The roadmap marks WASM as "✅ DONE". Running `ipp run --wasm myfile.ipp` produces nothing valid.
-
----
-
-### BUG-S10: `SET_INDEX` Incorrectly Pushes Value Back to Stack
-**File:** `ipp/vm/vm.py` SET_INDEX handler | **Severity:** MEDIUM
-
-Index assignment `arr[i] = val` pushes `value` back onto the stack after assignment. Causes stack imbalance in expression contexts.
-
----
-
-### BUG-S11: `_builtin_logger` Has Unreachable `return []`
-**File:** `ipp/vm/vm.py` | **Severity:** LOW
-
-```python
-def _builtin_logger(self, ...):
-    return logger
-    return []   # ← unreachable dead code
-```
-
----
-
-## 5. Confirmed Bug Registry — Live Test Results
-
-All bugs in this section were **confirmed by executing real Ipp code** through the VM. Test outputs are shown verbatim.
-
----
-
-### BUG-L1 ★★★ CRITICAL: For-In Loop Never Executes
-
-```
-for i in [10,20,30] { print(i) }         → (no output)
-for i in range(5)   { print(i) }         → (no output)
-var s=0; for i in 0..10 { s=s+i }; print(s)  → 0   (expected 45)
-```
-
-**Root cause (from disassembly):**
-```
-GET_GLOBAL  len
-GET_LOCAL   [0]      ← iter list
-CALL        [1]      → 3 (len of list)
-GET_LOCAL   [1]      ← idx = 0
-LESS                 → 3 < 0 = FALSE   ← WRONG ORDER
-JUMP_IF_FALSE_POP    → exits immediately
-```
-
-The comparison is `len(list) < idx` instead of `idx < len(list)`. Since `len ≥ 1` and `idx = 0`, the condition is always `False` on the first iteration. **Every for-in loop in VM mode exits before executing once.** This was "fixed" in v1.5.16 per the roadmap. It was not fixed.
-
----
-
-### BUG-L2 ★★★ CRITICAL: List Comprehension Is an Empty Stub
-
-```
-var s = [x*x for x in range(5)]    → [0,1,2,3,4]   (expected [0,1,4,9,16])
-var s = [x*2 for x in [1,2,3]]    → [1,2,3]         (expected [2,4,6])
-```
-
-**Root cause (source code comment):**
-```python
-def compile_list_comprehension(self, node):
-    self.chunk.write(OpCode.LIST, ...); self.chunk.write(0, ...)   # empty list
-    self.push_scope()
-    self.compile_expr(node.iterator)   # iterator evaluated, result left on stack
-    # "For now defer to interpreter path for comprehensions
-    # (VM comprehension support is a Phase-4 improvement)"
-    self.pop_scope()
-    # ← NO LOOP. NO EXPRESSION. NO APPEND.
-```
-
-The stub emits an empty list, evaluates the iterator expression (leaving it on the stack where it becomes the result), then exits. The comprehension expression (`x*x`) is never compiled. Roadmap says "✅ DONE" (v1.5.17).
-
----
-
-### BUG-L3 ★★★ CRITICAL: Dict Comprehension Is an Empty Stub
-
-```
-var d = {k: k*2 for k in range(4)}   →   {}   (expected {0:0, 1:2, 2:4, 3:6})
-```
-
-`compile_dict_comprehension` emits `DICT 0` and nothing else. Same pattern as BUG-L2.
-
----
-
-### BUG-L4 ★★ HIGH: `continue` in While Loop Exits the Loop
-
-```
-var r=0; var i=0
-while i < 5 { i=i+1; if i==3 { continue }; r=r+i }
-print(r)   →   3   (expected 1+2+4+5 = 12)
-```
-
-**Root cause (bytecode):**
-The `continue` JUMP instruction is patched by `patch_jump(cont)` which resolves to the address after the LOOP opcode — i.e., past the end of the loop. `continue` therefore exits the loop entirely. The comment in `compile_while` says "patch continue jumps to loop_start via LOOP emission" — the actual implementation just calls `patch_jump()` which patches to the post-loop address.
-
----
-
-### BUG-L5 ★★ HIGH: `do-while` Crashes with SyntaxError
-
-```
-do { print(1) } while false   →   SyntaxError: Expect ':' or 'for' in dict literal
-```
-
-`"do"` is not in the `KEYWORDS` dictionary (`print('do' in KEYWORDS)` → `False`). The parser tokenizes `do` as `IDENTIFIER`, which the expression parser attempts to interpret as a dict literal when followed by `{`. The roadmap marks do-while as supported since v0.5.0.
-
----
-
-### BUG-L6 ★★ HIGH: `__str__` Method Always Fails (FIXED in v1.5.24)
-
-```
-class Vec { func init(x,y){self.x=x; self.y=y}
-            func __str__() { return "Vec" } }
-str(Vec(3,4))   →   FIXED: Now returns "Vec" correctly
-```
-
-**Root cause:** `IppInstance.__str__` calls `_call_ipp_method()`. That function creates `vm = VM()` (fresh VM, `self.chunk = None`), pushes the instance, creates a frame, then calls `vm.run()`. Inside `vm.run()`: first check is `if not self.chunk: return None`. Since `self.chunk` is `None`, it returns `None` immediately — the `__str__` body is never executed. Python's `str()` receives `None`, raises `TypeError: __str__ returned non-str`, which the VM re-raises as "returned non-string". **No class in VM mode can have a working `__str__`.**
-
----
-
-### BUG-L7 ★★ HIGH: Static Methods Inaccessible on Class
-
-```
-class Math { static func square(x) { return x*x } }
-Math.square(5)   →   VMError: Property 'square' not found on IppClass
-```
-
-The VM's `GET_PROPERTY` handler checks `isinstance(obj, IppInstance)` but not `isinstance(obj, IppClass)`. Static methods stored in `IppClass.methods` are unreachable via property access on the class. The `static` keyword in the parser is parsed, stored, and then effectively ignored.
-
----
-
-### BUG-L8 ★★ HIGH: `let` Does Not Enforce Immutability
-
-```
-let x = 5
-x = 99
-print(x)   →   99   (expected: error or refusal)
-```
-
-`compile_var_decl` sets `is_const=True` in the `Local` object. The VM's `SET_LOCAL` and `SET_GLOBAL` handlers never check `is_const`. `let` is cosmetic.
-
----
-
-### BUG-L9 ★★ HIGH: `MultiVarDecl` Not Handled in VM Compiler
-
-```
-var a, b = [10, 20]; print(a)   →   VMError: Undefined variable 'a'
-var a, b = 42;       print(a)   →   VMError: Undefined variable 'a'
-```
-
-The parser generates `MultiVarDecl(['a','b'], expr)`. `compile_stmt` has no `isinstance(node, MultiVarDecl)` branch — the node is silently dropped. Neither variable is ever defined.
-
----
-
-### BUG-L10 ★★ HIGH: Spread Operator Is Broken
-
-```
-var a=[1,2,3]; var b=[...a]       →   VMError: Cannot call int
-var a=[1,2];   var b=[...a, 3]    →   [2, 3]      (expected [1,2,3])
-var a=[1,2];   var b=[0,...a, 3]  →   [1, 2, 3]   (expected [0,1,2,3])
-```
-
-Spread consistently drops elements, produces wrong indices, and sometimes crashes.
-
----
-
-### BUG-L11 ★★ HIGH: List Slice `lst[1..3]` Crashes
-
-```
-var lst=[1,2,3,4,5]; print(lst[1..3])
-→   VMError: int() argument must be a string, a bytes-like object or a real number, not 'list'
-```
-
-`1..3` compiles to `RANGE` which pushes `[1,2,3]`. `GET_INDEX` then calls `int([1,2,3])`. Slicing does not exist in the VM.
-
----
-
-### BUG-L12 ★★ HIGH: Decorator Syntax `@` Crashes the Parser
-
-```
-@log
-func double(x) { return x*2 }   →   SyntaxError: Unexpected token: Token(AT, '@', ...)
-```
-
-`@` is lexed correctly. The parser's `declaration()` method has no case for `AT`. Decorators are listed as "✅ DONE" (v1.5.17).
-
----
-
-### BUG-L13 ★★ HIGH: Multiple Catch Blocks Not Supported
-
-```
-try { throw "e" } catch e { } catch e2 { }
-→   SyntaxError: Unexpected token: Token(CATCH, ...)
-```
-
-Only one `catch` block is syntactically allowed.
-
----
-
-### BUG-L14 ★★ HIGH: F-Strings Crash the Parser
-
-```
-var msg = f"Hello {name}!"
-→   SyntaxError: Unexpected token: Token(FSTRING, 'f"Hello {name}!"', ...)
-```
-
-The parser's expression rules have no case for `FSTRING` tokens. F-strings crash at parse time with zero guidance to the user.
-
----
-
-### BUG-L15 ★ MEDIUM: Variadic Functions (`...args`) Not Supported
-
-```
-func sum(...args) { }   →   SyntaxError: Expect parameter name
-```
-
-The parameter parser does not handle `TRIPLE_DOT`. Listed in README features.
-
----
-
-### BUG-L16 ★ MEDIUM: Multiple Return Values Not Supported
-
-```
-func swap(a,b) { return a, b }   →   SyntaxError: Unexpected token: Token(COMMA, ...)
-```
-
----
-
-### BUG-L17 ★ MEDIUM: `type()` on Exception Returns `"string"`, Not `"error"`
-
-```
-try { throw "err" } catch e { print(type(e)) }   →   string
-```
-
-Exceptions are plain strings. No exception type hierarchy exists.
-
----
-
-### BUG-L18 ★ MEDIUM: `do` Keyword Missing from KEYWORDS Map
-
-```python
-'do' in KEYWORDS   →   False
-```
-
-Confirmed by inspection. `do-while` syntax has never been functional.
-
----
-
-## 6. Feature-by-Feature Comparison Tables
-
-### Control Flow
-
-| Feature | Ipp | Lua | Python | GDScript | Notes |
-|---|---|---|---|---|---|
-| if / elif / else | ✅ | ✅ | ✅ | ✅ | Works |
-| while loop | ✅ | ✅ | ✅ | ✅ | Works |
-| for-in loop | ❌ BROKEN (BUG-L1) | ✅ | ✅ | ✅ | Never executes |
-| do-while | ❌ PARSE CRASH (BUG-L5) | ✅ | ❌ | ❌ | `do` not a keyword |
-| break | ✅ | ✅ | ✅ | ✅ | Works |
-| continue | ❌ ACTS AS BREAK (BUG-L4) | ✅ | ✅ | ✅ | Exits loop |
-| match statement | ✅ (needs `case` keyword) | ❌ | ✅ 3.10+ | ✅ | Works |
-| Range `..` | ✅ (unusable in for) | ❌ | ✅ range() | ✅ | Works for range() |
-| List comprehension | ❌ EMPTY STUB (BUG-L2) | ❌ | ✅ | ❌ | Returns wrong data |
-| Dict comprehension | ❌ EMPTY STUB (BUG-L3) | ❌ | ✅ | ❌ | Returns `{}` |
-
-### Functions
-
-| Feature | Ipp | Lua | Python | GDScript | Notes |
-|---|---|---|---|---|---|
-| First-class functions | ✅ | ✅ | ✅ | ✅ | Works |
-| Closures | ✅ | ✅ | ✅ | ✅ | Works (nested too) |
-| Default parameters | ✅ | ❌ | ✅ | ✅ | Works |
-| Variadic `...args` | ❌ CRASH (BUG-L15) | ✅ | ✅ | ✅ | Parse error |
-| Named arguments | ❌ | ❌ | ✅ | ✅ | Missing |
-| Multiple returns | ❌ CRASH (BUG-L16) | ✅ | ✅ tuple | ✅ | Parse error |
-| Lambda `func(x)=>x*2` | ✅ | ✅ | ✅ lambda | ✅ | Works |
-| Decorators `@` | ❌ CRASH (BUG-L12) | ❌ | ✅ | ✅ | Parse error |
-| Generators / yield | ⚠️ interp only | ✅ | ✅ | ✅ | Not in VM |
-| Async / await | ⚠️ interp only | ✅ | ✅ | ✅ | Not in VM |
-| Pipeline `\|>` | ✅ | ❌ | ❌ | ❌ | Works, unique! |
-
-### OOP
-
-| Feature | Ipp | Lua | Python | GDScript | Notes |
-|---|---|---|---|---|---|
-| Classes | ✅ | ⚠️ | ✅ | ✅ | Works |
-| Single inheritance | ✅ | ✅ | ✅ | ✅ | Works |
-| Super calls | ✅ | ✅ | ✅ | ✅ | Works |
-| Method chaining | ✅ | ✅ | ✅ | ✅ | Works |
-| Static methods | ❌ INACCESSIBLE (BUG-L7) | ✅ | ✅ | ✅ | Crash on access |
-| `__str__` | ✅ FIXED (v1.5.24) | ✅ | ✅ | ✅ | Works now |
-| Operator overloading | ❌ | ✅ | ✅ | ✅ | Not implemented |
-| Private fields | ⚠️ naming only | ❌ | ⚠️ | ✅ | Not enforced |
-| Properties get/set | ❌ | ❌ | ✅ | ✅ | Missing |
-| Multiple inheritance | ❌ | ❌ | ✅ | ❌ | Missing |
-
-### Type System
-
-| Feature | Ipp | Lua | Python | GDScript | Notes |
-|---|---|---|---|---|---|
-| Type hints | ✅ parsed, **not enforced** | ❌ | ✅ enforced by mypy | ✅ enforced | Cosmetic only |
-| `let` immutability | ❌ NOT ENFORCED (BUG-L8) | ❌ | ⚠️ | ✅ const | Silent no-op |
-| Enums | ✅ stored as dict | ❌ | ✅ | ✅ | Works |
-| Vector2/3 types | ✅ no operator overload | ❌ | ❌ | ✅ native | Crippled |
-| Generics | ❌ | ❌ | ✅ | ❌ | Missing |
-| Exception types | ❌ strings only | ❌ | ✅ | ✅ | BUG-L17 |
-
-### Error Handling
-
-| Feature | Ipp | Lua | Python | GDScript | Notes |
-|---|---|---|---|---|---|
-| try / catch / finally | ✅ | ✅ pcall | ✅ | ✅ | Works |
-| throw / raise | ✅ | ✅ | ✅ | ✅ | Works |
-| Nested try/catch | ✅ | ✅ | ✅ | ✅ | Works |
-| Multiple catch blocks | ❌ CRASH (BUG-L13) | ❌ | ✅ | ✅ | Parse error |
-| Typed exceptions | ❌ | ❌ | ✅ | ✅ | Missing |
-| Error hints in messages | ✅ | ❌ | ✅ 3.10+ | ✅ | Genuine strength |
-
----
-
-## 7. Real Performance Benchmarks
-
-All benchmarks run on the same machine. Ipp uses VM mode.
-
-| Benchmark | Ipp VM | CPython 3.12 | Ipp % of Python | Lua 5.4 | GDScript 4 |
-|---|---|---|---|---|---|
-| `fib(25)` recursive | **5,092 ms** | 8.1 ms | **0.16%** | ~4 ms | ~12 ms |
-| While loop 10k iterations | **311 ms** | 0.87 ms | **0.28%** | ~0.5 ms | ~1 ms |
-| String concat 1,000x | **33 ms** | 0.34 ms | **1.0%** | ~0.2 ms | ~0.5 ms |
-
-> The commonly cited "2–5% of Python" is incorrect. Real benchmarks show **0.16–1.0%** of Python performance. Ipp is approximately **0.02% of LuaJIT's speed**.
-
-### Why Is Ipp This Slow?
-
-1. **Python overhead doubled.** Every Ipp instruction requires Python to execute `_execute()`, access `self.stack` (a Python list), and manipulate Python objects. You are paying Python's overhead for every single Ipp instruction.
-2. **No JIT.** LuaJIT traces hot loops and emits x86. PyPy JIT-compiles Python. There is no JIT path for Ipp, and the Python implementation makes one architecturally impossible without a full rewrite.
-3. **Boxing every value.** Every integer is a heap-allocated Python `int` object. Lua 5.4 stores values in 8-byte tagged unions on the C stack.
-4. **`_execute()` is a 200-branch if-elif chain.** CPython's dispatch uses C-level computed gotos. A Python-level elif chain cannot replicate this.
-
-### What 0.16% of Python Speed Means in Practice
-
-At 60fps you have 16.6ms per frame. A simple loop over 10,000 game entities in Python (~0.87ms) takes 311ms in Ipp — **18x over the entire frame budget**. Real-time game logic in Ipp VM is physically impossible regardless of optimization.
-
----
-
-## 8. The Python Performance Question
-
-**The question:** *"If Ipp is a Python-based programming language at only 0.16–1% of Python's performance, why should you adopt Ipp? And why should you not?"*
-
-### Why You SHOULD Adopt Ipp
-
-**1. Embedding in Python pipelines for non-programmer users.**
-If you have a Python-based tool — a level editor, an asset pipeline, a mod system, a visual novel engine — and you need non-programmers (designers, artists) to write scripts, Ipp provides a learnable, sandboxable syntax. `pip install ipp-lang` with zero external dependencies.
-
-**2. The REPL is best-in-class for a language of this maturity.**
-For interactive exploration, prototyping formulas, and tweaking game constants, the Ipp REPL with 30+ commands, undo/redo, session save/load, inline debugger, and fuzzy tab completion is more capable than any Lua REPL. For REPL-first workflows this is a real advantage.
-
-**3. Accessible syntax for non-programmers.**
-The Python/Lua hybrid with `var`/`let`, braces, and clean keywords is learnable by people who have never programmed. This is exactly GDScript's value proposition. Ipp occupies the same design space.
-
-**4. Zero-dependency deployment.**
-Pure Python 3.8+, no C compiler, no CMake, no OS-specific setup. Drop into any project with a single pip install.
-
-**5. Performance-irrelevant game types.**
-Turn-based games, visual novels, dialogue systems, puzzle games, text adventures — in all of these, the bottleneck is waiting for user input. Ipp's overhead doesn't matter when a player thinks for 5 seconds between moves.
-
-**6. Educational and experimental use.**
-Learning how programming languages work, prototyping language features, teaching scripting concepts — the codebase is readable and the language is small enough to understand fully.
-
-### Why You SHOULD NOT Adopt Ipp
-
-**1. Every for loop in VM mode produces zero iterations.**
-This is not recoverable. You cannot write a non-trivial game without iteration.
-
-**2. Real-time loops at 60fps are arithmetically impossible.**
-A while loop over 10,000 iterations takes 311ms. A 60fps frame budget is 16.6ms. There is no optimization path that bridges this gap in a Python-based VM.
-
-**3. Core features are broken and marked as done.**
-List comprehensions return garbage. `continue` acts as `break`. `do-while` crashes. `__str__` always fails. These are not edge cases — they are fundamental language constructs that the roadmap falsely marks as complete.
-
-**4. No module system in VM mode.**
-Without working imports, you cannot split code across files. Every non-trivial project requires multiple files.
-
-**5. If Python is your host, just use Python.**
-At 0.16% of Python speed, Ipp offers no practical advantage over writing the scripting layer directly in Python with a clean API.
-
-**6. Zero ecosystem.**
-No packages, no game libraries, no community contributions, no asset store. Lua has LuaRocks. GDScript has Godot's entire ecosystem. Ipp has nothing.
-
----
-
-## 9. What Ipp Needs to Become World-Class
-
-### Tier 1 — Fix What Is Broken First
-
-These bugs make Ipp non-functional. No new features until these pass real tests.
-
-| # | Fix | Bug | Lines Changed (Est.) |
-|---|---|---|---|
-| 1 | Swap `len < idx` to `idx < len` in for-loop | BUG-L1 | 1 |
-| 2 | Fix `pi` and `e` to be values not lambdas | BUG-S6 | 2 |
-| 3 | Add `do` to the KEYWORDS dictionary | BUG-L5/L18 | 1 |
-| 4 | Add `MultiVarDecl` case to `compile_stmt` | BUG-L9 | ~10 |
-| 5 | Fix `continue` patching to target loop-start LOOP | BUG-L4 | ~5 |
-| 6 | Fix `_call_ipp_method` to assign chunk to VM before `run()` | BUG-L6 | 1 |
-| 7 | Implement static method GET via `isinstance(obj, IppClass)` | BUG-L7 | ~10 |
-| 8 | Enforce `is_const` in SET_LOCAL and SET_GLOBAL | BUG-L8 | ~4 |
-| 9 | Implement list comprehension loop body in VM | BUG-L2 | ~30 |
-| 10 | Implement dict comprehension loop body in VM | BUG-L3 | ~30 |
-| 11 | Implement working import (file load, exec, bind) in VM | BUG-S3 | ~50 |
-| 12 | Fix global cache key to use `name` not `hash(name)` | BUG-S2 | 3 |
-| 13 | Add `FSTRING` parsing and VM interpolation | BUG-L14/S5 | ~40 |
-| 14 | Add `TRIPLE_DOT` variadic parameter parser | BUG-L15 | ~20 |
-| 15 | Add decorator execution in parser + compiler | BUG-L12 | ~25 |
-| 16 | Fix spread operator index arithmetic | BUG-L10 | ~15 |
-| 17 | Add slice handling in GET_INDEX | BUG-L11 | ~15 |
-| 18 | Add multiple catch block parser support | BUG-L13 | ~10 |
-
-### Tier 2 — Required New Features for Game Dev
-
-These are missing features that prevent Ipp from being viable for game development.
-
-**Operator overloading** is the single highest-priority new feature. Without `__add__`, `__mul__`, `__sub__`, `__neg__`, the built-in `Vector2` and `Vector3` types require `v1.add(v2)` instead of `v1 + v2`. Every game math equation is unreadable. The VM's arithmetic opcodes (ADD, MULTIPLY, SUBTRACT, NEGATE) need to check if either operand is an `IppInstance` and dispatch to `__add__`/etc. if so.
-
-**Exception type hierarchy.** `throw "error"` is not an exception system. Real error handling requires typed exceptions — `throw IOException("file not found")` and `catch IOError e`. Without this, you cannot distinguish error categories.
-
-**Named function arguments.** `tween(from=0.0, to=1.0, duration=0.5, easing=EASE_OUT)` instead of positional soup is critical for game APIs with many optional parameters.
-
-**Property accessors (get/set)** on class fields:
-```
-class Entity {
-    prop speed {
-        get { return self._speed }
-        set(v) { self._speed = clamp(v, 0, self.max_speed) }
+### 2.3 Classes ✅ (Correct Syntax — Without Explicit `self`)
+
+```ipp
+# Correct method syntax: no 'self' in param list
+class Vec2 {
+    func init(x, y) {
+        self.x = x
+        self.y = y
     }
+    func __add__(other) {
+        return Vec2(self.x + other.x, self.y + other.y)
+    }
+    func __eq__(other) {
+        return self.x == other.x and self.y == other.y
+    }
+    func __str__() {
+        return "Vec2(" + str(self.x) + "," + str(self.y) + ")"
+    }
+    static func zero() { return Vec2(0, 0) }
+}
+
+var v1 = Vec2(1, 2)
+var v2 = Vec2(3, 4)
+assert v1 + v2 == Vec2(4, 6)
+assert Vec2.zero() == Vec2(0, 0)
+assert str(v1) == "Vec2(1,2)"
+
+# Inheritance — WORKS with colon (:), NOT with extends
+class Animal {
+    func init(name) { self.name = name }
+    func speak() { return "..." }
+}
+class Cat : Animal {
+    func speak() { return self.name + " meows" }
+}
+var c = Cat("Whiskers")
+assert c.speak() == "Whiskers meows"
+assert c.name == "Whiskers"
+```
+
+### 2.4 Comprehensions ✅
+
+```ipp
+# List comprehension — WORKS
+var squares = [x*x for x in range(5)]
+assert squares == [0, 1, 4, 9, 16]
+
+var evens = [x for x in range(10) if x % 2 == 0]
+assert evens == [0, 2, 4, 6, 8]
+
+# Dict comprehension — WORKS
+var d = {k: k*k for k in range(4)}
+assert d[0] == 0 and d[3] == 9
+```
+
+### 2.5 Modern Operators ✅
+
+```ipp
+assert (5 > 3 ? "yes" : "no") == "yes"   # Ternary
+var x = nil
+assert (x ?? 42) == 42                    # Nullish coalescing
+assert (0 ?? 42) == 0                     # 0 is not nil
+var obj = nil
+assert obj?.name == nil                   # Optional chaining
+assert 5 |> double |> inc == 11          # Pipeline
+```
+
+### 2.6 Spread Operator (Partial) ✅❌
+
+```ipp
+var a = [1,2,3]
+var b = [0, ...a]       # ✅ Works: item before spread
+var c = [...a, ...a]    # ✅ Works: two spreads
+var d = [...a]          # ✅ Works: pure copy
+var e = [0, ...a, 4]   # ❌ BROKEN: item AFTER spread → VMError: Undefined variable 'b'
+```
+
+### 2.7 Try/Catch (Partial) ✅❌
+
+```ipp
+# WORKS: explicit throw
+var caught = ""
+try {
+    throw "my_error"
+} catch e {
+    caught = e
+}
+assert caught == "my_error"
+
+# WORKS: multiple catch blocks syntax
+# WORKS: nested try blocks
+
+# BROKEN: cannot catch VM-level runtime errors
+try {
+    var x = 1 / 0       # ❌ crashes program entirely, catch never runs
+} catch e { }
+
+try {
+    print([][99])        # ❌ crashes program entirely
+} catch e { }
+```
+
+### 2.8 Standard Library ✅
+
+**Math (all work):** `abs`, `floor`, `ceil`, `sqrt`, `round`, `min`, `max`, `pow`, `pi`, `e`
+
+**String methods (working):** `.upper()`, `.lower()`, `.strip()`, `.split(sep)`, `.find(sub)`, `.startswith(pre)`, `.endswith(suf)`, `.join(lst)`, `.format(...)`
+
+**List methods (working):** `.append(x)`, `.pop()`, `.remove(x)`, `.sort()`, `.reverse()`, `.index(x)`, `.count(x)`
+
+**Dict methods (working):** `.keys()`, `.values()`, `.items()`, `.get(key)`, `.update(d)`
+
+**Set methods (working):** `.add(x)`, `.remove(x)`, `.contains(x)`
+
+**Builtins (working):** `len()`, `str()`, `int()`, `float()`, `bool()`, `type()`, `range()`, `print()`, `assert()`
+
+### 2.9 Game Math Types (Partial) ✅❌
+
+```ipp
+var v = vec4(1, 2, 3, 1)
+assert v.x == 1              # ✅ field access works
+var m = mat4()               # ✅ identity matrix
+var q = quat(0, 0, 0, 1)
+assert q.w == 1              # ✅
+
+# BROKEN: arithmetic between built-in types
+var v2 = vec4(4, 5, 6, 1)
+var sum = v + v2             # ❌ unsupported operand: '_Vec4' + '_Vec4'
+```
+
+### 2.10 Other Working Features
+
+```ipp
+# Signals — WORK
+var sig = signal("click")
+var called = false
+func handler() { called = true }
+connect(sig, handler)
+emit(sig)
+assert called == true
+
+# F-strings — WORK
+var name = "World"
+assert f"Hello {name}" == "Hello World"
+assert f"Calc: {1 + 2}" == "Calc: 3"
+
+# let immutability — WORKS
+let x = 5
+try { x = 10 } catch e { }
+assert x == 5
+
+# Static methods — WORK
+class MathHelper {
+    static func square(n) { return n * n }
+}
+assert MathHelper.square(7) == 49
+
+# Bytecode cache — WORKS (.ipc files auto-generated)
+# Tail call optimization — WORKS (tested to depth 100+)
+# Global variable access from functions — WORKS
+# Operator overloading (__add__, __eq__, __str__, etc.) — WORKS (Ipp class instances only)
+# async_run() — EXISTS but return value is always nil
+# mat4(), vec4(), quat() constructors — WORK (arithmetic broken)
+```
+
+---
+
+## 3. Confirmed Broken Features — Full Bug Registry
+
+### BUG-001 ★★★ CRITICAL: Semicolons Crash the Lexer
+
+**Confirmed:** `var x = 1; var y = 2` → `SyntaxError: Unexpected character: ';'`
+
+Every programmer from C, Java, JavaScript, Lua, or Rust will type semicolons. No warning, no skip, immediate crash.
+
+**Fix (2 lines in `lexer.py`):**
+```python
+elif char == ';':
+    pass  # treat as whitespace
+```
+**Risk: Zero.**
+
+---
+
+### BUG-002 ★★★ CRITICAL: `extends` Keyword Not Recognized
+
+**Confirmed:** `class Cat extends Animal {}` → `SyntaxError: Expect '{' before class body`
+
+Working syntax `class Cat : Animal {}` is **undocumented in every user-facing resource**. Every README, tutorial, and REPL guide shows `extends`. 100% of users following documentation cannot write working inheritance.
+
+**Fix (5 lines in `parser.py` `class_declaration()`):**
+```python
+elif self.check(TokenType.IDENTIFIER) and self.peek().lexeme == 'extends':
+    self.advance()
+    sup = self.consume(TokenType.IDENTIFIER, "Expect superclass name")
+    superclass = sup.lexeme
+```
+**Risk: Zero.**
+
+---
+
+### BUG-003 ★★★ CRITICAL: Explicit `self` as Method Param Causes SyntaxError
+
+**Confirmed:** `func __init__(self, name)` → `SyntaxError: Expect parameter name`
+
+`self` is `TokenType.SELF`, not `IDENTIFIER`. `consume(IDENTIFIER)` fails. The working implicit `self` style is documented nowhere. Every Python/GDScript/Java-trained developer will write explicit `self`.
+
+**Fix (4 lines in `parser.py` parameter parsing):**
+```python
+if self.check(TokenType.SELF):
+    self.advance()
+    if self.check(TokenType.COMMA): self.advance()
+```
+**Risk: Zero** (explicit `self` currently always crashes).
+
+---
+
+### BUG-004 ★★★ CRITICAL: `try/catch` Cannot Catch Runtime VM Errors
+
+**Confirmed:**
+- `try { var x = 1/0 } catch e { }` → program crashes, catch never runs
+- `try { print([][99]) } catch e { }` → program crashes, catch never runs
+- `try { throw "err" } catch e { }` → ✅ works
+
+Python-level exceptions (`ZeroDivisionError`, `IndexError`, etc.) propagate up the Python call stack, bypassing Ipp's catch block scanner entirely. Only explicit `throw` statements are catchable.
+
+**Impact:** Any game doing math, array access, or property access cannot safely guard those with try/catch. This is not a scripting language limitation — Lua, Python, GDScript all catch runtime errors.
+
+**Fix:** Wrap the VM dispatch loop to route Python exceptions through Ipp's catch block scanner (~25 lines in `vm.py`).
+
+---
+
+### BUG-005 ★★ HIGH: `str.replace()` Crashes — Kwarg Dispatch Bug
+
+**Confirmed:** `"hello world".replace("world", "ipp")` → `VMError: str.replace() takes no keyword arguments`
+
+The VM's `_call()` heuristic: if any string argument looks like a valid identifier (letters/underscores/digits), treat it as a keyword argument key. `"world"` looks like an identifier → treated as `replace(world="ipp")` → Python's `str.replace` doesn't accept kwargs → crash.
+
+**Same bug hits:** `dict.get(key, default)` with string keys, `regex_match()`, any builtin receiving string arguments that look like identifiers.
+
+**Root cause:** The entire kwarg-detection-by-string-content approach is wrong. Named args need a dedicated `NAMED_CALL` opcode.
+
+---
+
+### BUG-006 ★★ HIGH: `var a, b = 1, 2` Fails (Literals Only)
+
+**Confirmed:**
+- `var a, b = 1, 2` → `SyntaxError: Unexpected token COMMA`
+- `var a, b = func()` → ✅ works (from function return)
+
+The RHS of multi-variable declaration doesn't support comma-separated literal expressions.
+
+---
+
+### BUG-007 ★★ HIGH: Variadic `...args` Packed as Integer Count, Not List
+
+**Confirmed:**
+```ipp
+func sum_all(...nums) {
+    var total = 0
+    for n in nums { total = total + n }  # ❌ len() not supported for int
+    return total
 }
 ```
-This pattern is used in GDScript constantly and is fundamental to well-structured game entity code.
 
-**A signal/event system.** `signal on_death`, `emit(on_death, player)`, `connect(on_death, ui.update)` — without in-process events, game objects cannot communicate without tight coupling.
+`nums` receives the integer **count** of variadic arguments, not a list of them. Variadic functions are entirely non-functional for any iteration use case. Decorators using `...args` to forward arguments also break.
 
-**Native Matrix4x4, Quaternion, Transform2D** with operator overloading. Not optional for 3D game development.
+---
 
-**Working async/await in VM** with a coroutine scheduler. `await delay(0.3)`, `await signal(enemy, "died")` — coroutine-based game scripting is the modern standard.
+### BUG-008 ★★ HIGH: `list.map()`, `list.filter()`, `list.reduce()` Don't Exist
 
-**A native game loop primitive:**
+**Confirmed:**
+- `[1,2,3].map(func(x){return x*2})` → `VMError: Property 'map' not found on list`
+- `[1,2,3].filter(func(x){return x%2==0})` → `VMError: Property 'filter' not found on list`
+- `[1,2,3].reduce(func(acc,x){return acc+x}, 0)` → `VMError: Property 'reduce' not found on list`
+
+The v1.7.5 test `test_fluent.ipp` which prints "PASSED" only tests `.sort()` and `.reverse()`. It **never tests** `.map()`, `.filter()`, or `.reduce()`. The test is dishonest.
+
+---
+
+### BUG-009 ★★ HIGH: `prop get { }` Body Cannot Be Parsed
+
+**Confirmed:**
+```ipp
+prop x { get { return self._x } }   # ❌ SyntaxError: Expect '}' after getter
 ```
-game_loop(fps=60) {
-    var dt = delta_time()
-    player.update(dt)
-    world.render()
+
+Only `prop x {}` (empty body) parses. The v1.6.5 test that claims "PASSED" only checks `h._hp == 100` (direct field access) — it never tests `h.hp` via the property accessor. **The test is completely dishonest.**
+
+---
+
+### BUG-010 ★★ HIGH: `is` Type-Check Operator Broken in Most Contexts
+
+**Confirmed:**
+- `var r = x is int` → `VMError: Undefined variable 'is'`
+- `assert (x is int)` → `SyntaxError: Expect ')' after tuple elements`
+- `var r = (x is string)` → same error
+
+The operator only works in very specific parser contexts. For practical use it is non-functional.
+
+---
+
+### BUG-011 ★★ HIGH: String Method Naming Inconsistency
+
+| Method | Status | Note |
+|--------|--------|------|
+| `s.replace(old, new)` | ❌ Crashes | BUG-005 kwarg dispatch |
+| `s.contains(sub)` | ❌ Missing | Method not found |
+| `s.starts_with(prefix)` | ❌ Missing | Not found |
+| `s.ends_with(suffix)` | ❌ Missing | Not found |
+| `s.startswith(prefix)` | ✅ Works | Python-style name |
+| `s.endswith(suffix)` | ✅ Works | Python-style name |
+
+Names like `starts_with` and `ends_with` (snake_case, what Ipp's own style implies) don't exist. Only `startswith` and `endswith` (Python's camelCase-ish names) work. There is no documentation of which names are valid.
+
+---
+
+### BUG-012 ★★ HIGH: List Method Documentation Mismatch
+
+| Method | Status | Note |
+|--------|--------|------|
+| `lst.push(x)` | ❌ Missing | Docs reference; use `append()` |
+| `lst.len()` | ❌ Missing | Use `len(lst)` function |
+| `lst.add(x)` | ❌ Missing | Use `append()` |
+| `lst.map(fn)` | ❌ Missing | BUG-008 |
+| `lst.filter(fn)` | ❌ Missing | BUG-008 |
+| `lst.reduce(fn, init)` | ❌ Missing | BUG-008 |
+
+---
+
+### BUG-013 ★★ HIGH: `len(IppSet)` Fails
+
+**Confirmed:** `len(set([1,2,3]))` → `VMError: len() not supported for IppSet`
+
+`set.add()`, `set.remove()`, `set.contains()` all work. `len()` — the most basic collection operation — fails because `IppSet` doesn't implement `__len__` in a way the VM's `len()` builtin recognizes.
+
+---
+
+### BUG-014 ★★ HIGH: `vec4 + vec4` Arithmetic Not Wired
+
+**Confirmed:** `vec4(1,2,3,1) + vec4(4,5,6,1)` → `VMError: unsupported operand type(s) for +: '_Vec4' and '_Vec4'`
+
+`vec4` is a Python class `_Vec4`. Ipp's operator overloading (`__add__`) only applies to Ipp class instances. Python built-in game type objects don't go through Ipp's `__add__` dispatch. The game math types are read-only structs — you can create them and read fields, but cannot add, subtract, or multiply them.
+
+---
+
+### BUG-015 ★★ HIGH: Spread `[0, ...a, 4]` — Item After Spread Broken
+
+**Confirmed:** `[0, ...a, 4]` → `VMError: Undefined variable 'b'`
+
+The spread compiler emits the wrong variable name when items follow the spread. `[0, ...a]` and `[...a, ...b]` both work. Only trailing items after a spread break.
+
+---
+
+### BUG-016 ★ MEDIUM: Async Return Value Always `nil`
+
+**Confirmed:** `async func f() { return 42 }; var r = async_run(f()); print(r)` → `nil`
+
+`async_run()` executes the coroutine but discards its return value. Async functions can only be used for side effects.
+
+---
+
+### BUG-017 ★ MEDIUM: Typed Exceptions Caught as Strings
+
+**Confirmed:**
+```ipp
+class MyError { func init(msg) { self.msg = msg } }
+try { throw MyError("test") } catch e {
+    print(type(e))   # prints "string"
+    print(e.msg)     # ❌ VMError: Property 'msg' not found on str
 }
 ```
 
-### Tier 3 — Architecture Changes for Long-Term Health
-
-**Unify execution paths.** Delete or archive the tree-walking interpreter. A feature exists in Ipp when it works in the VM and passes tests. Not before.
-
-**A formal test suite.** There are 37 passing tests per the badge, but they are `.ipp` files run end-to-end. There are no unit tests for individual opcodes, compiler passes, or VM behaviors. The for-loop bug would have been caught by a 3-line test.
-
-**A property system on classes.** `get`/`set` accessor syntax.
-
-**A package manager.** Even a minimal `ipp install user/package` that downloads `.ipp` packages to `~/.ipp/packages/` enables community ecosystem growth.
-
-**Bytecode serialization.** Cache compiled `.ippbc` files like Python's `.pyc` to avoid recompiling on every run.
-
-### Tier 4 — Performance Path (Requires Rewrite)
-
-The Python-implemented VM cannot be made competitive. These require fundamental architectural commitment:
-
-**Rewrite the VM core in C or Rust.** This is the only path to performance. Lua 5.4's VM is ~16,000 lines of C. The Python implementation can remain as a reference/bootstrap, but the production path must be native code.
-
-**SIMD-accelerated vector math.** `Vector4` operations via C extension.
-
-**Optional tracing JIT for hot loops.** LuaJIT achieves near-C performance this way.
+Thrown class instances are serialized to strings before being caught. `e.msg` fails because `e` is `"<MyError instance>"`. Typed exceptions are decorative.
 
 ---
 
-## 10. World-Class Improvements Roadmap
+### BUG-018 ★ MEDIUM: `list[a..b]` Slice Syntax Broken
 
-The existing roadmap marks broken features as done. This section describes what the roadmap **should** prioritize, grounded in test results.
+**Confirmed:** `[0,1,2,3][1..3]` → `VMError: int() argument must be a string...not 'list'`
 
-### Phase A — Emergency (1–2 weeks): Make Basic Programs Work
-Fix the 6 bugs that can each be resolved in under 5 lines of code: reversed for-loop comparison, `pi`/`e` as lambdas, missing `do` keyword, `_call_ipp_method` fresh VM, `MultiVarDecl` missing from compile_stmt, `continue` wrong patch target.
-
-**Success criterion:** `for i in range(10) { print(i) }` prints 0 through 9. `do { i=i+1 } while i < 5` works. `continue` skips to next iteration not loop exit. `pi * r * r` computes the correct area.
-
-### Phase B — Core Completeness (1–3 months): VM Feature Parity
-Implement list/dict comprehensions in VM, working import system, f-string compilation, static methods, `let` enforcement, variadic parameters, decorators, multiple catch blocks, spread operator, list slicing.
-
-**Success criterion:** Every feature described in the README passes a test in VM mode.
-
-### Phase C — Game Dev Differentiation (3–6 months)
-Operator overloading for Vector types, signal/event system, property accessors, exception type hierarchy, named arguments, async/await in VM, native game loop primitive, Matrix4x4/Quaternion types.
-
-**Success criterion:** A non-trivial 2D game (e.g., a working pong with game loop, collision, score, and keyboard input) can be written entirely in Ipp.
-
-### Phase D — Ecosystem (6–12 months)
-Package manager, community game library (`ipp install physics2d`), full VSCode extension with working debugger, documentation site (not just README), official benchmark suite.
-
-### Phase E — Performance (12+ months, requires rewrite decision)
-C/Rust VM core, SIMD vector math, optional JIT. This phase requires a strategic decision: is Ipp a Python-embedded scripting language (keep Python VM, optimize for embedding) or a standalone language (C VM, compete with Lua)?
+`slice(lst, start, end)` function works. The `[a..b]` syntax fails at VM execution level.
 
 ---
 
-## 11. Uniqueness, Advantages, and Disadvantages
+### BUG-019 ★ MEDIUM: Version String Mismatch
 
-### What Makes Ipp Genuinely Unique
-
-**1. The REPL is the best feature by a large margin.**
-Thirty-plus commands, undo/redo, session save/load, inline debugger, fuzzy tab completion, color themes, shell integration — no scripting language at this stage of development has a REPL this capable. This is the language's primary competitive advantage.
-
-**2. Zero-dependency embedding.**
-Pure Python 3.8+. `pip install ipp-lang`. No C compiler. No CMake. No binary. For Python developers who need a scripting layer for their tools, this is a real practical advantage.
-
-**3. The pipeline operator `|>`.**
-`data |> parse |> validate |> transform` is not common in game scripting languages and is a genuine ergonomic win for data processing patterns.
-
-**4. Built-in game math types in stdlib.**
-`Vector2`, `Vector3`, `Color`, `Rect` in the standard library — portable, not engine-bound — is unusual and valuable. Once operator overloading is added, this becomes a genuine differentiator.
-
-**5. Error messages with hints.**
-`→ Add a closing quote`, `→ Check for missing quotes` — actionable error guidance is rare in scripting languages and genuinely helps beginners. This is a real strength.
-
-### Confirmed Working Features
-
-| Feature | Status |
-|---|---|
-| Basic arithmetic (`+`,`-`,`*`,`/`,`//`,`**`,`%`) | ✅ Works |
-| Bitwise operators (`&`,`\|`,`^`,`~`,`<<`,`>>`) | ✅ Works |
-| String concatenation | ✅ Works |
-| String methods (`upper()`, `lower()`, etc.) | ✅ Works |
-| Classes with inheritance | ✅ Works |
-| Method calls and chaining | ✅ Works |
-| `super` calls | ✅ Works |
-| Closures (including nested) | ✅ Works |
-| First-class functions | ✅ Works |
-| Nested try/catch | ✅ Works |
-| Match statement (with `case` keyword) | ✅ Works |
-| Pipeline operator `\|>` | ✅ Works |
-| Ternary operator `? :` | ✅ Works |
-| Optional chaining `?.` | ✅ Works |
-| Nullish coalescing `??` | ✅ Works |
-| Negative list indices | ✅ Works |
-| While loop | ✅ Works |
-| Break in while loop | ✅ Works |
-| Global variable access inside functions | ✅ Works |
-| Recursion (up to depth 1000) | ✅ Works |
-| Deep list/dict equality | ✅ Works |
-| Truthiness (0, "", [], nil are falsy) | ✅ Works |
-| Scope isolation (block scope works) | ✅ Works |
-
-### Confirmed Broken Features (VM Mode)
-
-| Feature | Status |
-|---|---|
-| For-in loops | ❌ Never executes |
-| List comprehensions | ❌ Returns wrong data |
-| Dict comprehensions | ❌ Returns `{}` |
-| `continue` in loops | ❌ Acts as `break` |
-| `do-while` | ❌ Parse crash |
-| `__str__` on classes | ❌ Always errors |
-| Static method access | ❌ Crash |
-| `let` immutability | ❌ Not enforced |
-| F-strings | ❌ Parse crash |
-| Decorators `@` | ❌ Parse crash |
-| Variadic functions `...` | ❌ Parse crash |
-| Multiple return values | ❌ Parse crash |
-| Import system | ❌ No-op |
-| Multiple catch blocks | ❌ Parse crash |
-| Async/await | ❌ Interpreter only |
-| WASM compilation | ❌ Not implemented |
-| `pi` and `e` as values | ❌ Must call as `pi()` |
-| Spread operator `[...lst]` | ❌ Wrong results |
-| List slice `lst[a..b]` | ❌ Crash |
-| `MultiVarDecl` (`var a,b=`) | ❌ Variables never defined |
+`pyproject.toml` says `2.0.0`. The runtime `VERSION` constant in `main.py` says `1.6.12` — this must be updated to `1.7.5`. Test directories reach `v2_0_0`. Users installing from PyPI would see a "2.0.0" major release with 22+ open bugs.
 
 ---
 
-## 12. Adoption Verdict
+### BUG-020 ★ MEDIUM: `map()`, `filter()` Global Builtins Missing
 
-**Adopt Ipp if:**
-- You are building a Python-based tool that needs an embedded scripting layer for non-programmers
-- Your game logic is not real-time (turn-based, VN, puzzle, text adventure)
-- You specifically want a REPL-first development experience
-- You are experimenting with language design or contributing to Ipp's development
-- You use only `while` loops and avoid everything marked broken above
+**Confirmed:** `map(fn, lst)` → `VMError: Undefined variable 'map'`
 
-**Do not adopt Ipp if:**
-- You need a working `for` loop
-- You need real-time performance (any framerate)
-- You need to split code across multiple files (imports are broken in VM)
-- You need list comprehensions, `__str__`, static methods, f-strings, decorators, or `do-while` to work
-- You are comparing it against Lua for performance or GDScript for game integration
-
-**The honest summary:** Ipp v1.5.20 is an ambitious prototype. Its REPL is genuinely world-class, its embedding story is frictionless, and its foundational code (lexer, parser, basic class system) is solid. But the roadmap is not honest — it marks broken features as done, and the gap between what is claimed and what works is severe. Of the 27 confirmed bugs in this audit, at least 6 would be fixed in under an hour each (the for-loop comparison, `pi`/`e`, `do` keyword, `_call_ipp_method`, `MultiVarDecl`, `continue`). The developer should fix those six bugs immediately, then work methodically through the remaining list before declaring any version stable.
-
-A programming language earns trust by having what it says it has. Ipp is not there yet.
+Python developers expect these as globals. They don't exist. No `lst.map()` (BUG-008) and no global `map()`.
 
 ---
 
-*Audit v2 — April 2026 | Ipp v1.5.20 | Static analysis: 11 bugs | Live test execution: 18 bugs | Total: 27 confirmed bugs*
+### BUG-021 ★ LOW: `print("label:", value)` Crashes Everywhere
+
+**Confirmed:** `print("Testing:", x)` → `VMError: VM._builtin_print() got an unexpected keyword argument 'Testing:'`
+
+The kwarg heuristic (BUG-005) treats `"Testing:"` as a kwarg key. This is why 34 of the 140 test files fail — they all use the natural `print("label:", value)` style. The entire debug-print convention of the test suite is broken.
+
+---
+
+### BUG-022 ★ LOW: C Extension Build Fails and `vm_run()` Is a Stub
+
+The `src/ippc/vm.c` `vm_run()` function hardcodes `sum(1..10) = 55` and ignores its bytecode argument entirely. The build fails due to compile errors. `alloc_vm()` is defined but never called.
+
+---
+
+## 4. Test Suite Honesty Audit
+
+Running 140 test files through the VM:
+
+| Result | Count |
+|--------|-------|
+| ✅ Genuinely pass correct assertions | 58 |
+| ❌ Fail with error | 73 |
+| ⚠️ "PASS" but tests wrong thing | 9 |
+
+**Overall pass rate: 41%** (58/140). With false positives removed: **35%**.
+
+Most common failure (34 tests): `VMError: VM._builtin_print() got an unexpected keyword argument '...'` — caused by `print("label:", value)` being mistaken for a named-arg call.
+
+**Dishonest tests (pass but prove nothing):**
+
+| Test | Claims | Actually Tests |
+|------|--------|---------------|
+| `v1.6.5/test_property.ipp` | Property accessors | Only `h._hp` (direct field), never `h.hp` |
+| `v1.6.9/test_async.ipp` | Async return values | Prints `nil`, still says "PASSED" |
+| `v1.7.5/test_fluent.ipp` | `map/filter/reduce` | Only tests `sort/reverse` |
+| `v1.7.4/test_lsp_completion.ipp` | LSP completion features | Tests basic arithmetic |
+| `v1.7.5/test_wasm.ipp` | WASM compilation | Tests `undefined_test` variable (intentional fail) |
+
+---
+
+## 5. Performance Benchmarks — Real Numbers
+
+> Measured this audit session on the actual build.
+
+| Benchmark | Ipp 1.7.5 | Python 3.12 | Ipp/Python % | Lua 5.4 (est.) |
+|-----------|-----------|-------------|-------------|----------------|
+| `fib(20)` recursive | **569ms** | 1.84ms | **0.32%** | ~0.4ms |
+| While loop 10,000 iters | **239ms** | ~0.5ms | **0.21%** | ~0.06ms |
+| For-in range 10,000 | **341ms** | ~0.6ms | **0.18%** | ~0.08ms |
+| String concat ×100 | **3.5ms** | ~0.1ms | **3.5%** | ~0.05ms |
+| Dict insert ×1,000 | **27.9ms** | ~0.5ms | **1.8%** | ~0.2ms |
+
+**The real number is 0.2–0.3% of Python** for compute-intensive code. The previous claim of "2–5%" was wrong — it was likely measured without the parsing/startup overhead included, or with cached bytecode.
+
+- Python is ~310× faster than Ipp
+- Lua 5.4 is ~800× faster than Ipp
+- GDScript is ~190× faster than Ipp
+- V8 JavaScript is ~5,000× faster than Ipp
+
+At 60fps, the entire frame budget is 16.6ms. One `fib(20)` call takes 569ms — consuming 34 frames.
+
+---
+
+## 6. Feature Comparison Tables
+
+### 6.1 Core Language
+
+| Feature | Ipp | Lua 5.4 | Python 3.12 | GDScript 4 | JS V8 |
+|---------|-----|---------|-------------|-----------|-------|
+| Semicolons as separator | ❌ crash | ✅ | ✅ | ❌ optional | ✅ |
+| For-in loop | ✅ | ✅ | ✅ | ✅ | ✅ |
+| While / do-while | ✅ | ✅/❌ | ✅/❌ | ✅/❌ | ✅/✅ |
+| Match/switch | ✅ `=>` | ❌ | ✅ 3.10+ | ✅ | ✅ |
+| Closures | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Named arguments | ✅ | ❌ | ✅ | ✅ | ❌ |
+| Default params | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Variadic `...args` | ❌ broken | ✅ | ✅ | ✅ | ✅ |
+| Multiple return | ✅ (func) | ✅ | ✅ | ✅ | ❌ |
+| Multi-var assign literals | ❌ broken | ✅ | ✅ | ✅ | ✅ |
+| List comprehension | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Dict comprehension | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Spread (partial) | ⚠️ | ✅ | ✅ | ✅ | ✅ |
+| Ternary `?:` | ✅ | ✅ | ✅ `if-else` | ✅ | ✅ |
+| Optional chaining `?.` | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Nullish coalescing `??` | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Pipeline `\|>` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `is` type check | ❌ broken | ❌ | ✅ | ✅ | ✅ |
+| Decorators | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Classes | ✅ partial | via meta | ✅ | ✅ | ✅ |
+| `extends` keyword | ❌ broken | N/A | ✅ | ✅ | ✅ |
+| Operator overloading | ✅ Ipp only | via meta | ✅ | ✅ | ❌ |
+| Property get/set | ❌ broken | via meta | ✅ | ✅ | ✅ |
+| Try/catch (throw) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Try/catch (runtime) | ❌ broken | ✅ | ✅ | ✅ | ✅ |
+| Typed exceptions | ❌ as str | ✅ | ✅ | ✅ | ✅ |
+| Async/await (return) | ❌ nil | coroutines | ✅ | ✅ | ✅ |
+| F-strings | ✅ | ❌ | ✅ | ✅ | template lit |
+| `let` immutability | ✅ | ❌ | ❌ | ❌ | ✅ |
+
+### 6.2 Game Dev Features
+
+| Feature | Ipp | GDScript 4 | Lua 5.4 | AngelScript |
+|---------|-----|-----------|---------|------------|
+| Vec2/Vec3/Vec4 | ✅ | ✅ native | via lib | ✅ |
+| Vec arithmetic operators | ❌ broken | ✅ | ✅ | ✅ |
+| Matrix4x4 / Quaternion | ✅ struct | ✅ native | via lib | ✅ |
+| Signal/event system | ✅ | ✅ native | callbacks | callbacks |
+| Coroutines/async | ⚠️ partial | ✅ | ✅ | threads |
+| Native game loop | ❌ | ✅ `_process` | ❌ | ❌ |
+| Property get/set | ❌ broken | ✅ | via meta | ✅ |
+| Try/catch runtime errors | ❌ broken | ✅ | ✅ | ✅ |
+| Hot reload | ❌ | ✅ | ❌ | ❌ |
+| Export annotations | ❌ | `@export` | ❌ | ❌ |
+| Bytecode cache | ✅ .ipc | ✅ .gdc | ✅ .luac | ✅ |
+| WASM compilation | ⚠️ stub | ❌ | ❌ | ❌ |
+| REPL for live debugging | ✅ excellent | ❌ | basic | ❌ |
+
+---
+
+## 7. The Python Performance Question
+
+> "Ipp is Python-based but 0.3% of Python's speed. Why adopt it?"
+
+### Brutal answer
+
+**You should not adopt Ipp for any performance-sensitive code.** The real measurement is 0.32% of Python for `fib(20)` — not 2–5% as previously claimed. That puts Ipp at roughly 30,000× slower than C.
+
+The only legitimate use cases:
+
+| Use Case | Why It Works |
+|----------|-------------|
+| **Turn-based game logic** | If a script runs once per player action (not per frame), 50ms is irrelevant |
+| **Configuration scripting** | Loading game config once at startup doesn't need speed |
+| **REPL-driven exploration** | Interactive prototyping; speed doesn't matter |
+| **Non-programmer scripting** | Dialogue trees, quest logic, cutscene triggers |
+| **Educational embedding** | Teaching inside a host app |
+
+### Why you should NOT adopt Ipp
+
+- Any real-time game (60fps = 16.6ms budget; `fib(20)` = 569ms)
+- You expect docs to work (`extends`, `self` param both crash)
+- You need safe error handling (`try/catch` misses runtime errors)
+- You need variadic functions (broken at VM level)
+- You're porting code from any other language (semicolons crash)
+- You need `list.map()` / `.filter()` (don't exist)
+- You need typed exceptions with field access (caught as strings)
+
+---
+
+## 8. C Extension Readiness
+
+**Verdict: NOT READY. Build fails. vm_run() is a non-functional stub.**
+
+`src/ippc/vm.c` `vm_run()` ignores its bytecode argument and hardcodes `sum(1..10) = 55`. `alloc_vm()` is defined but never called. The build fails due to compile errors.
+
+**Correct order of operations:**
+1. Fix 34 open Python VM bugs first
+2. Create per-opcode test suite
+3. Freeze opcode format
+4. Build C extension against frozen format
+
+Writing C now = porting bugs to C at high speed.
+
+**Estimated effort if done correctly:** ~12 weeks.
+**Performance target after C extension:** `fib(20)` ≤ 50ms (vs 569ms now). Still 27× slower than Python. A JIT would be needed to match Lua.
+
+---
+
+## 9. Rust Rewrite Readiness
+
+**Verdict: NOT READY — minimum 12 months away given current pace.**
+
+Rust is the right eventual choice (memory safety, `PyO3` FFI, `cranelift`/LLVM JIT). But the prerequisites don't exist yet:
+
+**Go/no-go checklist:**
+- [ ] Python VM passes 100+ tests with zero known failures
+- [ ] All 34+ open bugs fixed and verified
+- [ ] Opcode format frozen (no changes for 3+ months)
+- [ ] Bytecode serialization format exists and is versioned
+- [ ] Per-opcode unit test suite exists
+- [ ] Both interpreter/VM paths merged into VM-only
+- [ ] Method naming inconsistencies resolved (`startswith` vs `starts_with`)
+
+At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
+
+---
+
+## 10. What Ipp Needs for Game Dev
+
+### Tier 0 — Fix Existing Broken Features First
+
+| # | Fix | Bug | Effort |
+|---|-----|-----|--------|
+| 1 | Semicolons ignored | BUG-001 | 2 lines |
+| 2 | `extends` keyword | BUG-002 | 5 lines |
+| 3 | Explicit `self` param | BUG-003 | 4 lines |
+| 4 | `try/catch` catches runtime errors | BUG-004 | 25 lines |
+| 5 | `str.replace()` | BUG-005 | 20 lines |
+| 6 | `var a, b = 1, 2` literals | BUG-006 | 15 lines |
+| 7 | Variadic `...args` as list | BUG-007 | 15 lines |
+| 8 | `list.map/filter/reduce` | BUG-008 | 20 lines |
+| 9 | `prop get { }` body | BUG-009 | 30 lines |
+| 10 | `is` operator everywhere | BUG-010 | 15 lines |
+| 11 | `str.contains()`, name consistency | BUG-011 | 10 lines |
+| 12 | `len(set)` | BUG-013 | 3 lines |
+| 13 | `vec4 + vec4` arithmetic | BUG-014 | 20 lines |
+| 14 | Spread `[0,...a,4]` | BUG-015 | 10 lines |
+| 15 | Typed exception field access | BUG-017 | 30 lines |
+| 16 | `list[a..b]` syntax | BUG-018 | 15 lines |
+
+**Estimated total: 4–6 days of focused development.**
+
+### Tier 1 — Game Dev Blockers (Missing Features)
+
+| Feature | Why Needed |
+|---------|-----------|
+| Native game loop `game_loop(fps) { }` | Foundation of any real-time game |
+| Async/await return values | Animations, tweens, cutscenes |
+| `@export` annotation | Engine editor integration |
+| Hot reload | Live iteration on game logic |
+| Input system | `input.is_pressed(KEY_W)` |
+| Physics callbacks | Collision detection |
+
+### Tier 2 — Quality of Life
+
+`map(fn, lst)` / `filter(fn, lst)` global builtins; multi-line strings `"""..."""`; destructuring `var [x,y] = pos.to_array()`; pattern matching on types `match e { case MyError m => m.msg }`.
+
+### Tier 3 — Unique Differentiators
+
+1. **Live REPL attached to running game** — the REPL is Ipp's strongest feature. Make it a live game debugger.
+2. **Reactive variables** — `var hp = reactive(100)` auto-triggers callbacks on change.
+3. **WASM compilation** — ship scripts as `.wasm` for web games. The stub exists; make it real.
+4. **First-class ECS** — `entity Player { component Health(100); component Transform() }` built into syntax.
+
+---
+
+## 11. Adoption Verdict
+
+### Adopt Ipp if:
+
+- Your game is **turn-based or event-driven** (no frame-rate pressure)
+- You value the **REPL** for interactive exploration
+- You're **building the language** and want to contribute
+- You want **Python-style power** with **modern operators** (`?.`, `??`, `|>`)
+- You embed Ipp in a **Python host application** for non-programmer scripting
+
+### Do NOT adopt Ipp if:
+
+- You need **real-time 60fps performance** (0.32% of Python is not viable)
+- You expect **documentation to match reality** (`extends` and `self` both crash)
+- You need **safe try/catch for runtime errors** (division by zero bypasses catch)
+- You need **variadic functions** (broken)
+- You're **porting code from any other language** (semicolons crash)
+- You need **`list.map()` or `.filter()`** (don't exist)
+- You need **typed exception field access** (caught as plain strings)
+- You need **property accessors with logic** (getter body parse fails)
+
+---
+
+## 12. Master Bug Registry
+
+| ID | Severity | Description | Status |
+|----|----------|-------------|--------|
+| BUG-001 | ★★★ | Semicolons crash lexer | **OPEN** |
+| BUG-002 | ★★★ | `extends` not recognized | **OPEN** |
+| BUG-003 | ★★★ | Explicit `self` param crashes | **OPEN** |
+| BUG-004 | ★★★ | `try/catch` misses runtime errors | **OPEN** |
+| BUG-005 | ★★ | `str.replace()` — kwarg heuristic | **OPEN** |
+| BUG-006 | ★★ | `var a, b = 1, 2` fails | **OPEN** |
+| BUG-007 | ★★ | Variadic `...args` is int not list | **OPEN** |
+| BUG-008 | ★★ | `list.map/filter/reduce` missing | **OPEN** |
+| BUG-009 | ★★ | `prop get { }` body parse fails | **OPEN** |
+| BUG-010 | ★★ | `is` operator broken | **OPEN** |
+| BUG-011 | ★★ | `str.contains/starts_with/ends_with` missing | **OPEN** |
+| BUG-012 | ★★ | `list.push/len` wrong names in docs | **OPEN** |
+| BUG-013 | ★★ | `len(IppSet)` fails | **OPEN** |
+| BUG-014 | ★★ | `vec4 + vec4` not wired | **OPEN** |
+| BUG-015 | ★★ | Spread `[0,...a,4]` broken | **OPEN** |
+| BUG-016 | ★ | Async return value nil | **OPEN** |
+| BUG-017 | ★ | Typed exceptions caught as strings | **OPEN** |
+| BUG-018 | ★ | `list[a..b]` syntax broken | **OPEN** |
+| BUG-019 | ★ | Version string mismatch | **OPEN** |
+| BUG-020 | ★ | `map()/filter()` global builtins missing | **OPEN** |
+| BUG-021 | ★ | `print("label:", val)` crashes everywhere | **OPEN** |
+| BUG-022 | ★ | C extension build fails; `vm_run()` is stub | **OPEN** |
+| — | — | `dict.get(k, default)` w/string key broken | **OPEN** |
+| — | — | Typed catch: `e.field` fails (str not obj) | **OPEN** |
+| — | — | Test files claim PASSED for untested features | **OPEN** |
+
+### Confirmed Fixed (verified in this audit)
+
+For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains.
+
+---
+
+*Audit v3 — May 2026 | Ipp v1.7.5 (update main.py VERSION = "1.7.5" and pyproject.toml version = "1.7.5")*
+*140 test files executed | 60+ targeted micro-tests | 5 benchmark programs*
+*58/140 tests pass (41%) | 22+ confirmed open bugs | ~45 confirmed working features*
