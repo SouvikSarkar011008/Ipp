@@ -817,7 +817,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
 | BUG-001 | ★★★ | Semicolons crash lexer | **OPEN** |
-| BUG-002 | ★★★ | `extends` not recognized | **OPEN** |
+| BUG-002 | ★★★ | `extends` not recognized | **FIXED v1.7.7** |
 | BUG-003 | ★★★ | Explicit `self` param crashes | **OPEN** |
 | BUG-004 | ★★★ | `try/catch` misses runtime errors | **OPEN** |
 | BUG-005 | ★★ | `str.replace()` — kwarg heuristic | **OPEN** |

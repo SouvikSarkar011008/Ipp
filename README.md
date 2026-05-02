@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.7.6.1-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.7.7-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -581,6 +581,8 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.7.5 | WASM Backend (real implementation) |
 | v1.7.6 | Fix (semicolons silently ignored) |
 | v1.7.6.1 | Fix (print with multiple args) |
+| v1.7.6.2 | Fix (dict.get with string key) |
+| v1.7.7 | Fix (extends keyword for inheritance) |
 | v2.0.0 | C Extension (VM foundation) |
 
 ---

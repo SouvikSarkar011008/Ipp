@@ -52,6 +52,12 @@ class Parser:
         if self.match(TokenType.COLON):
             sup = self.consume(TokenType.IDENTIFIER, "Expect superclass name")
             superclass = sup.lexeme
+        elif (self.check(TokenType.IDENTIFIER) and
+              self.peek().lexeme == 'extends'):
+            self.advance()   # consume the 'extends' identifier
+            sup = self.consume(TokenType.IDENTIFIER,
+                               "Expect superclass name after 'extends'")
+            superclass = sup.lexeme
 
         methods = []
         properties = []

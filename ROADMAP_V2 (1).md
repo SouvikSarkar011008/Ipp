@@ -214,7 +214,7 @@ assert d2.get("nope", 99) == 99
 
 ---
 
-### v1.7.7 — Fix: `extends` Keyword Works for Inheritance (BUG-002)
+### v1.7.7 — Fix: `extends` Keyword Works for Inheritance (BUG-002) ✅ DONE
 
 **User impact:** `class Cat extends Animal {}` → `SyntaxError: Expect '{' before class body`. This is in every documentation example. The working syntax `class Cat : Animal {}` is documented nowhere.
 
