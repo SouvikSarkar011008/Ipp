@@ -579,7 +579,7 @@ assert len(b) == 3
 
 ---
 
-### v1.7.9 — Fix: `try/catch` Catches Runtime VM Errors (BUG-004)
+### v1.7.9 — Fix: `try/catch` Catches Runtime VM Errors (BUG-004) ✅ DONE
 
 **User impact:** `try { var x = 1/0 } catch e { }` → program crashes. Division by zero, index out of bounds, and nil property access all bypass catch blocks entirely.
 

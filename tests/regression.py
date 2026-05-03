@@ -120,6 +120,10 @@ TESTS = [
     ("v1.7.8.3-len-basic", "tests/v1_7_8_3/test_len_basic.ipp"),
     ("v1.7.8.3-len-inheritance", "tests/v1_7_8_3/test_len_inheritance.ipp"),
     ("v1.7.8.3-len-default", "tests/v1_7_8_3/test_len_default.ipp"),
+    ("v1.7.9-try-div", "tests/v1_7_9/test_try_catch_div.ipp"),
+    ("v1.7.9-try-index", "tests/v1_7_9/test_try_catch_index.ipp"),
+    ("v1.7.9-try-nil", "tests/v1_7_9/test_try_catch_nil.ipp"),
+    ("v1.7.9-try-throw", "tests/v1_7_9/test_try_catch_throw.ipp"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 

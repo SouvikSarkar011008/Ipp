@@ -703,16 +703,18 @@ class VM:
             except VMError as e:
                 # FIX VM-BUG-3: route VMError through exception handlers (try/catch support)
                 if self.exception_handlers:
-                    self._handle_exception(e, frame)
+                    target_ip = self._handle_exception(e, frame)
                     frame = self.frames[-1]
+                    frame.ip = target_ip
                     continue
                 raise
             except Exception as e:
                 # wrap in VMError for structured handling
                 exc = VMError(str(e))
                 if self.exception_handlers:
-                    self._handle_exception(exc, frame)
+                    target_ip = self._handle_exception(exc, frame)
                     frame = self.frames[-1]
+                    frame.ip = target_ip
                     continue
                 raise VMError(str(e)) from e
 
