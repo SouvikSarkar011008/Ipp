@@ -104,6 +104,11 @@ TESTS = [
     ("v1.7.3", "tests/v1_7_3/test_package_manager.ipp"),
     ("v1.7.4", "tests/v1_7_4/test_lsp_completion.ipp"),
     ("v1.7.5", "tests/v1_7_5/test_wasm.ipp"),
+    ("v1.7.8.1-str-basic", "tests/v1_7_8_1/test_str_basic.ipp"),
+    ("v1.7.8.1-str-concat", "tests/v1_7_8_1/test_str_concat.ipp"),
+    ("v1.7.8.1-str-inherit", "tests/v1_7_8_1/test_str_inheritance.ipp"),
+    ("v1.7.8.1-str-default", "tests/v1_7_8_1/test_str_default.ipp"),
+    ("v1.7.8.1-str-collections", "tests/v1_7_8_1/test_str_collections.ipp"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 

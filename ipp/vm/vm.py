@@ -1508,21 +1508,21 @@ class VM:
         # FIX: Handle method_descriptor and builtin_function_or_method for string methods
         if callable(callee) and not isinstance(callee, (Closure, IppFunction, IppClass, BoundMethod, type(str.format))):
             # built-in Python callable - extract named arguments (pushed as name, value pairs)
-            # Only extract if the "key" looks like an identifier (no braces {}, no colon :)
+            # Only extract if the "key" looks like an identifier (no braces {}, no colon :, no angle brackets <>)
             kwargs = {}
             if args and len(args) >= 2:
                 for i in range(0, len(args), 2):
                     if i + 1 < len(args) and isinstance(args[i], str):
                         key = args[i]
-                        # Only treat as kwarg if it looks like an identifier (no braces, no colon)
-                        if '{' not in key and '}' not in key and ':' not in key:
+                        # Only treat as kwarg if it looks like an identifier (no braces, no colon, no angle brackets, no spaces)
+                        if '{' not in key and '}' not in key and ':' not in key and '<' not in key and '>' not in key and ' ' not in key:
                             kwargs[key] = args[i + 1]
             # Remove named arg pairs from positional args
             if kwargs:
                 new_args = []
                 used = set()
                 for i in range(0, len(args), 2):
-                    if i + 1 < len(args) and isinstance(args[i], str) and '{' not in args[i] and '}' not in args[i] and ':' not in args[i]:
+                    if i + 1 < len(args) and isinstance(args[i], str) and '{' not in args[i] and '}' not in args[i] and ':' not in args[i] and '<' not in args[i] and '>' not in args[i] and ' ' not in args[i]:
                         used.add(i)
                         used.add(i + 1)
                 for j in range(len(args)):
