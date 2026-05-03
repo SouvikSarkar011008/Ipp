@@ -114,6 +114,9 @@ TESTS = [
     ("v1.7.8.2-repr-default", "tests/v1_7_8_2/test_repr_default.ipp"),
     ("v1.7.8.2-repr-collections", "tests/v1_7_8_2/test_repr_collections.ipp"),
     ("v1.7.8.2-repr-inheritance", "tests/v1_7_8_2/test_repr_inheritance.ipp"),
+    ("v1.7.8.3-len-basic", "tests/v1_7_8_3/test_len_basic.ipp"),
+    ("v1.7.8.3-len-inheritance", "tests/v1_7_8_3/test_len_inheritance.ipp"),
+    ("v1.7.8.3-len-default", "tests/v1_7_8_3/test_len_default.ipp"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 

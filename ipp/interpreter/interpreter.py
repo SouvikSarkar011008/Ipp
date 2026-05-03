@@ -99,6 +99,25 @@ class IppInstance:
                     interp.environment = saved
         return f"<{self.ipp_class.name} instance>"
     
+    def __len__(self):
+        # FIX v1.7.8.3: Check for __len__ method
+        len_method = self.ipp_class.get_method('__len__')
+        if len_method:
+            new_env = Environment(len_method.closure)
+            new_env.define("self", self, constant=False)
+            interp = _ipp_get_interpreter()
+            if interp:
+                saved = interp.environment
+                interp.environment = new_env
+                try:
+                    for stmt in len_method.body:
+                        stmt.accept(interp)
+                        if interp.return_value is not None:
+                            return interp.return_value
+                finally:
+                    interp.environment = saved
+        raise TypeError(f"len() not supported for {self.ipp_class.name}")
+    
     def __str__(self):
         str_method = self.ipp_class.get_method('__str__')
         if str_method:

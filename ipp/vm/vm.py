@@ -546,6 +546,13 @@ class VM:
         return None
 
     def _builtin_len(self, obj):
+        # FIX v1.7.8.3: Check for __len__ method on IppInstance
+        if isinstance(obj, IppInstance):
+            len_method = obj.cls.get_method('__len__')
+            if len_method:
+                result = _call_ipp_method(obj, len_method)
+                return result
+            raise VMError(f"len() not supported for {obj.cls.name}")
         if isinstance(obj, (str, list, dict, tuple)):
             return len(obj)
         if hasattr(obj, '__len__'):

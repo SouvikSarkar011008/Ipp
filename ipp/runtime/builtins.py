@@ -142,6 +142,11 @@ def ipp_print(*args):
 
 
 def ipp_len(obj):
+    # FIX v1.7.8.3: Check for __len__ method on IppInstance
+    if hasattr(obj, 'ipp_class') and hasattr(obj.ipp_class, 'get_method'):
+        len_method = obj.ipp_class.get_method('__len__')
+        if len_method:
+            return len(obj)  # This will call IppInstance.__len__
     if isinstance(obj, (list, tuple, str)):
         return len(obj)
     if hasattr(obj, 'elements'):

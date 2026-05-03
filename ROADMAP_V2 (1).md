@@ -543,7 +543,7 @@ assert repr(v) == "Vec(1, 2)"
 
 ---
 
-### v1.7.8.3 — Enhancement: `__len__` Protocol + IppInstance `len()`
+### v1.7.8.3 — Enhancement: `__len__` Protocol + IppInstance `len()` ✅ DONE
 
 **Why here:** After `__str__` and `__repr__`, `__len__` completes the basic dunder protocol. Lets users make custom collections that work with `len()`.
 
