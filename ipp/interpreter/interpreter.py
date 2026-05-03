@@ -82,6 +82,21 @@ class IppInstance:
         self.fields = {}
     
     def __repr__(self):
+        repr_method = self.ipp_class.get_method('__repr__')
+        if repr_method:
+            new_env = Environment(repr_method.closure)
+            new_env.define("self", self, constant=False)
+            interp = _ipp_get_interpreter()
+            if interp:
+                saved = interp.environment
+                interp.environment = new_env
+                try:
+                    for stmt in repr_method.body:
+                        stmt.accept(interp)
+                        if interp.return_value is not None:
+                            return str(interp.return_value)
+                finally:
+                    interp.environment = saved
         return f"<{self.ipp_class.name} instance>"
     
     def __str__(self):

@@ -428,6 +428,26 @@ def ipp_str(s):
     return str(s)
 
 
+def ipp_repr(v):
+    """repr() builtin for interpreter - v1.7.8.2"""
+    # Handle IppInstance from interpreter
+    if hasattr(v, 'ipp_class') and hasattr(v.ipp_class, 'get_method'):
+        return repr(v)  # This will call IppInstance.__repr__ which we just added
+    # Handle IppInstance from VM
+    if hasattr(v, 'cls') and hasattr(v.cls, 'get_method'):
+        repr_method = v.cls.get_method('__repr__')
+        if repr_method:
+            return f"<{v.cls.name} instance>"  # VM handles this in _repr_impl
+        return f"<{v.cls.name} instance>"
+    if isinstance(v, str):
+        return '"' + v + '"'
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if v is None:
+        return "nil"
+    return str(v)
+
+
 def ipp_int(s, base=10):
     try:
         return int(s, base)
@@ -3774,6 +3794,7 @@ BUILTINS = {
     "to_float": ipp_to_float,
     "to_bool": ipp_to_bool,
     "str": ipp_str,
+    "repr": ipp_repr,
     "int": ipp_int,
     "float": ipp_float,
     "bool": ipp_bool,

@@ -252,6 +252,22 @@ class IppInstance:
         return f"<{self.cls.name} instance>"
 
 
+def _repr_impl(value):
+    """Implementation for repr() builtin - v1.7.8.2"""
+    if isinstance(value, IppInstance):
+        repr_method = value.cls.get_method('__repr__')
+        if repr_method:
+            return _call_ipp_method(value, repr_method)
+        return f"<{value.cls.name} instance>"
+    if isinstance(value, str):
+        return '"' + value + '"'
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "nil"
+    return str(value)
+
+
 def _call_ipp_method(instance: IppInstance, method) -> Any:
     """Helper to call an Ipp method from Python context (e.g. __str__).
     FIX BUG-N6: must push instance as self and capture the return value."""
@@ -391,6 +407,7 @@ class VM:
             'choice': lambda seq: random.choice(seq),
             'shuffle': lambda seq: random.shuffle(seq),
             'str': str,
+            'repr': lambda v: _repr_impl(v),
             'int': int,
             'float': float,
             'bool': bool,

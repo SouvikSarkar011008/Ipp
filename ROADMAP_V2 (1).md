@@ -507,7 +507,7 @@ assert s.contains("NoStr") == true
 
 ---
 
-### v1.7.8.2 — Enhancement: `__repr__` Protocol + `repr()` Builtin
+### v1.7.8.2 — Enhancement: `__repr__` Protocol + `repr()` Builtin ✅ DONE
 
 **Why here:** Once `__str__` works (v1.7.8.1), adding `__repr__` is 3 extra lines and completes the string protocol. Many debugging scenarios need `repr()` (e.g. strings show with quotes, lists show values).
 

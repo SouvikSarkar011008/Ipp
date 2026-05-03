@@ -109,6 +109,11 @@ TESTS = [
     ("v1.7.8.1-str-inherit", "tests/v1_7_8_1/test_str_inheritance.ipp"),
     ("v1.7.8.1-str-default", "tests/v1_7_8_1/test_str_default.ipp"),
     ("v1.7.8.1-str-collections", "tests/v1_7_8_1/test_str_collections.ipp"),
+    ("v1.7.8.2-repr-builtin", "tests/v1_7_8_2/test_repr_builtin.ipp"),
+    ("v1.7.8.2-repr-method", "tests/v1_7_8_2/test_repr_method.ipp"),
+    ("v1.7.8.2-repr-default", "tests/v1_7_8_2/test_repr_default.ipp"),
+    ("v1.7.8.2-repr-collections", "tests/v1_7_8_2/test_repr_collections.ipp"),
+    ("v1.7.8.2-repr-inheritance", "tests/v1_7_8_2/test_repr_inheritance.ipp"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 
