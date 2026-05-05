@@ -1680,9 +1680,11 @@ def run_repl():
                 print(f"  1. Variables: {colour(C_KW, 'var x = 10')}")
                 print(f"  2. Functions: {colour(C_KW, 'func add(a, b) { return a + b }')}")
                 print(f"  3. Lists: {colour(C_KW, 'var nums = [1, 2, 3]')}")
-                print(f"  4. Dicts: {colour(C_KW, 'var person = {\"name\": \"Alice\"}')}")
+                _s4 = 'var person = {"name": "Alice"}'
+                print(f"  4. Dicts: {colour(C_KW, _s4)}")
                 print(f"  5. Loops: {colour(C_KW, 'for i in 0..5 { print(i) }')}")
-                print(f"  6. Classes: {colour(C_KW, 'class Dog { func init() { this.name = \"rex\" } }')}")
+                _s6 = 'class Dog { func init() { this.name = "rex" } }'
+                print(f"  6. Classes: {colour(C_KW, _s6)}")
                 print()
                 print(f"  {colour(DIM, 'Try each example in the REPL!')}")
                 continue
