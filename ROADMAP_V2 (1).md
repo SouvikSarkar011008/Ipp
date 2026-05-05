@@ -723,7 +723,7 @@ assert outer_caught == true
 
 ---
 
-### v1.7.9.1 — Enhancement: Cleaner Error Messages with File + Line
+### v1.7.9.1 — Enhancement: Cleaner Error Messages with File + Line ✅ DONE
 
 **Why here:** After try/catch works, error messages themselves are often useless (`VMError: pop from empty list` reveals nothing). Add file+line info to every unhandled error.
 

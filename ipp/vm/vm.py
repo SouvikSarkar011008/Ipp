@@ -791,10 +791,23 @@ class VM:
         # Update the frame reference to use the correct frame after pop
         return handler.target_ip
 
+    def _get_line_info(self, frame: VMFrame) -> str:
+        """Get line number info from current frame's chunk."""
+        try:
+            ip = frame.ip
+            lines = frame.chunk.lines
+            if ip < len(lines):
+                line = lines[ip]
+                return f" at line {line}" if line > 0 else ""
+            return ""
+        except Exception as e:
+            return ""
+
     def _execute(self, opcode: OpCode, frame: VMFrame) -> Any:
         code = frame.chunk.code
         constants = frame.chunk.constants
         ip = frame.ip
+        line_info = self._get_line_info(frame)
 
         # ── Constants ────────────────────────────────────────────────────
         if opcode == OpCode.HALT:
@@ -844,7 +857,7 @@ class VM:
                 self._global_cache.set(name, val)
                 self.stack.append(val)
             else:
-                raise VMError(f"Undefined variable '{name}'")
+                raise VMError(f"Undefined variable '{name}'{line_info}")
 
         elif opcode == OpCode.SET_GLOBAL:
             idx = code[ip + 1]
@@ -852,7 +865,7 @@ class VM:
             # FIX v1.5.23: Check for const global
             const_globals = getattr(frame.chunk, 'const_globals', None)
             if const_globals and name in const_globals:
-                raise VMError(f"Cannot reassign immutable 'let' variable: {name}")
+                raise VMError(f"Cannot reassign immutable 'let' variable: {name}{line_info}")
             val = self.stack[-1] if self.stack else None
             self.globals[name] = val
             self._global_cache.set(name, val)  # FIX v1.5.31
@@ -1010,7 +1023,7 @@ class VM:
                 if -len(obj) <= i < len(obj):
                     obj[i] = value
                 else:
-                    raise VMError(f"Index {i} out of range (length {len(obj)})")
+                    raise VMError(f"Index {i} out of range (length {len(obj)}){line_info}")
             elif isinstance(obj, dict):
                 obj[idx] = value
             elif hasattr(obj, 'elements'):
@@ -1334,7 +1347,7 @@ class VM:
 
         elif opcode == OpCode.DIVIDE:
             b, a = self.stack.pop(), self.stack.pop()
-            if b == 0: raise VMError("Division by zero")
+            if b == 0: raise VMError(f"Division by zero{line_info}")
             if isinstance(a, IppInstance):
                 method = a.cls.get_method('__div__')
                 if method:
@@ -1356,7 +1369,7 @@ class VM:
 
         elif opcode == OpCode.FLOOR_DIV:
             b, a = self.stack.pop(), self.stack.pop()
-            if b == 0: raise VMError("Division by zero")
+            if b == 0: raise VMError(f"Division by zero{line_info}")
             self.stack.append(int(a) // int(b))
 
         # ── Bitwise ──────────────────────────────────────────────────────

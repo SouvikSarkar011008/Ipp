@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.7.9-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.7.9.1-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -589,6 +589,7 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.7.8.2 | Enhancement (__repr__ protocol and repr builtin) |
 | v1.7.8.3 | Enhancement (__len__ protocol and custom len) |
 | v1.7.9 | Fix (try/catch catches runtime errors) |
+| v1.7.9.1 | Enhancement (cleaner error messages with file + line) |
 | v2.0.0 | C Extension (VM foundation) |
 
 ---

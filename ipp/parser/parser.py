@@ -158,6 +158,7 @@ class Parser:
 
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect variable name")
+        line = name.line
         
         # Check for multiple variable declaration: var a, b = expr FIX: BUG-NEW-M7
         if self.match(TokenType.COMMA):
@@ -169,7 +170,9 @@ class Parser:
                     break
             self.consume(TokenType.EQUAL, "Expect '=' in multi-variable declaration")
             initializer = self.expression()
-            return MultiVarDecl(names, initializer)
+            decl = MultiVarDecl(names, initializer)
+            decl.line = line
+            return decl
         
         # Single variable declaration
         # FIX: BUG-P2 — actually store the type hint
@@ -181,7 +184,9 @@ class Parser:
         initializer = None
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
-        return VarDecl(name.lexeme, initializer, type_hint)
+        decl = VarDecl(name.lexeme, initializer, type_hint)
+        decl.line = line
+        return decl
 
     def let_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect variable name")
@@ -592,6 +597,7 @@ class Parser:
             op = self.previous().lexeme
             right = self.unary()
             left = BinaryExpr(left, op, right)
+            left.line = self.previous().line
         return left
 
     def unary(self):
@@ -678,7 +684,9 @@ class Parser:
 
     def primary(self):
         if self.match(TokenType.NUMBER):
-            return NumberLiteral(self.previous().literal)
+            lit = NumberLiteral(self.previous().literal)
+            lit.line = self.previous().line
+            return lit
         if self.match(TokenType.STRING):
             return StringLiteral(self.previous().literal)
         if self.match(TokenType.FSTRING):

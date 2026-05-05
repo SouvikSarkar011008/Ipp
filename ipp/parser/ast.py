@@ -16,6 +16,7 @@ class ASTNode(ABC):
 @dataclass
 class NumberLiteral(ASTNode):
     value: float
+    line: int = 0
     def accept(self, visitor): return visitor.visit_number_literal(self)
 
 @dataclass
@@ -234,7 +235,8 @@ class AsyncFuncDecl(ASTNode):
 class VarDecl(ASTNode):
     name: str
     initializer: Optional[ASTNode]
-    type_hint: Optional[str] = None    # FIX: BUG-P2 — store annotation
+    type_hint: Optional[str] = None
+    line: int = 0
     def accept(self, visitor): return visitor.visit_var_decl(self)
 
 @dataclass

@@ -37,6 +37,7 @@ Thumbs.db
 
 # Ipp specific
 *.ipp.bc  # Compiled bytecode (future)
+*.ippc    # Bytecode cache
 __pycache__/
 
 # Logs
