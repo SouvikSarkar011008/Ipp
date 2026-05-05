@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.7.9"
+VERSION = "1.6.12"
 
 # ─── Windows ANSI enablement ──────────────────────────────────────────────────
 # Windows 10 supports ANSI but requires ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -1513,7 +1513,9 @@ def run_repl():
                         
                         with open(session_file, 'w') as f:
                             json.dump(session_data, f, indent=2)
-                        print(f"  {colour(C_OK, f'Session saved ({len(session_data["variables"])} variables, {len(session_data["history"])} commands)')}")
+                        _sv = len(session_data["variables"]); _sh = len(session_data["history"])
+                        _sv = len(session_data["variables"]); _sh = len(session_data["history"])
+                        print(f"  " + colour(C_OK, f"Session saved ({_sv} variables, {_sh} commands)"))
                     except Exception as e:
                         print(f"  {colour(C_ERROR, f'Failed to save session: {e}')}")
                 
@@ -1544,7 +1546,9 @@ def run_repl():
                                     pass
                             
                             print(f"  {colour(C_OK, f'Session restored: {restored} commands executed')}")
-                            print(f"  {colour(DIM, f'Variables: {len(session_data.get("variables", {}))} saved')}")
+                            _sv2 = len(session_data.get("variables", {}))
+                            _sv2 = len(session_data.get("variables", {}))
+                            print(f"  " + colour(DIM, f"Variables: {_sv2} saved"))
                         else:
                             print(f"  {colour(C_WARN, 'No saved session found')}")
                     except Exception as e:
@@ -1663,7 +1667,9 @@ def run_repl():
                 if theme in themes:
                     print(f"  {colour(C_OK, f'Theme set to {theme}')}")
                 else:
-                    print(f"  {colour(C_WARN, f'Unknown theme: {theme}. Available: {", ".join(themes.keys())}')}")
+                    _avail = ", ".join(themes.keys())
+                    _avail = ", ".join(themes.keys())
+                    print(f"  " + colour(C_WARN, f"Unknown theme: {theme}. Available: {_avail}"))
                 continue
 
             # .tutorial — Start interactive tutorial
@@ -1709,14 +1715,16 @@ def run_repl():
                         if keyword in name.lower() or (fn.__doc__ and keyword in fn.__doc__.lower()):
                             matches.append((name, fn.__doc__ or "No docs"))
                     if matches:
-                        print(f"  {colour(C_CMD, f'Found {len(matches)} matches for \"{keyword}\":')}")
+                        _kw_msg = "Found " + str(len(matches)) + ' matches for "' + keyword + '":'
+                        print(f"  " + colour(C_CMD, _kw_msg))
                         for name, doc in sorted(matches)[:20]:
                             doc_preview = doc[:60] + "..." if len(doc) > 60 else doc
                             print(f"    {colour(C_KW, name)}: {colour(DIM, doc_preview)}")
                         if len(matches) > 20:
                             print(f"  {colour(DIM, f'... and {len(matches) - 20} more')}")
                     else:
-                        print(f"  {colour(C_WARN, f'No matches found for \"{keyword}\"')}")
+                        _kw_warn = 'No matches found for "' + keyword + '"'
+                        print(f"  " + colour(C_WARN, _kw_warn))
                 except Exception as e:
                     print(f"  {colour(C_ERROR, str(e))}")
                 continue
@@ -1803,7 +1811,8 @@ def run_repl():
                 try:
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write('// Ipp session export\n')
-                        f.write(f'// Exported at: {__import__("datetime").datetime.now()}\n\n')
+                        import datetime as _dt_tmp
+                        f.write(f'// Exported at: {_dt_tmp.datetime.now()}\n\n')
                         for cmd in _cmd_history:
                             f.write(cmd + '\n')
                     
