@@ -43,8 +43,6 @@ class Parser:
             return self.enum_declaration()
         if self.match(TokenType.IMPORT):
             return self.import_declaration()
-        if self.match(TokenType.IDENTIFIER) and self.previous().lexeme == "assert":
-            return self.assert_statement()
         return self.statement()
 
     def class_declaration(self):
@@ -315,6 +313,10 @@ class Parser:
             return ThrowStmt(expr)
         if self.match(TokenType.WITH):
             return self.with_statement()
+        # Check for assert statement (identifier "assert" followed by expression)
+        if self.check(TokenType.IDENTIFIER) and self.peek().lexeme == "assert":
+            self.advance()  # consume "assert"
+            return self.assert_statement()
         return self.expression_statement()
 
     def if_statement(self):

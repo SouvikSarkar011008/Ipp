@@ -125,6 +125,21 @@ TESTS = [
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 
+def extract_expected_from_file(filepath):
+    """Extract expected output markers from test file comments."""
+    try:
+        with open(filepath, 'r') as f:
+            content = f.read()
+        
+        # Look for patterns like "# expected: <value>" or "// expected: <value>"
+        import re
+        matches = re.findall(r'(?:#|//)\s*expected:\s*(.+)', content, re.IGNORECASE)
+        if matches:
+            return [m.strip() for m in matches]
+    except:
+        pass
+    return None
+
 VM_TEST_SCRIPT = '''
 import sys
 import os
@@ -218,8 +233,14 @@ def run_test(version, filepath):
     else:
         print(vm_out)
     
-    # Test passes if both modes succeed (or both fail with same error for expected failures)
+    # Test passes if both modes succeed (or both fail for expected failures)
     if interp_rc != 0 and vm_rc != 0:
+        # If both fail with different errors, that's a problem
+        if interp_err.strip() != vm_err.strip():
+            print(f"\n-> FAILED: Both failed but with different errors!")
+            print(f"Interpreter error: {interp_err[:200]}")
+            print(f"VM error:          {vm_err[:200]}")
+            return False
         print("\n-> Both modes failed (expected - test may check error handling)")
         return True
     
@@ -233,9 +254,31 @@ def run_test(version, filepath):
     
     # Both passed - compare outputs to ensure consistency
     if interp_out.strip() != vm_out.strip():
-        print(f"\n-> WARNING: Outputs differ between modes!")
-        print(f"Interpreter: {interp_out[:200]}...")
-        print(f"VM: {vm_out[:200]}...")
+        print(f"\n-> FAILED: Outputs differ between modes!")
+        print(f"Interpreter output: {repr(interp_out[:300])}")
+        print(f"VM output:          {repr(vm_out[:300])}")
+        return False
+    
+    # Check if test file has expected output markers
+    expected_file = filepath.replace('.ipp', '.expected')
+    if os.path.exists(expected_file):
+        with open(expected_file, 'r') as f:
+            expected = f.read().strip()
+        actual = interp_out.strip()
+        if expected != actual:
+            print(f"\n-> FAILED: Output doesn't match expected!")
+            print(f"Expected: {repr(expected[:200])}")
+            print(f"Actual:   {repr(actual[:200])}")
+            return False
+        print(f"  [Output verified against expected file]")
+    else:
+        # Check for inline expected markers in test file
+        inline_expected = extract_expected_from_file(filepath)
+        if inline_expected:
+            actual = interp_out.strip()
+            if inline_expected not in actual:
+                print(f"\n-> WARNING: Expected output '{inline_expected}' not found in output!")
+                print(f"Actual output: {actual[:200]}")
     
     print("\n-> PASSED in both modes")
     return True
