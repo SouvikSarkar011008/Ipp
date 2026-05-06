@@ -14,5 +14,7 @@ print("sync: ")
 print(sync_result)
 print("async: ")
 print(async_result)
+assert sync_result == 30
+assert async_result == 12
 
 print("v1.6.9: Async/Await tests PASSED")
