@@ -12,6 +12,7 @@ while i < 1000 {
     i = i + 1
 }
 print("Sum 0..999 = " + str(result))
+assert result == 499500
 
 var fib_result = 0
 func fib(n) {
@@ -23,6 +24,7 @@ func fib(n) {
 
 fib_result = fib(15)
 print("fib(15) = " + str(fib_result))
+assert fib_result == 610
 
 # ====== List Operations ======
 print("\n--- List Operations ---")

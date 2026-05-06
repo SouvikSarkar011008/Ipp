@@ -13,6 +13,10 @@ print("Dict size: " + str(len(d)))
 print("Name: " + str(d["name"]))
 print("Age: " + str(d["age"]))
 print("City: " + str(d["city"]))
+assert len(d) == 3
+assert d["name"] == "Alice"
+assert d["age"] == 30
+assert d["city"] == "NYC"
 
 # ====== List Index Assignment ======
 print("\n--- List Index Assignment ---")
@@ -23,6 +27,8 @@ print("Original: " + str(nums))
 nums[0] = 10
 nums[2] = nums[2] + 100
 print("After update: " + str(nums))
+assert nums[0] == 10
+assert nums[2] == 103
 
 # ====== Nested Dict ======
 print("\n--- Nested Dict ---")
@@ -33,6 +39,8 @@ nested["user"]["name"] = "Bob"
 nested["user"]["score"] = 100
 print("User: " + str(nested["user"]["name"]))
 print("Score: " + str(nested["user"]["score"]))
+assert nested["user"]["name"] == "Bob"
+assert nested["user"]["score"] == 100
 
 # ====== Dict Iteration ======
 print("\n--- Dict Iteration ---")

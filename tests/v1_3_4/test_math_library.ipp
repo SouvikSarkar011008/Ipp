@@ -8,18 +8,26 @@ print("\n--- Game Dev Math ---")
 # Lerp
 print("lerp(0, 10, 0.5):", lerp(0, 10, 0.5))
 print("lerp(0, 100, 0.25):", lerp(0, 100, 0.25))
+assert lerp(0, 10, 0.5) == 5
+assert lerp(0, 100, 0.25) == 25
 
 # Clamp
 print("clamp(5, 0, 10):", clamp(5, 0, 10))
 print("clamp(15, 0, 10):", clamp(15, 0, 10))
 print("clamp(-5, 0, 10):", clamp(-5, 0, 10))
+assert clamp(5, 0, 10) == 5
+assert clamp(15, 0, 10) == 10
+assert clamp(-5, 0, 10) == 0
 
 # Map Range
 print("map_range(0.5, 0, 1, 0, 100):", map_range(0.5, 0, 1, 0, 100))
+assert map_range(0.5, 0, 1, 0, 100) == 50
 
 # Distance
 print("distance(0, 0, 3, 4):", distance(0, 0, 3, 4))
 print("distance_3d(0, 0, 0, 1, 2, 2):", distance_3d(0, 0, 0, 1, 2, 2))
+assert distance(0, 0, 3, 4) == 5
+assert distance_3d(0, 0, 0, 1, 2, 2) == 3
 
 # Normalize
 var norm = normalize(3, 4)
@@ -28,6 +36,8 @@ print("normalize(3, 4):", norm)
 # Dot Product
 print("dot(1, 0, 0, 1):", dot(1, 0, 0, 1))
 print("dot(1, 0, 1, 0):", dot(1, 0, 1, 0))
+assert dot(1, 0, 0, 1) == 0
+assert dot(1, 0, 1, 0) == 1
 
 # Cross Product (2D)
 print("cross(1, 0, 0, 1):", cross(1, 0, 0, 1))

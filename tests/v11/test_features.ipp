@@ -13,12 +13,17 @@ print(now.day())
 print(now.hour())
 print(now.minute())
 print(now.second())
+assert now.year() >= 2020
+assert now.month() >= 1 and now.month() <= 12
+assert now.day() >= 1 and now.day() <= 31
 
 var formatted = now.format("%Y-%m-%d %H:%M:%S")
 print(formatted)
+assert formatted.len() > 0
 
 var future = now.add_days(10)
 print(future)
+assert future.day() >= now.day()
 
 # ====== Path Tests ======
 print("\n--- Path Tests ---")
@@ -28,34 +33,43 @@ print(p)
 print(path_dirname("/home/user/file.txt"))
 print(path_basename("/home/user/file.txt"))
 print(path_join("folder", "subfolder", "file.txt"))
-print(path_exists("tests/v11/test_features.ipp"))
+var exists = path_exists("tests/v11/test_features.ipp")
+print(exists)
+assert exists == true
 
 # ====== Hash Tests ======
 print("\n--- Hash Tests ---")
 
 var md5_hash = md5("hello")
 print(md5_hash)
+assert md5_hash == "5d41402abc4b2a76b9719d911017c592"
 
 var sha256_hash = sha256("hello")
 print(sha256_hash)
+assert sha256_hash.len() == 64
 
 var sha1_hash = sha1("hello")
 print(sha1_hash)
+assert sha1_hash.len() == 40
 
 var sha512_hash = sha512("hello")
 print(sha512_hash)
+assert sha512_hash.len() == 128
 
 var h = hash("test")
 print(h)
+assert h > 0
 
 # ====== Base64 Tests ======
 print("\n--- Base64 Tests ---")
 
 var encoded = base64_encode("Hello, World!")
 print(encoded)
+assert encoded == "SGVsbG8sIFdvcmxkIQ=="
 
 var decoded = base64_decode(encoded)
 print(decoded)
+assert decoded == "Hello, World!"
 
 # ====== CSV Tests ======
 print("\n--- CSV Tests ---")
@@ -64,15 +78,18 @@ var csv_data = "name,age,city\nAlice,25,NYC\nBob,30,LA"
 var parsed = csv_parse(csv_data)
 print(parsed)
 print(len(parsed))
+assert len(parsed) == 2
 
 # ====== OS Tests ======
 print("\n--- OS Tests ---")
 
 var platform = os_platform()
 print(platform)
+assert platform.len() > 0
 
 var cwd = os_cwd()
 print(cwd)
+assert cwd.len() > 0
 
 # ====== Complex Number Tests ======
 print("\n--- Complex Number Tests ---")
@@ -97,6 +114,7 @@ print(c6)
 
 var abs_c1 = abs(c1)
 print(abs_c1)
+assert abs_c1 > 4.9 and abs_c1 < 5.1
 
 var conj = c1.conjugate()
 print(conj)

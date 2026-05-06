@@ -14,12 +14,16 @@ print("now:", now())
 print("delta:", delta())
 print("format_duration(65):", format_duration(65))
 print("format_duration(3665):", format_duration(3665))
+assert format_duration(65) == "1m 5s"
+assert format_duration(3665) == "1h 1m 5s"
 
 # ====== Color ======
 print("\n--- Color ---")
 print("from_hex #FF0000:", from_hex("#FF0000"))
 print("to_hex 255,0,0:", to_hex(255, 0, 0))
 print("hsl 0,1,0.5:", hsl(0, 1, 0.5))
+var hex_color = from_hex("#FF0000")
+assert hex_color[0] == 255
 
 # ====== Easing ======
 print("\n--- Easing ---")
@@ -27,6 +31,8 @@ print("ease_in 0.5:", ease_in(0.5))
 print("ease_out 0.5:", ease_out(0.5))
 print("bounce 0.5:", bounce(0.5))
 print("spring 0.5:", spring(0.5))
+assert ease_in(0.5) > 0
+assert ease_out(0.5) > 0
 
 # ====== String ======
 print("\n--- String ---")

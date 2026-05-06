@@ -18,6 +18,18 @@ print(false or false)            # false
 print(not (1 == 2))             # true
 print(1 == 1 and not (1 == 2))  # true
 
+assert (1 == 1 and 2 == 2) == true
+assert (1 < 2 and 3 < 4) == true
+assert (1 < 2 and 3 > 4) == false
+assert (1 == 2 or 2 == 2) == true
+assert (1 == 2 or 2 == 3) == false
+assert (true and true) == true
+assert (false and true) == false
+assert (false or true) == true
+assert (false or false) == false
+assert not (1 == 2) == true
+assert (1 == 1 and not (1 == 2)) == true
+
 # In conditionals
 var x = 5
 var y = 10

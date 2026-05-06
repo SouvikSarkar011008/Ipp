@@ -12,6 +12,8 @@ class Person {
 }
 
 var p = Person("Alice")
-print(str(p))
+var s = str(p)
+print(s)
+assert s == "Person: Alice"
 
 print("v0.10.0 tests complete!")

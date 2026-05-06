@@ -23,10 +23,15 @@ var b = Vec2(3, 4)
 print(a.x)      # Should print 1
 print(a.y)      # Should print 2
 print(b.x)      # Should print 3
+assert a.x == 1
+assert a.y == 2
+assert b.x == 3
 
 var c = a + b
 print(c.x)      # Should print 4
 print(c.y)      # Should print 6
+assert c.x == 4
+assert c.y == 6
 
 # ─── BUG-N6: __str__ called by print ─────────────────────────────────────────
 print("\n--- __str__ method ---")
@@ -44,6 +49,7 @@ class Point {
 var p = Point(5, 10)
 print(p)           # Should print: Point(5, 10)
 print(str(p))      # Should print: Point(5, 10)
+assert str(p) == "Point(5, 10)"
 
 # ─── BUG-N1: Private member protection ───────────────────────────────────────
 print("\n--- Private members ---")
