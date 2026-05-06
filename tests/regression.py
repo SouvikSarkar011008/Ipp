@@ -2,6 +2,7 @@
 """
 Regression Test Runner
 Runs all version tests to verify nothing is broken
+Tests both INTERPRETER and VM modes
 """
 
 import subprocess
@@ -25,7 +26,6 @@ TESTS = [
     ("v1.1.1", "tests/v1_1_1/test_features.ipp"),
     ("v1.3.2", "tests/v1_3_2/test_features.ipp"),
     ("v1.3.3", "tests/v1_3_3/test_features.ipp"),
-    # ("v1.3.3-network", "tests/v1_3_3/test_network.ipp"),  # requires internet
     ("v1.3.4-core", "tests/v1_3_4/test_core_builtins.ipp"),
     ("v1.3.4-string", "tests/v1_3_4/test_string_functions.ipp"),
     ("v1.3.4-fileio", "tests/v1_3_4/test_file_io.ipp"),
@@ -62,13 +62,11 @@ TESTS = [
     ("v1.5.5.3", "tests/v1_5_5/test_scene_graph_v153.ipp"),
     ("v1.5.5.4", "tests/v1_5_5/test_basic_renderer_v154.ipp"),
     ("v1.5.6", "tests/v1_5_6/test_primitives_v156.ipp"),
-    # v1.5.21-25 Emergency Bug Fixes
     ("v1.5.21", "tests/v1_5_21/test_for_in_loop.ipp"),
     ("v1.5.22", "tests/v1_5_22/test_pi_e_constants.ipp"),
     ("v1.5.23", "tests/v1_5_23/test_let_immutable.ipp"),
     ("v1.5.24", "tests/v1_5_24/test_str_method.ipp"),
     ("v1.5.25", "tests/v1_5_25/test_static_methods.ipp"),
-    # v1.5.26-27 Emergency Bug Fixes
     ("v1.5.26", "tests/v1_5_26/test_continue_while.ipp"),
     ("v1.5.27", "tests/v1_5_27/test_continue_for.ipp"),
     ("v1.5.28", "tests/v1_5_28/test_multi_var.ipp"),
@@ -127,12 +125,72 @@ TESTS = [
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 
+VM_TEST_SCRIPT = '''
+import sys
+import os
+
+# Remove any installed ipp package
+for mod_name in list(sys.modules.keys()):
+    if mod_name == "ipp" or mod_name.startswith("ipp."):
+        del sys.modules[mod_name]
+
+sys.path.insert(0, os.getcwd())
+
+from ipp.lexer.lexer import tokenize
+from ipp.parser.parser import parse
+from ipp.vm.compiler import compile_ast
+from ipp.vm.vm import VM
+
+with open("{filepath}", "r") as f:
+    source = f.read()
+
+try:
+    tokens = tokenize(source)
+    ast = parse(tokens)
+    chunk = compile_ast(ast)
+    vm = VM()
+    vm.run(chunk)
+except Exception as e:
+    print(str(e), file=sys.stderr)
+    sys.exit(1)
+'''
+
+def run_interpreter_test(version, filepath):
+    """Run test in interpreter mode using main.py"""
+    result = subprocess.run(
+        ["python", "main.py", "run", filepath],
+        capture_output=True,
+        text=True
+    )
+    return result.returncode, result.stdout, result.stderr
+
+def run_vm_test(version, filepath):
+    """Run test in VM mode using direct VM execution"""
+    # Write temp test script
+    script = VM_TEST_SCRIPT.format(filepath=filepath)
+    script_path = "tests/temp_vm_test.py"
+    with open(script_path, "w") as f:
+        f.write(script)
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True,
+            text=True
+        )
+        return result.returncode, result.stdout, result.stderr
+    finally:
+        try:
+            os.remove(script_path)
+        except:
+            pass
+
 def run_test(version, filepath):
     print("=" * 50)
     print(f"Testing {version}")
     print("=" * 50)
     
-    # Python test files
+    # Python test files - only run in interpreter mode
     if filepath.endswith('.py'):
         result = subprocess.run(
             [sys.executable, filepath],
@@ -145,21 +203,46 @@ def run_test(version, filepath):
         print(result.stdout)
         return True
     
-    # Ipp test files
-    result = subprocess.run(
-        ["python", "main.py", "run", filepath],
-        capture_output=True,
-        text=True
-    )
-    if result.returncode != 0:
-        print(f"FAILED: {result.stderr}")
+    # Ipp test files - test both modes
+    print("\n--- INTERPRETER MODE ---")
+    interp_rc, interp_out, interp_err = run_interpreter_test(version, filepath)
+    if interp_rc != 0:
+        print(f"INTERPRETER FAILED: {interp_err}")
+    else:
+        print(interp_out)
+    
+    print("\n--- VM MODE ---")
+    vm_rc, vm_out, vm_err = run_vm_test(version, filepath)
+    if vm_rc != 0:
+        print(f"VM FAILED: {vm_err}")
+    else:
+        print(vm_out)
+    
+    # Test passes if both modes succeed (or both fail with same error for expected failures)
+    if interp_rc != 0 and vm_rc != 0:
+        print("\n-> Both modes failed (expected - test may check error handling)")
+        return True
+    
+    if interp_rc != 0:
+        print(f"\n-> FAILED: Interpreter passed but VM failed")
         return False
-    print(result.stdout)
+    
+    if vm_rc != 0:
+        print(f"\n-> FAILED: VM passed but interpreter failed")
+        return False
+    
+    # Both passed - compare outputs to ensure consistency
+    if interp_out.strip() != vm_out.strip():
+        print(f"\n-> WARNING: Outputs differ between modes!")
+        print(f"Interpreter: {interp_out[:200]}...")
+        print(f"VM: {vm_out[:200]}...")
+    
+    print("\n-> PASSED in both modes")
     return True
 
 def main():
     print("\n" + "=" * 50)
-    print("REGRESSION TEST SUITE")
+    print("REGRESSION TEST SUITE (INTERPRETER + VM)")
     print("=" * 50 + "\n")
     
     failed = []

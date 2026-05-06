@@ -43,6 +43,8 @@ class Parser:
             return self.enum_declaration()
         if self.match(TokenType.IMPORT):
             return self.import_declaration()
+        if self.match(TokenType.IDENTIFIER) and self.previous().lexeme == "assert":
+            return self.assert_statement()
         return self.statement()
 
     def class_declaration(self):
@@ -155,6 +157,18 @@ class Parser:
                          TokenType.BOOL, TokenType.VOID):
             return self.previous().lexeme
         return None
+
+    def assert_statement(self):
+        """Parse assert statement: assert condition [, message]"""
+        condition = self.expression()
+        
+        message = None
+        if self.match(TokenType.COMMA):
+            message = self.expression()
+        
+        stmt = AssertStmt(condition, message)
+        stmt.line = getattr(condition, 'line', 1)
+        return stmt
 
     def var_declaration(self):
         name = self.consume(TokenType.IDENTIFIER, "Expect variable name")

@@ -1450,10 +1450,15 @@ class Interpreter:
             self.return_value = node.value.accept(self)
         else:
             self.return_value = None
-        # Signal that execution should stop
         self._return_flag = True
-        # Signal that execution should stop
-        self._return_flag = True
+
+    def visit_assert_stmt(self, node: AssertStmt):
+        cond = node.condition.accept(self)
+        if not cond:
+            msg = "Assertion failed"
+            if node.message:
+                msg = node.message.accept(self)
+            raise RuntimeError(str(msg))
 
     def visit_break_stmt(self, node: BreakStmt):
         self.break_flag = True

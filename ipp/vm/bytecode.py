@@ -150,6 +150,9 @@ class OpCode(IntEnum):
     BREAK = 92
     CONTINUE = 93
 
+    # Assert statement (v1.7.9.1)
+    ASSERT = 94
+
 
 # ─── Operand size table (authoritative) ──────────────────────────────────────
 # Every opcode is exactly one of: 0-operand (size=1), 1-byte operand (size=2),
@@ -173,6 +176,7 @@ _SIZE1 = frozenset([
     OpCode.EXCEPTION, OpCode.WITH_ENTER, OpCode.DELETE_LOCAL, OpCode.DELETE_GLOBAL,
     OpCode.CLOSE_UPVALUE,
     OpCode.BREAK, OpCode.CONTINUE,
+    OpCode.ASSERT,
     OpCode.SUBCLASS, OpCode.END_IMPORT,
     # FIX BUG-2: GET_INDEX/SET_INDEX have no operand — they pop from stack
     OpCode.GET_INDEX, OpCode.SET_INDEX, OpCode.SET_INDEX_POP,

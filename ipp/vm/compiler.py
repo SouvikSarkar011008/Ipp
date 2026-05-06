@@ -170,6 +170,8 @@ class Compiler:
             self.compile_with(node)
         elif isinstance(node, ThrowStmt):
             self.compile_throw(node)
+        elif isinstance(node, AssertStmt):
+            self.compile_assert(node)
         elif isinstance(node, EnumDecl):
             self.compile_enum(node)   # FIX: BUG-CP4
         elif isinstance(node, LabeledStmt):
@@ -677,6 +679,12 @@ class Compiler:
     def compile_throw(self, node: ThrowStmt):
         self.compile_expr(node.expression)
         self.chunk.write(OpCode.THROW, self.current_line)
+
+    def compile_assert(self, node: AssertStmt):
+        self.compile_expr(node.condition)
+        if node.message:
+            self.compile_expr(node.message)
+        self.chunk.write(OpCode.ASSERT, self.current_line)
 
     def compile_with(self, node: WithStmt):
         self.push_scope()

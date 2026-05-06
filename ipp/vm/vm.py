@@ -1456,6 +1456,17 @@ class VM:
                 return _SUSPEND
             raise exc
 
+        elif opcode == OpCode.ASSERT:
+            has_message = len(self.stack) >= 2
+            if has_message:
+                msg = self.stack.pop()
+                cond = self.stack.pop()
+            else:
+                msg = "Assertion failed"
+                cond = self.stack.pop() if self.stack else None
+            if not self._is_truthy(cond):
+                raise VMError(str(msg))
+
         elif opcode == OpCode.TRY:
             offset = frame.chunk.read_int(ip + 1)
             target = ip + 4 + offset

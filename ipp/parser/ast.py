@@ -254,6 +254,13 @@ class LetDecl(ASTNode):
     def accept(self, visitor): return visitor.visit_let_decl(self)
 
 @dataclass
+class AssertStmt(ASTNode):
+    condition: ASTNode
+    message: Optional[ASTNode] = None
+    line: int = 0
+    def accept(self, visitor): return visitor.visit_assert_stmt(self)
+
+@dataclass
 class FunctionDecl(ASTNode):
     name: str
     parameters: List[str]
