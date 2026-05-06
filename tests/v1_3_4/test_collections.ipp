@@ -10,11 +10,15 @@ s.add(4)
 print(s)
 print(s.contains(3))
 print(s.contains(5))
+assert s.contains(3) == true
+assert s.contains(5) == false
 s.remove(2)
 print(s)
 print(s.len())
+assert s.len() == 3
 s.clear()
 print(s.len())
+assert s.len() == 0
 
 # ====== Deque Tests ======
 print("\n--- Deque Tests ---")
@@ -28,6 +32,9 @@ print(dq.len())
 var popped = dq.pop_front()
 print("Popped:", popped)
 print(dq)
+assert dq.front() == 2
+assert dq.back() == 4
+assert popped == 1
 
 # ====== Ordered Dict Tests ======
 print("\n--- Ordered Dict Tests ---")

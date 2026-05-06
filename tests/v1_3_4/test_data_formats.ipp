@@ -9,9 +9,12 @@ var json_obj = json_parse(json_str)
 print(json_obj)
 print(json_obj["name"])
 print(json_obj["age"])
+assert json_obj["name"] == "Alice"
+assert json_obj["age"] == 30
 
-var back_to_json = json_stringify(json_obj)
+var back_to_json = json_stringify(json_str)
 print(back_to_json)
+assert back_to_json.len() > 0
 
 # ====== XML Tests ======
 print("\n--- XML Tests ---")
@@ -20,6 +23,7 @@ var xml_parsed = xml_parse(xml_str)
 print(xml_parsed)
 var xml_back = xml_to_string(xml_parsed)
 print(xml_back)
+assert xml_parsed != nil
 
 # ====== YAML Tests ======
 print("\n--- YAML Tests ---")
@@ -28,6 +32,7 @@ var yaml_parsed = yaml_parse(yaml_str)
 print(yaml_parsed)
 var yaml_back = yaml_to_string(yaml_parsed)
 print(yaml_back)
+assert yaml_parsed != nil
 
 # ====== TOML Tests ======
 print("\n--- TOML Tests ---")

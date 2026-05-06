@@ -13,4 +13,5 @@ var b = Bag()
 print("Before len call")
 var x = len(b)
 print("After len call, result: " + str(x))
+assert x == 0
 print("Test passed!")

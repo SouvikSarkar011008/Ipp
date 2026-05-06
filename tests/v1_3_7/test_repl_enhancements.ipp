@@ -10,6 +10,7 @@ print("When loaded via .load, variables should persist in session")
 
 var test_value = 42
 print("test_value:", test_value)
+assert test_value == 42
 
 # ====== .save Test ======
 print("\n--- .save Test ---")
@@ -19,6 +20,9 @@ print("Save command should write history to file")
 print("\n--- .doc Test ---")
 print("Doc command should show builtin documentation")
 print("Available builtins:", type(print), type(len), type(type))
+assert type(print) != nil
+assert type(len) != nil
+assert type(type) != nil
 
 # ====== .time Test ======
 print("\n--- .time Test ---")
@@ -28,6 +32,8 @@ for i in 0..1000 {
     sum = sum + i
 }
 var elapsed = time() - start
+print("Sum:", sum, "Time:", elapsed)
+assert sum == 500500
 print("Sum 0..999:", sum)
 print("Elapsed:", elapsed, "seconds")
 

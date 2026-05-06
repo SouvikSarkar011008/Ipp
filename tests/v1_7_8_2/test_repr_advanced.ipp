@@ -11,5 +11,7 @@ class Person {
 }
 
 var p = Person("Alice", 30)
-print("Person repr: " + repr(p))
+var r = repr(p)
+print("Person repr: " + r)
+assert r == "Person(Alice, 30)"
 print("Test passed!")
