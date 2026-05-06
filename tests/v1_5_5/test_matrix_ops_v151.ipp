@@ -6,6 +6,7 @@ print("=== Testing v1.5.5.1 Matrix Operations ===")
 print("\n--- Test 1: mat4_perspective ---")
 var proj = mat4_perspective(60, 1.5, 0.1, 100)
 print("Perspective matrix created")
+assert proj != nil, "mat4_perspective works"
 
 # Test 2: mat4_look_at
 print("\n--- Test 2: mat4_look_at ---")
@@ -14,21 +15,25 @@ var target = vec3(0, 0, 0)
 var up = vec3(0, 1, 0)
 var view = mat4_look_at(eye, target, up)
 print("LookAt view matrix created")
+assert view != nil, "mat4_look_at works"
 
 # Test 3: mat4_translate
 print("\n--- Test 3: mat4_translate ---")
 var t = mat4_translate(1, 2, 3)
 print("Translation matrix created")
+assert t != nil, "mat4_translate works"
 
 # Test 4: mat4_rotate
 print("\n--- Test 4: mat4_rotate ---")
 var r = mat4_rotate(90, vec3(0, 1, 0))
 print("Rotation 90deg around Y axis")
+assert r != nil, "mat4_rotate works"
 
 # Test 5: mat4_scale
 print("\n--- Test 5: mat4_scale ---")
 var s = mat4_scale(2, 2, 2)
 print("Scale matrix created")
+assert s != nil, "mat4_scale works"
 
 # Test 6: Combined transformations
 print("\n--- Test 6: Combined Transformations ---")
@@ -37,10 +42,12 @@ var mt = mat4_multiply(m, mat4_translate(5, 0, 0))
 var mr = mat4_multiply(mt, mat4_rotate(45, vec3(0, 1, 0)))
 var ms = mat4_multiply(mr, mat4_scale(1.5, 1.5, 1.5))
 print("Combined transform created")
+assert ms != nil, "Combined transforms work"
 
 # Test 7: Basic functionality
 print("\n--- Test 7: Basic Functionality ---")
 print("sum([1,2,3]) = " + str(sum([1, 2, 3])))
+assert sum([1, 2, 3]) == 6, "sum works"
 
 print("\n=== v1.5.5.1 Tests Complete ===")
 print("New in v1.5.5.1:")

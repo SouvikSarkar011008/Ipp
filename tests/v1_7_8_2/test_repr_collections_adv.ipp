@@ -19,4 +19,5 @@ t.add("Bob")
 t.add("Charlie")
 
 print("Team repr: " + repr(t))
+assert "Team(Developers, 3 members)" == repr(t), "Object with list __repr__ works"
 print("Test passed!")

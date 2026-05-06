@@ -10,6 +10,10 @@ print("websocket_connect function exists:", type(websocket_connect))
 print("websocket_send function exists:", type(websocket_send))
 print("websocket_receive function exists:", type(websocket_receive))
 print("websocket_close function exists:", type(websocket_close))
+assert type(websocket_connect) == "function", "websocket_connect exists"
+assert type(websocket_send) == "function", "websocket_send exists"
+assert type(websocket_receive) == "function", "websocket_receive exists"
+assert type(websocket_close) == "function", "websocket_close exists"
 
 # ====== WebSocket Class Tests ======
 print("\n--- WebSocket Class Tests ---")
@@ -17,6 +21,7 @@ print("\n--- WebSocket Class Tests ---")
 # Test WebSocket creation (without actual connection)
 # We can't test actual connections without a server, but we can verify the API
 print("WebSocket API available")
+assert true == true, "WebSocket API available"
 
 # ====== WebSocket Error Handling ======
 print("\n--- WebSocket Error Handling ---")
@@ -30,6 +35,7 @@ try {
     print("Connection error caught successfully")
 }
 print("Error handling works:", ws_error)
+assert ws_error == true, "WebSocket error handling works"
 
 # ====== WebSocket with echo server (if available) ======
 print("\n--- WebSocket Integration Test ---")

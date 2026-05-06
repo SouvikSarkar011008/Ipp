@@ -9,15 +9,19 @@ var x = 10
 var y = 20
 print("x = " + str(x))
 print("y = " + str(y))
+assert x == 10, "Variable assignment works"
+assert y == 20, "Variable assignment works"
 
 func add(a, b) {
     return a + b
 }
 
 print("add(5, 3) = " + str(add(5, 3)))
+assert add(5, 3) == 8, "Function works"
 
 var nums = [1, 2, 3, 4, 5]
 print("List length: " + str(len(nums)))
+assert len(nums) == 5, "List length works"
 
 # Canvas operations - these work in the REPL with Tkinter
 # Uncomment to test in REPL:

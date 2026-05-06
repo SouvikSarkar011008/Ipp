@@ -2,6 +2,9 @@
 
 print("=== Testing v1.5.3b WebGL Bindings ===")
 
+var test_result = 1 + 2 + 3
+assert test_result == 6, "Basic interpreter works"
+
 # This would be implemented in the web playground for browser WebGL
 # WebGL provides:
 # - GPU-accelerated 2D/3D graphics

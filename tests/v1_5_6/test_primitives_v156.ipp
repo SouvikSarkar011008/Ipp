@@ -6,16 +6,19 @@ print("=== Testing v1.5.6 3D Primitives ===")
 print("\n--- Test 1: mesh_cube ---")
 var c = mesh_cube(2)
 print("Cube: " + str(c))
+assert c != nil, "mesh_cube works"
 
 # Test 2: mesh_sphere
 print("\n--- Test 2: mesh_sphere ---")
 var s = mesh_sphere(1, 8, 4)
 print("Sphere: " + str(s))
+assert s != nil, "mesh_sphere works"
 
 # Test 3: mesh_plane
 print("\n--- Test 3: mesh_plane ---")
 var p = mesh_plane(4, 3)
 print("Plane: " + str(p))
+assert p != nil, "mesh_plane works"
 
 # Test 4: Use in scene
 print("\n--- Test 4: Scene with Primitives ---")
@@ -27,10 +30,12 @@ scene.add(c)
 scene.add(s)
 scene.add(p)
 print("Scene with 3 primitives: " + str(scene.render()))
+assert scene.render() != nil, "scene render works"
 
 # Test 5: Basic functionality
 print("\n--- Test 5: Basic Functionality ---")
 print("sum([1,2,3]) = " + str(sum([1, 2, 3])))
+assert sum([1, 2, 3]) == 6, "sum works"
 
 print("\n=== v1.5.6 Tests Complete ===")
 print("New in v1.5.6:")

@@ -13,4 +13,5 @@ print("Trying len on class without __len__:")
 # Note: In current implementation, this will raise error in VM mode
 # but in interpreter it may fall through to Python's len
 
+assert nl.get() == 42, "Class method works"
 print("Default __len__ test passed!")

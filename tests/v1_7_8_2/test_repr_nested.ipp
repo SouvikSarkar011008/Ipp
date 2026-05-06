@@ -25,4 +25,6 @@ var emp = Employee("Bob", addr)
 
 print("Employee repr: " + repr(emp))
 print("Address repr: " + repr(addr))
+assert repr(addr) == "123 Main, Boston", "Address repr works"
+assert "Bob lives at" in repr(emp), "Employee repr works"
 print("Test passed!")
