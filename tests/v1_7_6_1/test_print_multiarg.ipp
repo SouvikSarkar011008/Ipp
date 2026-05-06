@@ -17,4 +17,9 @@ print("hello")
 print(42)
 print(nil)
 
+# Verify values
+assert x == 42
+assert name == "Alice"
+assert (1 + 2) == 3
+
 print("v1.7.6.1: print multiarg tests PASSED")
