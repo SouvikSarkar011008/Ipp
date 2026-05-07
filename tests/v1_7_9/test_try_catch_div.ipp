@@ -12,6 +12,6 @@ try {
 }
 
 assert caught == true
-assert error_msg.contains("Division") == true or error_msg.contains("zero") == true
+assert contains(error_msg, "Division") == true or contains(error_msg, "zero") == true
 
 print("Test passed!")
