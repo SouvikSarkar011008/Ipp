@@ -1042,15 +1042,24 @@ class Compiler:
         # Compile iterator first
         self.compile_expr(node.iterator)
         list_slot = self.define_local("__src_list")
+        # Store the iterator result to list_slot
+        self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+        self.chunk.write(list_slot, self.current_line)
         
         # Empty result list
         self.chunk.write(OpCode.LIST, self.current_line)
         self.chunk.write(0, self.current_line)
         result_slot = self.define_local("__result")
+        # Store the empty list to result_slot
+        self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+        self.chunk.write(result_slot, self.current_line)
         
         # idx = 0
         self.chunk.add_constant(0, self.current_line)
         idx_slot = self.define_local("__idx")
+        # Store initial idx value
+        self.chunk.write(OpCode.SET_LOCAL, self.current_line)
+        self.chunk.write(idx_slot, self.current_line)
         
         # DEFINE loop variable ONCE before loop
         var_slot = self.define_local(node.variable)
@@ -1121,7 +1130,7 @@ class Compiler:
         self.chunk.emit_loop(loop_start, self.current_line)
         self.chunk.patch_jump(exit_jump)
         
-        # Return result
+        # Return result - get from local before popping scope
         self.chunk.write(OpCode.GET_LOCAL, self.current_line)
         self.chunk.write(result_slot, self.current_line)
         
