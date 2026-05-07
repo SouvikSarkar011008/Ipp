@@ -525,6 +525,47 @@ class VM:
             # Logging
             'logger': self._builtin_logger,
         })
+        
+        # Add missing builtins from interpreter's BUILTINS
+        missing_builtins = [
+            'http_get', 'http_post', 'http_put', 'http_delete', 'http_request', 'http_serve',
+            'websocket_connect', 'websocket_send', 'websocket_receive', 'websocket_close',
+            'deque', 'datetime', 'datetime_create', 'seed', 'is_coroutine',
+            'PriorityQueue', 'Tree', 'Graph',
+            'map_range', 'vec3', 'vec2',
+            'mat4_look_at', 'mat4_translate', 'mat4_rotate', 'mat4_scale', 'mat4_multiply',
+            'mat4_perspective', 'quat_from_axis_angle', 'quat_multiply', 'quat_slerp', 'quat_to_mat4',
+            'scene', 'node', 'camera', 'mesh', 'light',
+            'mesh_cube', 'mesh_sphere', 'mesh_plane',
+        ]
+        
+        for name in missing_builtins:
+            if name in _INTERP_BUILTINS:
+                self.globals[name] = _INTERP_BUILTINS[name]
+            else:
+                # Add placeholder for missing builtins that might not be in BUILTINS dict
+                pass
+        
+        # Add even more missing builtins
+        more_missing = [
+            'distance', 'distance_3d', 'normalize', 'normalize_3d',
+            'normal', 'ordict',
+        ]
+        
+        for name in more_missing:
+            if name in _INTERP_BUILTINS:
+                self.globals[name] = _INTERP_BUILTINS[name]
+        
+        # Add path functions and more math
+        path_and_math = [
+            'path_dirname', 'path_basename', 'path_join',
+            'dot', 'dot_3d',
+            'now',
+        ]
+        
+        for name in path_and_math:
+            if name in _INTERP_BUILTINS:
+                self.globals[name] = _INTERP_BUILTINS[name]
 
     # ─── Built-in helpers ─────────────────────────────────────────────────────
 

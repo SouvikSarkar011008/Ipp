@@ -249,6 +249,93 @@ def visible_len(s):
 def pad_to(s, width):
     return s + ' ' * max(0, width - visible_len(s))
 
+# ─── Interactive Tutorial ───────────────────────────────────────────────────────
+_tutorial_steps = [
+    {
+        "title": "Variables",
+        "desc": "Store values with var (mutable) and let (immutable)",
+        "example": "var x = 10\nlet name = \"Alice\"\nx = 20  # Change var\nprint(x)",
+        "hint": "Try creating a variable with var or let"
+    },
+    {
+        "title": "Data Types",
+        "desc": "Numbers, strings, booleans, and nil",
+        "example": "var num = 42\nvar text = \"Hello\"\nvar flag = true\nvar empty = nil\nprint(type(num))",
+        "hint": "Try different data types"
+    },
+    {
+        "title": "Lists",
+        "desc": "Ordered collections of values",
+        "example": "var nums = [1, 2, 3, 4, 5]\nprint(nums[0])  # First element\nprint(len(nums))  # Length\nnums.append(6)  # Add element",
+        "hint": "Create a list and access elements"
+    },
+    {
+        "title": "Dictionaries",
+        "desc": "Key-value pairs",
+        "example": "var person = {\"name\": \"Alice\", \"age\": 30}\nprint(person[\"name\"])\nperson[\"city\"] = \"NYC\"\nprint(keys(person))",
+        "hint": "Create a dictionary and access values"
+    },
+    {
+        "title": "Functions",
+        "desc": "Reusable code blocks",
+        "example": "func greet(name) {\n    return \"Hello, \" + name + \"!\"\n}\nprint(greet(\"World\"))",
+        "hint": "Define a function with func"
+    },
+    {
+        "title": "Control Flow",
+        "desc": "If/else, loops, and match",
+        "example": "var x = 5\nif x > 10 {\n    print(\"big\")\n} else {\n    print(\"small\")\n}\n\nfor i in 0..3 {\n    print(i)\n}",
+        "hint": "Try an if statement or for loop"
+    },
+    {
+        "title": "Classes",
+        "desc": "Object-oriented programming",
+        "example": "class Dog {\n    func init(name) {\n        this.name = name\n    }\n    func bark() {\n        return this.name + \" says woof!\"\n    }\n}\nvar dog = Dog(\"Rex\")\nprint(dog.bark())",
+        "hint": "Create a class with methods"
+    },
+    {
+        "title": "Error Handling",
+        "desc": "Try/catch for handling errors",
+        "example": "try {\n    var result = 10 / 0\n} catch e {\n    print(\"Error: \" + e)\n}\nprint(\"Program continues\")",
+        "hint": "Wrap code in try/catch"
+    }
+]
+
+_tutorial_step = 0
+_tutorial_mode = False
+
+def _run_tutorial_step():
+    global _tutorial_step, _tutorial_mode
+    if _tutorial_step >= len(_tutorial_steps):
+        print()
+        print(f"  {colour(C_OK, '✓ Tutorial Complete!')}")
+        print(f"  {colour(DIM, 'You learned the basics of Ipp. Keep practicing!')}")
+        print()
+        print(f"  {colour(C_CMD, 'Next steps:')}")
+        print(f"    - Try .examples for more code samples")
+        print(f"    - Try .help for all commands")
+        print(f"    - Explore built-in functions with .builtins")
+        global _tutorial_mode
+        _tutorial_mode = False
+        _tutorial_step = 0
+        return
+    
+    step = _tutorial_steps[_tutorial_step]
+    print()
+    print(f"  {colour(C_CMD, '═' * 50)}")
+    print(f"  {colour(C_CMD, f'Lesson {_tutorial_step + 1}/8: {step['title']}')}")
+    print(f"  {colour(C_CMD, '═' * 50)}")
+    print()
+    print(f"  {colour(DIM, step['desc'])}")
+    print()
+    print(f"  {colour(C_CMD, 'Example:')}")
+    for line in step['example'].split('\n'):
+        print(f"    {colour(C_KW, line)}")
+    print()
+    print(f"  {colour(C_WARN, '➤ ' + step['hint'])}")
+    print()
+    print(f"  {colour(DIM, 'Commands: .tutorial next | .tutorial prev | .tutorial end')}")
+
 # ─── Syntax highlighter ───────────────────────────────────────────────────────
 _KEYWORDS = frozenset([
     "var","let","func","class","if","else","elif","for","while",
@@ -708,6 +795,9 @@ def print_help():
         (".search <kw>",    "Search builtin documentation"),
         (".examples",       "Show interactive code examples"),
         (".tutorial",       "Start interactive tutorial"),
+        (".tutorial next",   "Next lesson"),
+        (".tutorial prev",   "Previous lesson"),
+        (".tutorial end",   "Exit tutorial"),
         (".plugin load f",  "Load plugin file"),
         (".debug start",    "Start step-through debugger"),
         (".debug stop",     "Stop debugger"),
@@ -1508,6 +1598,16 @@ def run_repl():
                     print(f"  {colour(DIM, '(nothing to undo)')}")
                 continue
 
+            # .alias — List all aliases
+            if stripped == '.alias':
+                if not _aliases:
+                    print(f"  {colour(DIM, '(no aliases defined)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Aliases:')}")
+                    for name, cmd in _aliases.items():
+                        print(f"  {colour(DIM, f'.{name}')} → {cmd}")
+                continue
+
             # .alias <name> <cmd> — Create custom REPL command alias
             m = re.match(r'\.alias\s+(\w+)\s+(.+)$', stripped)
             if m:
@@ -1753,17 +1853,44 @@ def run_repl():
                             obj = env.values[var_name]; break
                         env = getattr(env, 'parent', None)
                     
-                    if obj and isinstance(obj, list) and obj and isinstance(obj[0], dict):
-                        # Print table header
-                        headers = list(obj[0].keys())
-                        col_widths = {h: max(len(h), max(len(str(row.get(h, ''))) for row in obj)) for h in headers}
+                    from ipp.interpreter.interpreter import IppList, IppDict
+                    is_valid = False
+                    list_obj = None
+                    
+                    if obj:
+                        if isinstance(obj, list) and obj and isinstance(obj[0], dict):
+                            list_obj = obj
+                            is_valid = True
+                        elif isinstance(obj, IppList) and len(obj.elements) > 0:
+                            first_elem = obj.elements[0]
+                            if isinstance(first_elem, dict) or isinstance(first_elem, IppDict):
+                                list_obj = obj.elements
+                                is_valid = True
+                    
+                    if is_valid and list_obj:
+                        first_row = list_obj[0]
+                        if isinstance(first_row, IppDict):
+                            headers = list(first_row.data.keys())
+                        elif isinstance(first_row, dict):
+                            headers = list(first_row.keys())
+                        else:
+                            headers = []
                         
-                        header_line = ' | '.join(h.ljust(col_widths[h]) for h in headers)
+                        def get_cell(row, key):
+                            if isinstance(row, IppDict):
+                                return str(row.data.get(key, ''))
+                            elif isinstance(row, dict):
+                                return str(row.get(key, ''))
+                            return ''
+                        
+                        col_widths = {h: max(len(str(h)), max(len(get_cell(row, h)) for row in list_obj)) for h in headers}
+                        
+                        header_line = ' | '.join(str(h).ljust(col_widths[h]) for h in headers)
                         print(f"  {colour(C_CMD, header_line)}")
                         print(f"  {'-' * len(header_line)}")
                         
-                        for row in obj:
-                            row_line = ' | '.join(str(row.get(h, '')).ljust(col_widths[h]) for h in headers)
+                        for row in list_obj:
+                            row_line = ' | '.join(get_cell(row, h).ljust(col_widths[h]) for h in headers)
                             print(f"  {row_line}")
                     else:
                         print(f"  {colour(C_WARN, f'{var_name} is not a list of dicts')}")
@@ -1859,7 +1986,6 @@ def run_repl():
                 continue
 
             # .bg <expr> — Run in background
-            _bg_jobs = []  # Add this at the top of the file
             m = re.match(r'\.bg\s+(.+)$', stripped)
             if m:
                 expr = m.group(1)
@@ -1994,22 +2120,49 @@ func __async_task__() {{
                     print(f"  {colour(C_ERROR, str(e))}")
                 continue
 
+            # .tutorial commands - declare global first
+            if stripped == '.tutorial' or stripped == '.tutorial next' or stripped == '.tutorial prev' or stripped == '.tutorial end':
+                global _tutorial_step, _tutorial_mode
+
             # .tutorial — Start interactive tutorial
             if stripped == '.tutorial':
-                print(f"  {colour(C_CMD, 'Ipp Interactive Tutorial')}")
-                print(f"  {colour(DIM, 'Learn Ipp step by step!')}")
-                print()
-                print(f"  1. Variables: {colour(C_KW, 'var x = 10')}")
-                print(f"  2. Functions: {colour(C_KW, 'func add(a, b) { return a + b }')}")
-                print(f"  3. Lists: {colour(C_KW, 'var nums = [1, 2, 3]')}")
-                _s4 = 'var person = {"name": "Alice"}'
-                print(f"  4. Dicts: {colour(C_KW, _s4)}")
-                print(f"  5. Loops: {colour(C_KW, 'for i in 0..5 { print(i) }')}")
-                _s6 = 'class Dog { func init() { this.name = "rex" } }'
-                print(f"  6. Classes: {colour(C_KW, _s6)}")
-                print()
-                print(f"  {colour(DIM, 'Try each example in the REPL!')}")
+                _tutorial_mode = True
+                _tutorial_step = 0
+                _run_tutorial_step()
                 continue
+
+            # .tutorial next — Next tutorial step
+            if stripped == '.tutorial next':
+                if _tutorial_mode:
+                    _tutorial_step += 1
+                    _run_tutorial_step()
+                else:
+                    print(f"  {colour(C_WARN, 'Start with .tutorial first')}")
+                continue
+
+            # .tutorial prev — Previous tutorial step
+            if stripped == '.tutorial prev':
+                if _tutorial_mode:
+                    _tutorial_step = max(0, _tutorial_step - 1)
+                    _run_tutorial_step()
+                else:
+                    print(f"  {colour(C_WARN, 'Start with .tutorial first')}")
+                continue
+
+            # .tutorial end — Exit tutorial
+            if stripped == '.tutorial end':
+                _tutorial_mode = False
+                _tutorial_step = 0
+                print(f"  {colour(C_OK, 'Tutorial ended. Happy coding!')}")
+                continue
+
+            # Handle tutorial mode input
+            if _tutorial_mode:
+                if stripped.startswith('.'):
+                    print(f"  {colour(C_WARN, 'In tutorial mode. Try the code or use .tutorial next/prev/end')}")
+                else:
+                    # Execute user code and continue
+                    pass
 
             # .plugin load <file> — Load plugin
             m = re.match(r'\.plugin\s+load\s+(.+)$', stripped)
@@ -2431,6 +2584,16 @@ func __async_task__() {{
                         print(f"  {colour(C_WARN, 'No checkpoints saved')}")
                 except Exception as e:
                     print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .macro — List all macros
+            if stripped == '.macro':
+                if not _macros:
+                    print(f"  {colour(DIM, '(no macros defined)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Macros:')}")
+                    for name, expansion in _macros.items():
+                        print(f"  {colour(DIM, f'{name}')} → {expansion}")
                 continue
 
             # .macro <name> <expansion> — Define macro
