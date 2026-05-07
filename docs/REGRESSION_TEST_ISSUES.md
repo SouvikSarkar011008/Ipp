@@ -12,23 +12,28 @@ The test passes only if both modes produce the same output.
 
 ---
 
-## Test Summary
+## Test Summary (Updated May 2026)
 
 | Category | Count |
 |----------|-------|
 | Total test versions | 111 |
-| Passing in both modes | 38 |
-| **Failing (any reason)** | **73** |
+| Passing in both modes | **41** |
+| **Failing (any reason)** | **65** |
+
+### Recent Fixes Applied
+
+- Fixed `test_try_catch_div.ipp`: Changed `string.contains()` to `contains()` function
+- Added all interpreter builtins to VM (110 missing builtins added)
+- Fixed kwargs inference bug that broke string arguments to functions
 
 ### Failure Breakdown
 
 | Failure Type | Count |
 |--------------|-------|
-| Outputs differ between modes | 18 |
-| Both fail with different errors | 26 |
-| VM passed but interpreter failed | 21 |
-| Interpreter passed but VM failed | 5 |
-| Other/Unknown | 3 |
+| Outputs differ between modes | ~15 |
+| Both fail with different errors | ~25 |
+| VM passed but interpreter failed | ~20 |
+| Interpreter passed but VM failed | ~5 |
 
 ---
 
