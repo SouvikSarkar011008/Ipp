@@ -374,6 +374,7 @@ class Interpreter:
         self.break_flag = False
         self.continue_flag = False
         self.current_line = 0
+        self.current_file = None
         self.call_stack = []
         self.call_depth = 0
         self.max_depth = max_depth

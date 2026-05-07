@@ -304,6 +304,11 @@ _tutorial_steps = [
 _tutorial_step = 0
 _tutorial_mode = False
 
+def _advance_tutorial():
+    global _tutorial_step, _tutorial_mode
+    _tutorial_step += 1
+    _run_tutorial_step()
+
 def _run_tutorial_step():
     global _tutorial_step, _tutorial_mode
     if _tutorial_step >= len(_tutorial_steps):
@@ -2723,6 +2728,12 @@ func __async_task__() {{
                 _last_results.append((len(_last_results) + 1, result_val))
                 if len(_last_results) > 100:
                     _last_results.pop(0)
+            
+            # Auto-advance tutorial after any successful code execution
+            if _tutorial_mode:
+                print()
+                print(f"  {colour(C_OK, '✓ Good! Moving to next lesson...')}")
+                _advance_tutorial()
         except KeyboardInterrupt:
             # Ctrl+C during execution - exit immediately
             print(f"\n  {colour(C_OK, 'Goodbye!')}")
