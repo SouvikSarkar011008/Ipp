@@ -402,11 +402,10 @@ class Compiler:
             self.chunk.lines.append(self.current_line)
 
     def compile_enum(self, node: EnumDecl):
-        """FIX: BUG-CP4 — actually compile enums."""
-        # Emit a dict constant { "VALUE": index, ... }
-        for i, val in enumerate(node.values):
+        """BUG-10 fix: enum values are the member name string, not integer index."""
+        for val in node.values:
             self.chunk.add_constant(val, self.current_line)
-            self.chunk.add_constant(i, self.current_line)
+            self.chunk.add_constant(val, self.current_line)  # name→name, not name→index
         self.chunk.write(OpCode.DICT, self.current_line)
         self.chunk.write(len(node.values), self.current_line)
         self.chunk.write(OpCode.DEFINE_GLOBAL, self.current_line)
@@ -422,6 +421,19 @@ class Compiler:
         self.chunk.write(cidx & 0xFF, self.current_line)
         self.chunk.write((cidx >> 8) & 0xFF, self.current_line)
         self.chunk.write((cidx >> 16) & 0xFF, self.current_line)
+        # Store alias info in constants so VM can create the alias dict
+        alias = getattr(node, 'alias', None)
+        names = getattr(node, 'names', None)  # selective import: import "m" as {a, b}
+        alias_cidx = len(self.chunk.constants)
+        self.chunk.constants.append(alias)
+        self.chunk.write(alias_cidx & 0xFF, self.current_line)
+        self.chunk.write((alias_cidx >> 8) & 0xFF, self.current_line)
+        self.chunk.write((alias_cidx >> 16) & 0xFF, self.current_line)
+        names_cidx = len(self.chunk.constants)
+        self.chunk.constants.append(names)
+        self.chunk.write(names_cidx & 0xFF, self.current_line)
+        self.chunk.write((names_cidx >> 8) & 0xFF, self.current_line)
+        self.chunk.write((names_cidx >> 16) & 0xFF, self.current_line)
         self.chunk.write(OpCode.END_IMPORT, self.current_line)
 
     # ─── Control flow ─────────────────────────────────────────────────────────
@@ -493,6 +505,7 @@ class Compiler:
             'break_jumps': [],
             'continue_target': None,
             'continue_jumps': [],
+            'base_local_count': len(self.locals),  # for stack cleanup on continue/break
         })
 
         # bounds check: idx < len(list)
@@ -525,12 +538,19 @@ class Compiler:
             self.chunk.write(OpCode.POP, self.current_line)
 
         # body
+        self.push_scope()   # inner scope for body locals
         for stmt in node.body:
             self.compile_stmt(stmt)
+        self._emit_scope_pops()      # clean up body-local vars before idx++
+        self._pop_scope_no_emit()    # remove from tracking without double-emit
 
-        # FIX v1.5.27: Set continue_target BEFORE idx++ section (so compile_continue can emit LOOP)
+        # BUG-21/27: Set continue_target BEFORE idx++ so continue patches here
         continue_target = len(self.chunk.code)
         self.loop_stack[-1]['continue_target'] = continue_target
+        # Patch all forward continue jumps now that target is known
+        for cont in self.loop_stack[-1]['continue_jumps']:
+            self.chunk.patch_jump(cont)
+        self.loop_stack[-1]['continue_jumps'] = []  # already patched
 
         # idx += 1
         self.chunk.write(OpCode.GET_LOCAL, self.current_line)
@@ -547,7 +567,9 @@ class Compiler:
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
             self.chunk.patch_jump(brk)
-        # No special patch needed - compile_continue now checks continue_target before body
+        # BUG-21: patch any forward continue jumps to the idx++ continue_target
+        for cont in loop_info['continue_jumps']:
+            self.chunk.patch_jump(cont)
 
         self.pop_scope()
 
@@ -560,6 +582,7 @@ class Compiler:
             'break_jumps': [],
             'continue_target': loop_start,
             'continue_jumps': [],
+            'base_local_count': len(self.locals),
         })
 
         self.compile_expr(node.condition)
@@ -568,15 +591,34 @@ class Compiler:
         for stmt in node.body:
             self.compile_stmt(stmt)
 
+        # BUG-11/22: emit POPs for body-scope locals BEFORE the backward jump
+        # so they are reachable and the stack stays correct on every iteration
+        self._emit_scope_pops()
+
         self.chunk.emit_loop(loop_start, self.current_line)
         self.chunk.patch_jump(exit_jump)
 
         loop_info = self.loop_stack.pop()
         for brk in loop_info['break_jumps']:
             self.chunk.patch_jump(brk)
-        # No patch needed for continue - compile_continue emits LOOP directly
 
-        self.pop_scope()
+        # pop_scope without re-emitting pops (already done above)
+        self._pop_scope_no_emit()
+
+    def _emit_scope_pops(self):
+        """Emit POP/CLOSE_UPVALUE for locals at current depth WITHOUT removing them yet."""
+        for local in reversed(self.locals):
+            if local.depth == self.depth:
+                if local.is_captured:
+                    self.chunk.write(OpCode.CLOSE_UPVALUE, self.current_line)
+                else:
+                    self.chunk.write(OpCode.POP, self.current_line)
+
+    def _pop_scope_no_emit(self):
+        """Remove locals at current depth from tracking without emitting POPs."""
+        while self.locals and self.locals[-1].depth == self.depth:
+            self.locals.pop()
+        self.depth -= 1
 
     def compile_do_while(self, node: DoWhileStmt):
         self.push_scope()
@@ -601,6 +643,12 @@ class Compiler:
             exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_TRUE_POP, self.current_line)
         else:
             exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
+<<<<<<< HEAD
+
+        # BUG-22: emit scope pops before backward jump so they're reachable each iteration
+        self._emit_scope_pops()
+=======
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
 
         self.chunk.emit_loop(loop_start, self.current_line)
         self.chunk.patch_jump(exit_jump)
@@ -610,7 +658,7 @@ class Compiler:
             self.chunk.patch_jump(brk)
         for cont in loop_info['continue_jumps']:
             self.chunk.patch_jump(cont)
-        self.pop_scope()
+        self._pop_scope_no_emit()
 
     def compile_match(self, node: MatchStmt):
         # FIX: BUG-C4 — use node.subject
@@ -659,20 +707,28 @@ class Compiler:
     def compile_break(self, node: BreakStmt = None):
         if not self.loop_stack:
             self.error("'break' outside of loop")
+        loop_info = self.loop_stack[-1]
+        # Pop any locals declared inside the loop body since the loop started
+        base = loop_info.get('base_local_count', 0)
+        excess = len(self.locals) - base
+        for _ in range(excess):
+            self.chunk.write(OpCode.POP, self.current_line)
         jump = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
         self.loop_stack[-1]['break_jumps'].append(jump)
 
     def compile_continue(self, node: ContinueStmt = None):
-        # FIX v1.5.26: emit LOOP (backward jump) directly instead of forward JUMP
         if not self.loop_stack:
             self.error("'continue' outside of loop")
         loop_info = self.loop_stack[-1]
+        # Pop any locals declared inside the loop body since the loop started
+        base = loop_info.get('base_local_count', 0)
+        excess = len(self.locals) - base
+        for _ in range(excess):
+            self.chunk.write(OpCode.POP, self.current_line)
         continue_target = loop_info.get('continue_target')
         if continue_target is not None:
-            # Direct backward jump - no patching needed
             self.chunk.emit_loop(continue_target, self.current_line)
         else:
-            # For-in loop - need to emit forward jump and patch later
             jump = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
             self.loop_stack[-1]['continue_jumps'].append(jump)
 
@@ -900,6 +956,9 @@ class Compiler:
             self.chunk.write(OpCode.SPREAD, self.current_line)
 
     def compile_identifier(self, name: str):
+        # Treat "this" as alias for "self" (slot 0)
+        if name == "this":
+            name = "self"
         # FIX BUG-NEW-M5: check upvalue chain before falling back to globals
         idx = self.resolve_local(name)
         if idx is not None:

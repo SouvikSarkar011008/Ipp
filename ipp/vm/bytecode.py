@@ -219,7 +219,6 @@ _SIZE4 = frozenset([
     OpCode.LOOP,
     OpCode.TRY, OpCode.CATCH,
     OpCode.MATCH,
-    OpCode.IMPORT,
     OpCode.INVOKE, OpCode.SUPER_INVOKE, OpCode.TAIL_CALL,
 ])
 
@@ -232,6 +231,9 @@ def opcode_size(opcode: 'OpCode') -> int:
         return 2
     if opcode in _SIZE4:
         return 4
+    # IMPORT: 1 opcode + 9 operand bytes (3 each for path, alias, names)
+    if opcode == OpCode.IMPORT:
+        return 10
     return 1  # safe default
 
 
