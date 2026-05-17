@@ -709,6 +709,10 @@ class VM:
         return None
 
     def _builtin_len(self, obj):
+<<<<<<< HEAD
+=======
+        # FIX: drain generators to a list (for-loop iterates with len + index)
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
         if isinstance(obj, IppVMGenerator):
             if not hasattr(obj, '_collected'):
                 items = []
@@ -719,6 +723,10 @@ class VM:
                     items.append(val)
                 obj._collected = items
             return len(obj._collected)
+<<<<<<< HEAD
+=======
+        # FIX v1.7.8.3: Check for __len__ method on IppInstance
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
         if isinstance(obj, IppInstance):
             len_method = obj.cls.get_method('__len__')
             if len_method:
@@ -727,6 +735,7 @@ class VM:
             raise VMError(f"len() not supported for {obj.cls.name}")
         if isinstance(obj, (str, list, dict, tuple)):
             return len(obj)
+<<<<<<< HEAD
         # Matrix4 len = 16 (total scalar elements in 4x4 matrix)
         if type(obj).__name__ in ('Matrix4', '_Mat4') or (hasattr(obj, 'm') and isinstance(getattr(obj, 'm', None), list) and len(obj.m) == 16):
             return 16
@@ -741,6 +750,12 @@ class VM:
             return 2
         if hasattr(obj, '_items') and isinstance(obj._items, set):
             return len(obj._items)
+=======
+        # FIX: IppSet uses _items
+        if hasattr(obj, '_items') and isinstance(obj._items, set):
+            return len(obj._items)
+        # FIX: IppSet may use _data
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
         if hasattr(obj, '_data') and isinstance(obj._data, set):
             return len(obj._data)
         if hasattr(obj, '__len__'):
@@ -787,6 +802,7 @@ class VM:
         # Already a computed value
         return fn
 
+<<<<<<< HEAD
     def _builtin_ipp_str(self, obj):
         """Convert value to Ipp-canonical string (nil, true, false)."""
         if obj is None:           return "nil"
@@ -808,6 +824,13 @@ class VM:
         if isinstance(obj, bool): return "bool"
         if isinstance(obj, int):  return "number"
         if isinstance(obj, float): return "number"
+=======
+    def _builtin_type(self, obj):
+        if obj is None:           return "nil"
+        if isinstance(obj, bool): return "bool"
+        if isinstance(obj, int):  return "number"   # FIX: Ipp uses "number" not "int"
+        if isinstance(obj, float): return "number"  # FIX: Ipp uses "number" not "float"
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
         if isinstance(obj, str):  return "string"
         if isinstance(obj, IppVMGenerator): return "generator"   # BUG-22
         if isinstance(obj, (list, tuple)): return "list"
@@ -820,8 +843,12 @@ class VM:
         if isinstance(obj, IppInstance): return obj.cls.name
         if isinstance(obj, (Closure, IppFunction)): return "function"
         if callable(obj): return "function"
+<<<<<<< HEAD
         # Python-native stdlib objects → "object"
         return "object"
+=======
+        return type(obj).__name__
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
 
     def _builtin_sum(self, *args):
         if len(args) == 1 and hasattr(args[0], '__iter__') and not isinstance(args[0], str):
@@ -1393,6 +1420,7 @@ class VM:
             elif isinstance(obj, (int, float, bool)) and int(idx) == 0:
                 # FIX: scalar[0] returns the scalar (supports single-value tuple idiom)
                 self.stack.append(obj)
+<<<<<<< HEAD
             elif hasattr(obj, 'x') and hasattr(obj, 'y'):
                 # Vector types: index into components
                 components = []
@@ -1404,6 +1432,8 @@ class VM:
                     self.stack.append(components[i])
                 else:
                     raise VMError(f"Vector index {i} out of range")
+=======
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
             else:
                 raise VMError(f"Cannot index {type(obj).__name__} with {idx!r}{line_info}")
 

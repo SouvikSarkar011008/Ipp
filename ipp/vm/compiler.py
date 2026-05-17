@@ -643,9 +643,12 @@ class Compiler:
             exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_TRUE_POP, self.current_line)
         else:
             exit_jump = self.chunk.emit_jump(OpCode.JUMP_IF_FALSE_POP, self.current_line)
+<<<<<<< HEAD
 
         # BUG-22: emit scope pops before backward jump so they're reachable each iteration
         self._emit_scope_pops()
+=======
+>>>>>>> 06745fbfe88ed27173a3ebe12528c8d04e0e3c5e
 
         self.chunk.emit_loop(loop_start, self.current_line)
         self.chunk.patch_jump(exit_jump)
