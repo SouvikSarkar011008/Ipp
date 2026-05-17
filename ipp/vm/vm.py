@@ -34,9 +34,30 @@ class _IppSignal:
 
 class _Vec4:
     def __init__(self, x=0, y=0, z=0, w=1):
-        self.x, self.y, self.z, self.w = x, y, z, w
+        self.x, self.y, self.z, self.w = float(x), float(y), float(z), float(w)
     def __repr__(self):
         return f"vec4({self.x}, {self.y}, {self.z}, {self.w})"
+    def __add__(self, o):
+        if isinstance(o, _Vec4):
+            return _Vec4(self.x+o.x, self.y+o.y, self.z+o.z, self.w+o.w)
+        return _Vec4(self.x+o, self.y+o, self.z+o, self.w+o)
+    def __sub__(self, o):
+        if isinstance(o, _Vec4):
+            return _Vec4(self.x-o.x, self.y-o.y, self.z-o.z, self.w-o.w)
+        return _Vec4(self.x-o, self.y-o, self.z-o, self.w-o)
+    def __mul__(self, o):
+        if isinstance(o, _Vec4):
+            return _Vec4(self.x*o.x, self.y*o.y, self.z*o.z, self.w*o.w)
+        return _Vec4(self.x*o, self.y*o, self.z*o, self.w*o)
+    def __truediv__(self, o):
+        if isinstance(o, _Vec4):
+            return _Vec4(self.x/o.x, self.y/o.y, self.z/o.z, self.w/o.w)
+        return _Vec4(self.x/o, self.y/o, self.z/o, self.w/o)
+    def dot(self, o):
+        return self.x*o.x + self.y*o.y + self.z*o.z + self.w*o.w
+    def length(self):
+        import math
+        return math.sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
 
 
 class _Mat4:
@@ -353,6 +374,19 @@ def _repr_impl(value):
         return "true" if value else "false"
     if value is None:
         return "nil"
+    # Recursively repr containers so IppInstance elements get their __repr__
+    if hasattr(value, 'elements'):
+        items = ', '.join(_repr_impl(e) for e in value.elements)
+        return f"[{items}]"
+    if isinstance(value, (list, tuple)):
+        items = ', '.join(_repr_impl(e) for e in value)
+        return f"[{items}]"
+    if isinstance(value, dict):
+        pairs = ', '.join(f"{_repr_impl(k)}: {_repr_impl(v)}" for k, v in value.items())
+        return "{" + pairs + "}"
+    if hasattr(value, 'data') and isinstance(getattr(value, 'data', None), dict):
+        pairs = ', '.join(f"{_repr_impl(k)}: {_repr_impl(v)}" for k, v in value.data.items())
+        return "{" + pairs + "}"
     return str(value)
 
 
@@ -494,7 +528,8 @@ class VM:
             'randfloat': lambda a, b: random.uniform(a, b),
             'choice': lambda seq: random.choice(seq),
             'shuffle': lambda seq: random.shuffle(seq),
-            'str': str,
+            'str': self._builtin_ipp_str,
+            'eval': lambda src: __import__('ipp.runtime.builtins', fromlist=['_ipp_eval'])._ipp_eval(src),
             'repr': lambda v: _repr_impl(v),
             'int': int,
             'float': float,
@@ -592,9 +627,9 @@ class VM:
             'emit': lambda sig, *args: sig.emit(*args) if isinstance(sig, _IppSignal) else None,
             # Mathematics (v1.6.8) - simplified placeholder versions
             'vec4': lambda x=0, y=0, z=0, w=1: _Vec4(x, y, z, w),
-            'mat4': lambda: _Mat4(),
-            'mat4_identity': lambda: _Mat4(),
-            'quat': lambda x=0, y=0, z=0, w=1: _Quat(x, y, z, w),
+            'mat4': lambda: __import__('ipp.runtime.builtins', fromlist=['Matrix4']).Matrix4(),
+            'mat4_identity': lambda: __import__('ipp.runtime.builtins', fromlist=['Matrix4']).Matrix4(),
+            'quat': lambda x=0, y=0, z=0, w=1: __import__('ipp.runtime.builtins', fromlist=['Quaternion']).Quaternion(x, y, z, w),
             # Async (v1.6.9)
             'async_run': self._builtin_async_run,
             'next': self._builtin_next,
@@ -611,7 +646,7 @@ class VM:
             'gcd': math.gcd,
             'hypot': math.hypot,
             # Complex
-            'complex': complex,
+            'complex': lambda r=0, i=0: __import__('ipp.runtime.builtins', fromlist=['Complex']).Complex(float(r), float(i)),
             # Logging
             'logger': self._builtin_logger,
         })
@@ -663,10 +698,10 @@ class VM:
                 parts.append("nil")
             elif isinstance(a, bool):
                 parts.append("true" if a else "false")
-            elif isinstance(a, float) and a.is_integer():
-                parts.append(str(int(a)))
+            elif isinstance(a, float):
+                # Preserve float representation — 4.0 stays "4.0", not "4"
+                parts.append(str(a))
             elif isinstance(a, IppInstance):
-                # FIX BUG-N6: call user-defined __str__ via Python str() which triggers __str__
                 parts.append(str(a))
             else:
                 parts.append(str(a))
@@ -674,7 +709,6 @@ class VM:
         return None
 
     def _builtin_len(self, obj):
-        # FIX: drain generators to a list (for-loop iterates with len + index)
         if isinstance(obj, IppVMGenerator):
             if not hasattr(obj, '_collected'):
                 items = []
@@ -685,7 +719,6 @@ class VM:
                     items.append(val)
                 obj._collected = items
             return len(obj._collected)
-        # FIX v1.7.8.3: Check for __len__ method on IppInstance
         if isinstance(obj, IppInstance):
             len_method = obj.cls.get_method('__len__')
             if len_method:
@@ -694,10 +727,20 @@ class VM:
             raise VMError(f"len() not supported for {obj.cls.name}")
         if isinstance(obj, (str, list, dict, tuple)):
             return len(obj)
-        # FIX: IppSet uses _items
+        # Matrix4 len = 16 (total scalar elements in 4x4 matrix)
+        if type(obj).__name__ in ('Matrix4', '_Mat4') or (hasattr(obj, 'm') and isinstance(getattr(obj, 'm', None), list) and len(obj.m) == 16):
+            return 16
+        # Quaternion / vec4 = 4 components (x,y,z,w but NOT m)
+        if type(obj).__name__ in ('Quaternion', '_Quat') or (hasattr(obj, 'x') and hasattr(obj, 'w') and not hasattr(obj, 'm')):
+            return 4
+        # Vector3 = 3 components
+        if hasattr(obj, 'x') and hasattr(obj, 'z') and not hasattr(obj, 'w') and not hasattr(obj, 'm'):
+            return 3
+        # Vector2 = 2 components
+        if hasattr(obj, 'x') and hasattr(obj, 'y') and not hasattr(obj, 'z') and not hasattr(obj, 'm'):
+            return 2
         if hasattr(obj, '_items') and isinstance(obj._items, set):
             return len(obj._items)
-        # FIX: IppSet may use _data
         if hasattr(obj, '_data') and isinstance(obj._data, set):
             return len(obj._data)
         if hasattr(obj, '__len__'):
@@ -744,14 +787,31 @@ class VM:
         # Already a computed value
         return fn
 
+    def _builtin_ipp_str(self, obj):
+        """Convert value to Ipp-canonical string (nil, true, false)."""
+        if obj is None:           return "nil"
+        if obj is True:           return "true"
+        if obj is False:          return "false"
+        if isinstance(obj, IppInstance):
+            str_method = obj.cls.get_method('__str__')
+            if str_method:
+                return _call_ipp_method(obj, str_method)
+            repr_method = obj.cls.get_method('__repr__')
+            if repr_method:
+                return _call_ipp_method(obj, repr_method)
+            return f"<{obj.cls.name} instance>"
+        # Preserve float representation — do not truncate to int
+        return str(obj)
+
     def _builtin_type(self, obj):
         if obj is None:           return "nil"
         if isinstance(obj, bool): return "bool"
-        if isinstance(obj, int):  return "number"   # FIX: Ipp uses "number" not "int"
-        if isinstance(obj, float): return "number"  # FIX: Ipp uses "number" not "float"
+        if isinstance(obj, int):  return "number"
+        if isinstance(obj, float): return "number"
         if isinstance(obj, str):  return "string"
+        if isinstance(obj, IppVMGenerator): return "generator"   # BUG-22
         if isinstance(obj, (list, tuple)): return "list"
-        if hasattr(obj, 'elements'): return "list"   # IppList
+        if hasattr(obj, 'elements'): return "list"
         if isinstance(obj, dict): return "dict"
         if hasattr(obj, '_items') and isinstance(getattr(obj,'_items',None), set): return "set"
         if hasattr(obj, '_data') and hasattr(obj, 'add'): return "set"
@@ -760,7 +820,8 @@ class VM:
         if isinstance(obj, IppInstance): return obj.cls.name
         if isinstance(obj, (Closure, IppFunction)): return "function"
         if callable(obj): return "function"
-        return type(obj).__name__
+        # Python-native stdlib objects → "object"
+        return "object"
 
     def _builtin_sum(self, *args):
         if len(args) == 1 and hasattr(args[0], '__iter__') and not isinstance(args[0], str):
@@ -815,7 +876,7 @@ class VM:
 
     def _builtin_assert(self, cond, msg="Assertion failed"):
         if not self._is_truthy(cond):
-            raise VMError(str(msg))
+            raise VMError(f"Assertion failed: {msg}" if msg != "Assertion failed" else "Assertion failed")
         return None
 
     def _builtin_set(self, *args):
@@ -1252,6 +1313,15 @@ class VM:
                     raise VMError(f"Property '{name}' not found on str")
             elif isinstance(obj, dict) and name in obj:
                 self.stack[-1] = obj[name]
+            elif hasattr(obj, 'data') and isinstance(getattr(obj, 'data', None), dict):
+                # IppDict — look up key, then fall back to methods
+                val = obj.data.get(name)
+                if val is not None:
+                    self.stack[-1] = val
+                elif hasattr(obj, name):
+                    self.stack[-1] = getattr(obj, name)
+                else:
+                    self.stack[-1] = None  # nil — key not found
             elif hasattr(obj, name):
                 attr = getattr(obj, name)
                 # FIX: wrap method_descriptor so it becomes callable from VM
@@ -1323,6 +1393,17 @@ class VM:
             elif isinstance(obj, (int, float, bool)) and int(idx) == 0:
                 # FIX: scalar[0] returns the scalar (supports single-value tuple idiom)
                 self.stack.append(obj)
+            elif hasattr(obj, 'x') and hasattr(obj, 'y'):
+                # Vector types: index into components
+                components = []
+                for attr in ('x', 'y', 'z', 'w'):
+                    if hasattr(obj, attr):
+                        components.append(getattr(obj, attr))
+                i = int(idx)
+                if 0 <= i < len(components):
+                    self.stack.append(components[i])
+                else:
+                    raise VMError(f"Vector index {i} out of range")
             else:
                 raise VMError(f"Cannot index {type(obj).__name__} with {idx!r}{line_info}")
 
@@ -1547,32 +1628,40 @@ class VM:
         # ── Import ───────────────────────────────────────────────────────
         elif opcode == OpCode.IMPORT:
             path_idx = code[ip + 1] | (code[ip + 2] << 8) | (code[ip + 3] << 16)
+            alias_idx = code[ip + 4] | (code[ip + 5] << 8) | (code[ip + 6] << 16)
+            names_idx = code[ip + 7] | (code[ip + 8] << 8) | (code[ip + 9] << 16)
             module_path = constants[path_idx] if path_idx < len(constants) else ""
+            alias = constants[alias_idx] if alias_idx < len(constants) else None
+            names = constants[names_idx] if names_idx < len(constants) else None
 
             if not hasattr(self, '_module_cache'):
                 self._module_cache = {}
             if module_path in self._module_cache:
-                self.globals.update(self._module_cache[module_path])
+                new_globals = self._module_cache[module_path]
             else:
                 import os
-                import sys
-                
-                # Get directory of current file
+
+                current_source = getattr(self, '_current_source_file', None)
                 cwd = os.getcwd()
-                
-                # Try multiple paths
-                candidates = [
-                    module_path,
+                mp_with_ext = module_path if module_path.endswith('.ipp') else module_path + '.ipp'
+
+                candidates = []
+                if current_source:
+                    base_dir = os.path.dirname(current_source)
+                    candidates.append(os.path.join(base_dir, mp_with_ext))
+                    candidates.append(os.path.join(base_dir, module_path))
+                candidates += [
+                    mp_with_ext, module_path,
+                    os.path.join(cwd, mp_with_ext),
                     os.path.join(cwd, module_path),
-                    os.path.join(cwd, 'tests', 'v1_5_37', module_path),
                 ]
-                
+
                 found_path = None
                 for candidate in candidates:
                     if os.path.exists(candidate):
                         found_path = candidate
                         break
-                
+
                 if not found_path:
                     raise VMError(f"Module not found: '{module_path}'")
 
@@ -1583,12 +1672,26 @@ class VM:
                 from ipp.parser.parser import parse
                 from ipp.vm.compiler import compile_ast
                 child = VM()
+                child._current_source_file = found_path
                 child.globals.update(self.globals)
                 child.run(compile_ast(parse(tokenize(src))))
                 new_globals = {k: v for k, v in child.globals.items()
                                if k not in self.globals or child.globals[k] is not self.globals.get(k)}
-                self.globals.update(new_globals)
                 self._module_cache[module_path] = new_globals
+
+            # Apply alias or selective import
+            if alias and isinstance(alias, str):
+                # import "mod" as u  → create dict-like namespace
+                from ipp.interpreter.interpreter import IppDict
+                ns = IppDict(dict(new_globals))
+                self.globals[alias] = ns
+            elif names and isinstance(names, (list, tuple)):
+                # import "mod" as { a, b }  → import only named symbols
+                for name in names:
+                    if name in new_globals:
+                        self.globals[name] = new_globals[name]
+            else:
+                self.globals.update(new_globals)
 
         elif opcode == OpCode.END_IMPORT:
             pass
@@ -1848,10 +1951,13 @@ class VM:
                 msg = self.stack.pop()
                 cond = self.stack.pop()
             else:
-                msg = "Assertion failed"
+                msg = None
                 cond = self.stack.pop() if self.stack else None
             if not self._is_truthy(cond):
-                raise VMError(str(msg))
+                # BUG-09: use message as description, not as the error itself
+                if msg is not None:
+                    raise VMError(f"Assertion failed: {msg}")
+                raise VMError("Assertion failed")
 
         elif opcode == OpCode.TRY:
             offset = frame.chunk.read_int(ip + 1)
