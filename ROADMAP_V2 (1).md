@@ -2754,6 +2754,13 @@ These features are confirmed for implementation after all regression tests pass.
 - **Root cause:** VM `_init_builtins()` defines its own `hash` and `gzip_compress` lambdas that shadow the fixed versions in `builtins.py` — fixing `builtins.py` alone was not enough
 - **Files:** `ipp/vm/vm.py`, `.github/workflows/publish.yml`
 
+### v1.7.9.1.8 — Drop Python 3.9 Support (3.10+ minimum)
+**Goal:** Remove Python 3.9 from CI matrix and package metadata — `str | None` union type hint syntax used in `ipp/runtime/keyboard.py` requires Python 3.10+.
+- `.github/workflows/publish.yml` — removed `"3.9"` from test matrix; now tests on `3.10`, `3.11`, `3.12` only
+- `pyproject.toml` — removed `Programming Language :: Python :: 3.9` classifier; bumped `requires-python` from `>=3.8` to `>=3.10`
+- **Root cause:** `keyboard.py` uses `str | None` return type annotation (PEP 604) which is only valid in Python 3.10+; CI was failing on every 3.9 runner
+- **Files:** `.github/workflows/publish.yml`, `pyproject.toml`
+
 ---
 
 *Roadmap v3 — May 2026 | Starting from Ipp v1.7.5*
