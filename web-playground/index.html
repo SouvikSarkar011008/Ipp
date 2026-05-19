@@ -1242,17 +1242,20 @@ async function bootPyodide() {
 
     progress(90, 'Engine ready — fetching version…');
 
-    // Read actual VERSION from the engine
+    // Read actual VERSION from the installed/loaded Ipp engine
     try {
-      const ver = pyodide.runPython(`
-import sys
-sys.modules.pop('ipp', None)
-sys.modules.pop('ipp.main', None)
-"unknown"
+      const versionStr = pyodide.runPython(`
+try:
+    from ipp.main import VERSION
+    VERSION
+except:
+    try:
+        import re, pathlib
+        # Try to get from ippCode string
+        "1.7.9.1"
+    except:
+        "1.7.9.1"
 `);
-      // Try to get the version from the injected source
-      const verMatch = ippCode.match(/VERSION\s*=\s*["']([^"']+)["']/);
-      const versionStr = verMatch ? verMatch[1] : '1.7.9.1';
       document.getElementById('version-pill').textContent = 'v' + versionStr;
       document.getElementById('sb-mode').textContent = '🐍 Pyodide · Ipp v' + versionStr;
     } catch(e) {
@@ -1277,72 +1280,130 @@ sys.modules.pop('ipp.main', None)
 }
 
 async function loadIppEngine() {
-  // Fetch the real Ipp source files and inject them into Pyodide's filesystem
-  // We try to fetch from the same origin (works when served locally).
-  // On CDN/playground hosting the files are bundled at build time.
-  const files = [
-    // Core modules — paths relative to playground's server root
-    { path: '../ipp/__init__.py',              vpath: '/ipp/__init__.py' },
-    { path: '../ipp/lexer/__init__.py',        vpath: '/ipp/lexer/__init__.py' },
-    { path: '../ipp/lexer/lexer.py',           vpath: '/ipp/lexer/lexer.py' },
-    { path: '../ipp/parser/__init__.py',       vpath: '/ipp/parser/__init__.py' },
-    { path: '../ipp/parser/parser.py',         vpath: '/ipp/parser/parser.py' },
-    { path: '../ipp/interpreter/__init__.py',  vpath: '/ipp/interpreter/__init__.py' },
-    { path: '../ipp/interpreter/interpreter.py', vpath: '/ipp/interpreter/interpreter.py' },
-    { path: '../ipp/runtime/__init__.py',      vpath: '/ipp/runtime/__init__.py' },
-    { path: '../ipp/runtime/builtins.py',      vpath: '/ipp/runtime/builtins.py' },
-    { path: '../ipp/runtime/keyboard.py',      vpath: '/ipp/runtime/keyboard.py' },
-    { path: '../ipp/vm/__init__.py',           vpath: '/ipp/vm/__init__.py' },
-    { path: '../ipp/vm/compiler.py',           vpath: '/ipp/vm/compiler.py' },
-    { path: '../ipp/vm/vm.py',                 vpath: '/ipp/vm/vm.py' },
-    { path: '../ipp/main.py',                  vpath: '/ipp/main.py' },
-  ];
+  // Strategy 1: Try micropip.install from PyPI (works when Pyodide has network access)
+  // Strategy 2: Fetch files from local server (works when served from repo root)
+  // Strategy 3: Fall back to demo mode
 
+  document.getElementById('boot-log').textContent = 'Installing Ipp engine…';
+
+  // Set up filesystem structure first
   pyodide.runPython(`
 import sys, os
-os.makedirs('/ipp/lexer', exist_ok=True)
-os.makedirs('/ipp/parser', exist_ok=True)
-os.makedirs('/ipp/interpreter', exist_ok=True)
-os.makedirs('/ipp/runtime', exist_ok=True)
-os.makedirs('/ipp/vm', exist_ok=True)
-if '/ipp' not in sys.path and '/ipp/..' not in sys.path:
+for d in ['/ipp','/ipp/lexer','/ipp/parser','/ipp/interpreter','/ipp/runtime','/ipp/vm','/ipp/wasm','/ipp/network','/ipp/lsp']:
+    os.makedirs(d, exist_ok=True)
+if '/' not in sys.path:
     sys.path.insert(0, '/')
 `);
 
-  let loaded = 0;
+  // Strategy 1: micropip from PyPI
+  try {
+    document.getElementById('boot-log').textContent = 'Installing ipp-lang from PyPI…';
+    document.getElementById('boot-bar').style.width = '65%';
+    await pyodide.loadPackage('micropip');
+    const micropip = pyodide.pyimport('micropip');
+    await micropip.install('ipp-lang');
+    document.getElementById('boot-bar').style.width = '85%';
+
+    // Verify import works
+    const ok = pyodide.runPython(`
+try:
+    from ipp.lexer.lexer import tokenize
+    from ipp.parser.parser import parse
+    from ipp.interpreter.interpreter import Interpreter
+    _IPP_AVAILABLE = True
+    result = True
+except Exception as e:
+    _IPP_AVAILABLE = False
+    _IPP_ERR = str(e)
+    result = False
+result
+`);
+    if (ok) {
+      // Get version
+      const ver = pyodide.runPython(`
+try:
+    from ipp.main import VERSION
+    VERSION
+except:
+    "1.7.9.1"
+`);
+      ippCode = `VERSION = "${ver}"`;
+      document.getElementById('boot-log').textContent = `✓ ipp-lang ${ver} installed from PyPI`;
+      document.getElementById('boot-bar').style.width = '95%';
+      return;
+    }
+  } catch(e) {
+    console.log('micropip install failed:', e.message || e);
+  }
+
+  // Strategy 2: Fetch files from local server (playground opened from repo)
+  document.getElementById('boot-log').textContent = 'Fetching Ipp source from local server…';
+  document.getElementById('boot-bar').style.width = '65%';
+
+  const files = [
+    { path: '../ipp/__init__.py',                    vpath: '/ipp/__init__.py' },
+    { path: '../ipp/lexer/__init__.py',              vpath: '/ipp/lexer/__init__.py' },
+    { path: '../ipp/lexer/lexer.py',                 vpath: '/ipp/lexer/lexer.py' },
+    { path: '../ipp/lexer/token.py',                 vpath: '/ipp/lexer/token.py' },
+    { path: '../ipp/parser/__init__.py',             vpath: '/ipp/parser/__init__.py' },
+    { path: '../ipp/parser/parser.py',               vpath: '/ipp/parser/parser.py' },
+    { path: '../ipp/parser/ast.py',                  vpath: '/ipp/parser/ast.py' },
+    { path: '../ipp/interpreter/__init__.py',        vpath: '/ipp/interpreter/__init__.py' },
+    { path: '../ipp/interpreter/interpreter.py',     vpath: '/ipp/interpreter/interpreter.py' },
+    { path: '../ipp/runtime/__init__.py',            vpath: '/ipp/runtime/__init__.py' },
+    { path: '../ipp/runtime/builtins.py',            vpath: '/ipp/runtime/builtins.py' },
+    { path: '../ipp/runtime/keyboard.py',            vpath: '/ipp/runtime/keyboard.py' },
+    { path: '../ipp/vm/__init__.py',                 vpath: '/ipp/vm/__init__.py' },
+    { path: '../ipp/vm/bytecode.py',                 vpath: '/ipp/vm/bytecode.py' },
+    { path: '../ipp/vm/compiler.py',                 vpath: '/ipp/vm/compiler.py' },
+    { path: '../ipp/vm/vm.py',                       vpath: '/ipp/vm/vm.py' },
+    { path: '../ipp/main.py',                        vpath: '/ipp/main.py' },
+  ];
+
+  let loadedCount = 0;
+  let successCount = 0;
   for (const f of files) {
     try {
       const resp = await fetch(f.path);
       if (resp.ok) {
         const text = await resp.text();
         pyodide.FS.writeFile(f.vpath, text);
-        if (f.vpath.includes('main.py') && !f.vpath.includes('ipp/main')) {
-          ippCode = text;
-        }
-        if (f.vpath === '/ipp/main.py') {
-          ippCode = text;
-        }
+        if (f.vpath === '/ipp/main.py') { ippCode = text; }
+        successCount++;
       }
-    } catch(e) { /* file not available — graceful skip */ }
-    loaded++;
-    document.getElementById('boot-bar').style.width = (60 + (loaded / files.length) * 25) + '%';
+    } catch(e) { /* not served locally — skip */ }
+    loadedCount++;
+    document.getElementById('boot-bar').style.width =
+      Math.round(65 + (loadedCount / files.length) * 25) + '%';
   }
 
-  // Verify the interpreter can import
-  try {
-    pyodide.runPython(`
-import sys
-sys.path.insert(0, '/')
+  if (successCount >= 4) {
+    // Try to import
+    try {
+      const ok = pyodide.runPython(`
 try:
     from ipp.lexer.lexer import tokenize
     from ipp.parser.parser import parse
     from ipp.interpreter.interpreter import Interpreter
     _IPP_AVAILABLE = True
+    result = True
 except Exception as e:
     _IPP_AVAILABLE = False
     _IPP_ERR = str(e)
+    result = False
+result
 `);
-  } catch(e) {}
+      if (ok) {
+        document.getElementById('boot-log').textContent = '✓ Ipp loaded from local files';
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Strategy 3: Demo fallback
+  console.warn('Ipp engine unavailable — demo mode active');
+  document.getElementById('boot-log').textContent = '⚠ Demo mode (limited — open from repo for full engine)';
+  pyodide.runPython(`_IPP_AVAILABLE = False`);
 }
 
 // ── Run code ──────────────────────────────────────────────────────────────────
@@ -1382,13 +1443,6 @@ async function runCode() {
 }
 
 async function runWithPyodide(code) {
-  // Capture canvas calls
-  const canvasCalls = [];
-  pyodide.globals.set('_canvas_calls', canvasCalls);
-
-  // Redirect stdout/stderr through our output functions
-  const escaped = code.replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
-
   try {
     pyodide.runPython(`
 import sys, io
@@ -1404,20 +1458,17 @@ _run_ok = False
 _run_err = None
 
 try:
-    # Check if Ipp engine is available
-    if 'Interpreter' not in dir():
-        try:
-            from ipp.lexer.lexer import tokenize
-            from ipp.parser.parser import parse
-            from ipp.interpreter.interpreter import Interpreter
-        except Exception as import_err:
-            raise RuntimeError(f"Ipp engine unavailable: {import_err}")
+    from ipp.lexer.lexer import tokenize
+    from ipp.parser.parser import parse
+    from ipp.interpreter.interpreter import Interpreter
 
     _interp = Interpreter()
     _src = ${JSON.stringify(code)}
     _tokens = tokenize(_src)
     _ast = parse(_tokens)
     _interp.run(_ast)
+    _run_ok = True
+except SystemExit:
     _run_ok = True
 except Exception as _e:
     _run_err = str(_e)
@@ -1450,7 +1501,6 @@ _err_text = _stderr_buf.getvalue()
     }
 
   } catch(pyErr) {
-    // If it's already been shown as an error line, just rethrow
     if (!pyErr.message?.includes('[Error]')) {
       appendLine(String(pyErr), 'error');
     }

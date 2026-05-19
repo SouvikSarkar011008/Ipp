@@ -73,7 +73,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.7.9.1.8"
+VERSION = "1.7.9.1.9"
 
 # ─── Windows ANSI enablement — v1.7.9.1.2 ────────────────────────────────────
 # Windows 10+ supports ANSI via ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -1680,13 +1680,19 @@ def run_repl():
             if stripped == '.modules':      show_modules();       continue
             if stripped == '.version':      print(f"  Ipp v{VERSION}"); continue
             if stripped == '.highlight':
-                if _HAS_HIGHLIGHT and _hl_session and _hl_session.available:
+                # Check if prompt_toolkit is available AND session is active
+                session_on = _HAS_HIGHLIGHT and _hl_session and _hl_session.available
+                pt_avail   = _HAS_HIGHLIGHT and _HAS_PT
+                if session_on:
                     print(f"  {colour(C_OK, '✓ Syntax highlighting: ON')}  (prompt_toolkit)")
-                    print(f"  {colour(DIM, 'Keywords, builtins, strings, numbers all highlighted')}")
+                    print(f"  {colour(DIM, 'Keywords purple · builtins cyan · strings green · numbers gold')}")
                     print(f"  {colour(DIM, 'Use .theme <name> to change colours')}")
+                elif pt_avail:
+                    print(f"  {colour(C_WARN, '⚠ prompt_toolkit installed but session not active')}")
+                    print(f"  {colour(DIM, 'Restart the REPL to enable highlighting')}")
                 else:
                     print(f"  {colour(C_WARN, '✗ Syntax highlighting: OFF')}")
-                    print(f"  {colour(DIM, 'Install prompt_toolkit:  pip install prompt_toolkit')}")
+                    print(f"  {colour(DIM, 'Install:  pip install prompt_toolkit')}")
                 continue
             if stripped in ('.clear', 'clear()'):
                 buf.clear()
