@@ -67,7 +67,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.7.9.1.8"
+VERSION = "1.7.9.1.9"
 
 # ─── Windows ANSI enablement — v1.7.9.1.2 ────────────────────────────────────
 def _enable_windows_ansi() -> bool:
@@ -347,7 +347,10 @@ def print_banner():
             print(sp + DIM("  (colors disabled - ANSI not supported)"))
         print(sp + DIM("  Use .colors on to force colors"))
     else:
-        print(sp + colour(C_OK, "  (colors enabled)"))
+        hl_status = (colour(C_OK, "  ✓ syntax highlighting on") + " " + DIM("(.highlight)")
+                     if _HAS_HIGHLIGHT else
+                     DIM("  syntax highlighting off  pip install prompt_toolkit"))
+        print(sp + hl_status)
     print()
 
 # ─── Readline / autocomplete ──────────────────────────────────────────────────
@@ -356,6 +359,23 @@ try:
     HAS_RL = True
 except ImportError:
     HAS_RL = False
+
+# ─── prompt_toolkit highlighting session ──────────────────────────────────────
+try:
+    from ipp.runtime.highlighter import (
+        make_session as _make_hl_session,
+        highlight_line as _hl_line,
+        set_highlight_theme as _set_hl_theme,
+        _HAS_PT,
+    )
+    _HAS_HIGHLIGHT = _HAS_PT
+except Exception:
+    _HAS_HIGHLIGHT = False
+    _HAS_PT = False
+    def _hl_line(src, theme='default'): return src
+    def _set_hl_theme(name): return False
+
+_hl_session = None   # created lazily in run_repl()
 
 # On Windows, pyreadline intercepts Ctrl+C. Use msvcrt to detect it.
 if sys.platform.startswith('win'):
@@ -387,6 +407,7 @@ class IppCompleter:
             '.colors', '.vm', '.clear', '.types', '.version',
             '.load', '.save', '.doc', '.time', '.which', '.last',
             '.undo', '.redo', '.edit', '.profile', '.alias',
+            '.highlight', '.mem', '.theme', '.themes',
             'exit', 'quit',
         ])
 
@@ -495,11 +516,24 @@ class IppCompleter:
             return []
 
 def setup_readline(interp):
+    global _hl_session
+    hdir  = os.path.join(os.path.expanduser("~"), ".ipp")
+    hfile = os.path.join(hdir, "history")
+    os.makedirs(hdir, exist_ok=True)
+
+    # ── prompt_toolkit session (preferred — gives live syntax highlighting) ──
+    if _HAS_HIGHLIGHT and _hl_session is None:
+        try:
+            _hl_session = _make_hl_session(history_file=hfile)
+            _hl_session.set_theme(_current_theme_name)
+            _refresh_symbols(interp)
+            return   # prompt_toolkit handles history + completion natively
+        except Exception:
+            _hl_session = None
+
+    # ── readline fallback ─────────────────────────────────────────────────────
     if not HAS_RL: return
     try:
-        hdir = os.path.join(os.path.expanduser("~"), ".ipp")
-        os.makedirs(hdir, exist_ok=True)
-        hfile = os.path.join(hdir, "history")
         try: readline.read_history_file(hfile)
         except FileNotFoundError: pass
         readline.set_history_length(2000)
@@ -508,28 +542,31 @@ def setup_readline(interp):
         readline.set_completer_delims(" \t\n`~!@#$%^&*()-=+[]{}|;:',.<>?/")
         comp = IppCompleter(interp)
         readline.set_completer(comp.complete)
-        
-        # Auto-indentation: after Enter, if line ends with {, (, [, add indent
-        def auto_indent_hook(text):
-            if text and text[-1] in '{([':
-                return text + '    '
-            return text
-        
-        # Bracket matching: highlight matching brackets
         readline.parse_and_bind("set show-all-if-ambiguous on")
         readline.parse_and_bind("set mark-directories on")
-        
-        # Windows-specific: use libedit-style binding if needed
         if sys.platform.startswith('win'):
             try:
                 readline.parse_and_bind("bind ^I rl_complete")
-            except:
+            except Exception:
                 pass
-        
         atexit.register(readline.write_history_file, hfile)
         return comp
     except Exception:
         return None
+
+
+def _refresh_symbols(interp):
+    """Push user-defined names into the highlight session's completer."""
+    if not _hl_session:
+        return
+    try:
+        syms = []
+        env = getattr(interp, 'environment', None) or getattr(interp, 'global_env', None)
+        if env:
+            syms = list(getattr(env, 'values', {}).keys())
+        _hl_session.update_symbols(syms)
+    except Exception:
+        pass
 
 # ─── Brace balance check ──────────────────────────────────────────────────────
 def _balanced(src: str) -> bool:
@@ -1214,7 +1251,12 @@ def run_repl():
                 arrow = _PROMPT_ARROW + ' '
                 prompt_txt = colour(C_PROMPT, f"  {arrow}")
 
-            raw = input(prompt_txt)
+            # Use prompt_toolkit session when available (gives syntax highlighting)
+            if _hl_session and _hl_session.available:
+                _refresh_symbols(interp)
+                raw = _hl_session.prompt(prompt_txt, continuation=bool(buf))
+            else:
+                raw = input(prompt_txt)
 
         except KeyboardInterrupt:
             # Ctrl+C always exits the REPL immediately
@@ -1239,6 +1281,69 @@ def run_repl():
             if stripped == '.builtins':     show_builtins();      continue
             if stripped == '.modules':      show_modules();       continue
             if stripped == '.version':      print(f"  Ipp v{VERSION}"); continue
+
+            # .highlight — show syntax highlighting status
+            if stripped == '.highlight':
+                if _HAS_HIGHLIGHT and _hl_session and _hl_session.available:
+                    print(f"  {colour(C_OK, '✓ Syntax highlighting: ON')}  (prompt_toolkit)")
+                    print(f"  {colour(DIM, 'Keywords purple · builtins cyan · strings green · numbers gold')}")
+                    print(f"  {colour(DIM, 'Use .theme <name> to change colours')}")
+                else:
+                    avail = _HAS_HIGHLIGHT and _HAS_PT
+                    if avail:
+                        print(f"  {colour(C_WARN, '✗ Syntax highlighting: OFF (session failed to start)')}")
+                    else:
+                        print(f"  {colour(C_WARN, '✗ Syntax highlighting: OFF')}")
+                    print(f"  {colour(DIM, 'Install:  pip install prompt_toolkit')}")
+                continue
+
+            # .mem — memory usage
+            if stripped == '.mem':
+                try:
+                    import psutil, os as _os
+                    proc = psutil.Process(_os.getpid())
+                    mb = proc.memory_info().rss / 1024 / 1024
+                    pct = proc.memory_percent()
+                    print(f"  {colour(C_HEADER, 'Memory usage:')}")
+                    print(f"    RSS:  {colour(C_NUM, f'{mb:.1f} MB')}")
+                    print(f"    %:    {colour(C_NUM, f'{pct:.2f}%')}")
+                except ImportError:
+                    print(f"  {colour(C_WARN, 'psutil not installed')}")
+                    print(f"  {colour(DIM, 'Install psutil: pip install psutil')}")
+                continue
+
+            # .theme <name> — set colour theme
+            m_theme = re.match(r'\.theme\s+(\w+)$', stripped)
+            if m_theme:
+                theme = m_theme.group(1).lower()
+                if _apply_theme(theme):
+                    if _hl_session:
+                        _hl_session.set_theme(theme)
+                    _set_hl_theme(theme)
+                    print(f"  {colour(C_OK, f'✓ Theme: {theme}')}")
+                    print(f"    {colour(C_PROMPT, '●')} prompt   "
+                          f"{colour(C_RESULT, '●')} result   "
+                          f"{colour(C_ERROR,  '●')} error   "
+                          f"{colour(C_WARN,   '●')} warn")
+                else:
+                    _avail = ', '.join(_THEMES.keys())
+                    print(f"  {colour(C_WARN, f'Unknown theme: {theme}')}")
+                    print(f"  {colour(DIM, f'Available: {_avail}')}")
+                continue
+
+            # .themes — list all themes
+            if stripped == '.themes':
+                print(f"  {colour(C_HEADER, 'Available themes:')}")
+                for tname, tdata in _THEMES.items():
+                    mark = colour(C_OK, '✓') if tname == _current_theme_name else ' '
+                    p = lambda text, c=tdata['prompt']:  _rgb(*c, text)
+                    r = lambda text, c=tdata['result']:  _rgb(*c, text)
+                    e = lambda text, c=tdata['error']:   _rgb(*c, text)
+                    w = lambda text, c=tdata['warn']:    _rgb(*c, text)
+                    print(f"  {mark} {colour(C_CMD, tname.ljust(10))} "
+                          f"{p('●')} {r('●')} {e('●')} {w('●')}  "
+                          f"{DIM('.theme ' + tname)}")
+                continue
             if stripped in ('.clear', 'clear()'):
                 buf.clear()
                 interp_manager.reset()
