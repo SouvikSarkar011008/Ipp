@@ -126,7 +126,10 @@ TESTS = [
     ("v1.7.9.1.2-ansi", "tests/v1_7_9_1_2/test_ansi_strip.ipp"),
     ("v1.7.9.1.3-playground", "tests/v1_7_9_1_3/test_playground.ipp"),
     ("v1.7.9.1.4-themes", "tests/v1_7_9_1_4/test_themes.ipp"),
-    ("v1.7.9.1.5-docs", "tests/v1_7_9_1_5/test_docs.ipp"),
+    ("v1.7.9.1.5-docs",        "tests/v1_7_9_1_5/test_docs.ipp"),
+    ("v1.7.9.1.9-highlighter", "tests/v1_7_9_1_9/test_highlighter.ipp"),
+    ("v1.7.9.1.9-highlight-cmd","tests/v1_7_9_1_9/test_highlight_cmd.ipp"),
+    ("v1.7.9.1.9-bundle",      "tests/v1_7_9_1_9/test_playground_bundle.py"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
 ]
 

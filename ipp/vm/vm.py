@@ -734,6 +734,30 @@ class VM:
             list(getattr(getattr(obj, 'cls', None), 'methods', {}).keys())
         ))
 
+        # v1.7.9.1.9 — highlighter builtins
+        def _highlight_line_builtin(src: str) -> str:
+            try:
+                from ipp.runtime.highlighter import highlight_line
+                return highlight_line(str(src))
+            except Exception:
+                return str(src)
+        def _pt_available() -> bool:
+            try:
+                from ipp.runtime.highlighter import _HAS_PT
+                return bool(_HAS_PT)
+            except Exception:
+                return False
+        def _try_create_session() -> bool:
+            try:
+                from ipp.runtime.highlighter import make_session
+                s = make_session(history_file=None)
+                return s.available
+            except Exception:
+                return False
+        self.globals['highlight_line']             = _highlight_line_builtin
+        self.globals['prompt_toolkit_available']   = _pt_available
+        self.globals['try_create_highlight_session'] = _try_create_session
+
     # ─── Built-in helpers ─────────────────────────────────────────────────────
 
     def _builtin_print(self, *args):

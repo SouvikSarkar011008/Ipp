@@ -482,6 +482,8 @@ body.light .cm-comment { color: #8891b8 !important; }
 <div id="snackbar"></div>
 
 <!-- ── Scripts ──────────────────────────────────────────────────── -->
+<!-- Ipp language bundle (all source files base64-encoded for Pyodide) -->
+<script src="ipp-bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
@@ -1280,20 +1282,54 @@ except:
 }
 
 async function loadIppEngine() {
-  // Strategy 1: Try micropip.install from PyPI (works when Pyodide has network access)
-  // Strategy 2: Fetch files from local server (works when served from repo root)
-  // Strategy 3: Fall back to demo mode
+  document.getElementById('boot-log').textContent = 'Loading Ipp engine…';
 
-  document.getElementById('boot-log').textContent = 'Installing Ipp engine…';
-
-  // Set up filesystem structure first
+  // Set up filesystem structure
   pyodide.runPython(`
 import sys, os
-for d in ['/ipp','/ipp/lexer','/ipp/parser','/ipp/interpreter','/ipp/runtime','/ipp/vm','/ipp/wasm','/ipp/network','/ipp/lsp']:
+for d in ['/ipp','/ipp/lexer','/ipp/parser','/ipp/interpreter','/ipp/runtime','/ipp/vm']:
     os.makedirs(d, exist_ok=True)
 if '/' not in sys.path:
     sys.path.insert(0, '/')
 `);
+
+  // ── Strategy 0: Bundled source (always works, no network needed) ────────────
+  if (typeof IPP_BUNDLE !== 'undefined') {
+    document.getElementById('boot-log').textContent = 'Loading bundled Ipp source…';
+    document.getElementById('boot-bar').style.width = '65%';
+    try {
+      const entries = Object.entries(IPP_BUNDLE);
+      for (let i = 0; i < entries.length; i++) {
+        const [rel, b64] = entries[i];
+        const text = atob(b64);
+        pyodide.FS.writeFile('/' + rel, text);
+        document.getElementById('boot-bar').style.width =
+          Math.round(65 + (i / entries.length) * 20) + '%';
+      }
+
+      // Verify
+      const ok = pyodide.runPython(`
+try:
+    from ipp.lexer.lexer import tokenize
+    from ipp.parser.parser import parse
+    from ipp.interpreter.interpreter import Interpreter
+    _IPP_AVAILABLE = True
+    result = True
+except Exception as e:
+    _IPP_AVAILABLE = False
+    _IPP_ERR = str(e)
+    result = False
+result
+`);
+      if (ok) {
+        document.getElementById('boot-log').textContent = '✓ Ipp engine loaded (bundled)';
+        document.getElementById('boot-bar').style.width = '95%';
+        return;
+      }
+    } catch(e) {
+      console.warn('Bundle load failed:', e);
+    }
+  }
 
   // Strategy 1: micropip from PyPI
   try {
@@ -1410,6 +1446,9 @@ result
 async function runCode() {
   const code = editor.getValue();
   if (!code.trim()) return;
+
+  // Always switch to Console tab so output is visible
+  switchTab('console', document.querySelector('.tab'));
 
   clearConsole();
   setStatus('running', 'Running…');
@@ -1636,7 +1675,17 @@ function switchTab(name, el) {
   document.querySelectorAll('.output-tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  if (el) el.classList.add('active');
+  // If el is a tab button, activate it; otherwise find it by name
+  if (el && el.classList && el.classList.contains('tab')) {
+    el.classList.add('active');
+  } else {
+    // Find the tab button that matches
+    document.querySelectorAll('.tab').forEach(t => {
+      if (t.getAttribute('onclick') && t.getAttribute('onclick').includes("'" + name + "'")) {
+        t.classList.add('active');
+      }
+    });
+  }
 }
 
 // ── Examples / demos ──────────────────────────────────────────────────────────

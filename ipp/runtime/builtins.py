@@ -4279,7 +4279,13 @@ BUILTINS = {
     ),
     # v1.7.9.1.1 — Keyboard input builtins (simulation-safe)
     **__import__('ipp.runtime.keyboard', fromlist=['build_keyboard_builtins']).build_keyboard_builtins(),
+    # v1.7.9.1.9 — highlighter builtins
+    "highlight_line": lambda src: __import__('ipp.runtime.highlighter', fromlist=['highlight_line']).highlight_line(str(src)) if True else str(src),
+    "prompt_toolkit_available": lambda: bool(getattr(__import__('ipp.runtime.highlighter', fromlist=['_HAS_PT']), '_HAS_PT', False)),
+    "try_create_highlight_session": lambda: (lambda: (lambda s: s.available)(
+        __import__('ipp.runtime.highlighter', fromlist=['make_session']).make_session(history_file=None)
+    ) if getattr(__import__('ipp.runtime.highlighter', fromlist=['_HAS_PT']), '_HAS_PT', False) else False)(),
     # v1.7.9.1.2 — ANSI helpers
     "strip_ansi": lambda s: __import__('re').sub(r'\033\[[0-9;]*[mKJHF]', '', str(s)),
-    "ipp_version": lambda: "1.7.9.1.2",
+    "ipp_version": lambda: "1.7.9.1.9",
 }

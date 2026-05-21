@@ -343,14 +343,15 @@ def set_highlight_theme(name: str) -> bool:
 
 
 def _make_pt_style(theme_name: str) -> 'Style':
-    """Build a prompt_toolkit Style from a theme dict."""
+    """Build a prompt_toolkit Style from a theme dict.
+    prompt_toolkit Style.from_dict uses plain class names (no 'class:' prefix).
+    """
     theme = _THEMES.get(theme_name, _THEMES['default'])
     mapping = {}
     for tok, css in theme.items():
-        mapping[f'class:{tok}'] = css
-    # Prompt style
-    mapping['class:prompt']     = '#7eb3ff bold'
-    mapping['class:prompt_cont']= '#4f5577'
+        mapping[tok] = css   # plain key: 'keyword', not 'class:keyword'
+    mapping['prompt']      = '#7eb3ff bold'
+    mapping['prompt_cont'] = '#4f5577'
     return Style.from_dict(mapping)
 
 
@@ -410,6 +411,11 @@ class HighlightSession:
         self._theme     = _current_theme_name
 
         if not _HAS_PT:
+            return
+
+        # Don't create a session if stdin is not a real terminal
+        import sys as _sys
+        if not _sys.stdin.isatty():
             return
 
         self._completer = _IppCompleter()

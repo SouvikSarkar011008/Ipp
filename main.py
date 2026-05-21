@@ -73,7 +73,7 @@ def _disable_interrupt_handling():
     if sys.platform != "win32":
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-VERSION = "1.7.9.1.9"
+VERSION = "1.7.9.1.10"
 
 # ─── Windows ANSI enablement — v1.7.9.1.2 ────────────────────────────────────
 # Windows 10+ supports ANSI via ENABLE_VIRTUAL_TERMINAL_PROCESSING.
@@ -705,8 +705,8 @@ def setup_readline(interp):
     hfile = os.path.join(hdir, "history")
     os.makedirs(hdir, exist_ok=True)
 
-    # ── prompt_toolkit session (preferred) ───────────────────────────────────
-    if _HAS_HIGHLIGHT and _hl_session is None:
+    # ── prompt_toolkit session — only when stdin is a real terminal ──────────
+    if _HAS_HIGHLIGHT and _hl_session is None and sys.stdin.isatty():
         try:
             _hl_session = _make_hl_session(history_file=hfile)
             _hl_session.set_theme(_current_theme_name)
@@ -749,13 +749,33 @@ def _refresh_symbols(interp):
         env = getattr(interp, 'environment', None)
         if env:
             syms = list(getattr(env, 'values', {}).keys())
-        # Also grab globals dict from VM if running in VM mode
         vm = getattr(interp, '_vm', None)
         if vm:
             syms += [k for k in getattr(vm, 'globals', {}).keys()
                      if not k.startswith('_')]
         _hl_session.update_symbols(syms)
     except Exception:
+        pass
+
+
+def _restart_highlight_session():
+    """(Re)create the prompt_toolkit highlight session. Called by .highlight on."""
+    global _hl_session
+    if not sys.stdin.isatty():
+        print(f"  [93m⚠ Cannot enable highlighting: not a real terminal[0m")
+        return
+    try:
+        import os
+        hfile = os.path.join(os.path.expanduser("~"), ".ipp", "history")
+        _hl_session = _make_hl_session(history_file=hfile)
+        _hl_session.set_theme(_current_theme_name)
+        if _hl_session.available:
+            print(f"  {colour(C_OK, '✓ Syntax highlighting: ON')}")
+            print(f"  {colour(DIM, 'Highlighting is now active — type code to see colours')}")
+        else:
+            print(f"  {colour(C_WARN, '⚠ Session started but terminal may not support highlighting')}")
+    except Exception as e:
+        print(f"  {colour(C_WARN, f'Failed to start session: {e}')}")
         pass
 
 # ─── Brace balance check ──────────────────────────────────────────────────────
@@ -1585,6 +1605,7 @@ _SPINNER = ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷']
 
 # ─── Main REPL ────────────────────────────────────────────────────────────────
 def run_repl():
+    global _hl_session
     from ipp.lexer.lexer import tokenize
     from ipp.parser.parser import parse
     interp_manager = InterpreterManager()
@@ -1679,20 +1700,34 @@ def run_repl():
             if stripped == '.builtins':     show_builtins();      continue
             if stripped == '.modules':      show_modules();       continue
             if stripped == '.version':      print(f"  Ipp v{VERSION}"); continue
-            if stripped == '.highlight':
-                # Check if prompt_toolkit is available AND session is active
+            # .highlight / .highlight on / .highlight off
+            m_hl = re.match(r'\.highlight(?:\s+(on|off))?$', stripped)
+            if m_hl:
+                action = m_hl.group(1)
                 session_on = _HAS_HIGHLIGHT and _hl_session and _hl_session.available
                 pt_avail   = _HAS_HIGHLIGHT and _HAS_PT
-                if session_on:
-                    print(f"  {colour(C_OK, '✓ Syntax highlighting: ON')}  (prompt_toolkit)")
-                    print(f"  {colour(DIM, 'Keywords purple · builtins cyan · strings green · numbers gold')}")
-                    print(f"  {colour(DIM, 'Use .theme <name> to change colours')}")
-                elif pt_avail:
-                    print(f"  {colour(C_WARN, '⚠ prompt_toolkit installed but session not active')}")
-                    print(f"  {colour(DIM, 'Restart the REPL to enable highlighting')}")
+                if action == 'on':
+                    if not pt_avail:
+                        print(f"  {colour(C_WARN, '✗ prompt_toolkit not installed')}")
+                        print(f"  {colour(DIM, 'Run:  pip install prompt_toolkit')}")
+                    else:
+                        _restart_highlight_session()
+                elif action == 'off':
+                    _hl_session = None
+                    print(f"  {colour(C_WARN, '○ Syntax highlighting: OFF')}")
+                    print(f"  {colour(DIM, 'Type .highlight on to re-enable')}")
                 else:
-                    print(f"  {colour(C_WARN, '✗ Syntax highlighting: OFF')}")
-                    print(f"  {colour(DIM, 'Install:  pip install prompt_toolkit')}")
+                    if session_on:
+                        print(f"  {colour(C_OK, '✓ Syntax highlighting: ON')}  (prompt_toolkit)")
+                        print(f"  {colour(C_KW, 'func')} purple · {colour(C_STR, chr(34)+'string'+chr(34))} green · {colour(C_NUM, '42')} gold")
+                        print(f"  {colour(DIM, '.highlight off — disable  |  .theme <name> — change colours')}")
+                    elif pt_avail:
+                        print(f"  {colour(C_WARN, '⚠ prompt_toolkit installed but session not active')}")
+                        print(f"  {colour(DIM, 'Type: .highlight on')}")
+                    else:
+                        print(f"  {colour(C_WARN, '✗ Syntax highlighting: OFF')}")
+                        print(f"  {colour(DIM, 'Install:  pip install prompt_toolkit')}")
+                        print(f"  {colour(DIM, 'Then run: .highlight on')}")
                 continue
             if stripped in ('.clear', 'clear()'):
                 buf.clear()
