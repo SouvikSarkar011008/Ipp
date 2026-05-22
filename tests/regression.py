@@ -11,6 +11,18 @@ import os
 
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Clean stale bytecode cache files before running — prevents false failures
+# from outdated .ippc files when test .ipp files are modified
+import glob
+for ippc in glob.glob("tests/**/*.ippc", recursive=True):
+    try:
+        ipp = ippc[:-1]   # .ippc → .ipp
+        if os.path.exists(ipp):
+            if os.path.getmtime(ippc) < os.path.getmtime(ipp):
+                os.remove(ippc)
+    except Exception:
+        pass
+
 TESTS = [
     ("v0.5.0", "tests/v05/test_features.ipp"),
     ("v0.6.0", "tests/v06/test_features.ipp"),

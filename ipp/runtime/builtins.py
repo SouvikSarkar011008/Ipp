@@ -3944,6 +3944,18 @@ def _ipp_eval(source):
         raise RuntimeError(str(e))
 
 
+
+def _safe_try_highlight_session() -> bool:
+    """Safely try to create a highlight session — returns False on any error."""
+    try:
+        from ipp.runtime.highlighter import _HAS_PT, make_session
+        if not _HAS_PT:
+            return False
+        s = make_session(history_file=None)
+        return bool(s.available)
+    except Exception:
+        return False
+
 BUILTINS = {
     "format": ipp_format,
     "print": ipp_print,
@@ -4282,10 +4294,8 @@ BUILTINS = {
     # v1.7.9.1.9 — highlighter builtins
     "highlight_line": lambda src: __import__('ipp.runtime.highlighter', fromlist=['highlight_line']).highlight_line(str(src)) if True else str(src),
     "prompt_toolkit_available": lambda: bool(getattr(__import__('ipp.runtime.highlighter', fromlist=['_HAS_PT']), '_HAS_PT', False)),
-    "try_create_highlight_session": lambda: (lambda: (lambda s: s.available)(
-        __import__('ipp.runtime.highlighter', fromlist=['make_session']).make_session(history_file=None)
-    ) if getattr(__import__('ipp.runtime.highlighter', fromlist=['_HAS_PT']), '_HAS_PT', False) else False)(),
+    "try_create_highlight_session": lambda: _safe_try_highlight_session(),
     # v1.7.9.1.2 — ANSI helpers
     "strip_ansi": lambda s: __import__('re').sub(r'\033\[[0-9;]*[mKJHF]', '', str(s)),
-    "ipp_version": lambda: "1.7.9.1.9",
+    "ipp_version": lambda: __import__("ipp.main", fromlist=["VERSION"]).VERSION,
 }
