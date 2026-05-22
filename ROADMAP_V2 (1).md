@@ -2770,4 +2770,19 @@ These features are confirmed for implementation after all regression tests pass.
 *Phase C (v1.9.0–v1.9.5): ~1 week, completes standard library*
 *Phase D (v2.0.0–v2.0.8): ~1 month, real game dev capability*
 *Phase E (v2.1.0+): 3–6 months, native performance*
+### v1.7.9.1.9 — REPL Highlight Fix, Playground Pyodide, CLI Parity
+**Goal:** Fix three user-facing bugs introduced by the PyPI package differing from local `main.py`.
+- `main.py` `.highlight` command — fixed detection logic; `pt_avail` flag now correctly reflects both `_HAS_HIGHLIGHT` and `_HAS_PT`; banner and `.highlight` command show correct ON/OFF status after `pip install prompt_toolkit`
+- `ipp/main.py` — added full `_hl_session` / `make_session` highlight pipeline so the `ipp` CLI entry point (PyPI) has identical REPL behaviour to `python main.py`
+- `web-playground/index.html` — added `micropip.install('ipp-lang')` strategy so Pyodide loads the real Ipp engine instead of showing "Ipp engine unavailable"
+- `web-playground/ipp-bundle.js` — new bundled JS shim exposing the Ipp interpreter to the playground without requiring a server
+- **Files:** `main.py`, `ipp/main.py`, `web-playground/index.html`, `web-playground/ipp-bundle.js`
+
+### v1.7.9.1.10 — Version Bump & pyproject Cleanup
+**Goal:** Bump version to 1.7.9.1.10 and clean up stale Python version metadata.
+- VERSION bumped `1.7.9.1.9` → `1.7.9.1.10` in `main.py` and `ipp/main.py`
+- `pyproject.toml` — removed stale `Programming Language :: Python :: 3.8` classifier (minimum is 3.10)
+- ROADMAP updated with v1.7.9.1.9 and v1.7.9.1.10 sections
+- **Files:** `main.py`, `ipp/main.py`, `pyproject.toml`, `ROADMAP_V2 (1).md`
+
 *Phase F (v1.7.9.1.x): UX & game-dev QoL — keyboard, REPL polish, web playground, docs*
