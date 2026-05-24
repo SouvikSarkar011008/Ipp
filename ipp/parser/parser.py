@@ -324,10 +324,12 @@ class Parser:
         then_branch = self.block_or_statement()
         elif_branches = []
         else_branch = None
+        self.skip_newlines()
         while self.match(TokenType.ELIF):
             elif_cond = self.expression()
             elif_body = self.block_or_statement()
             elif_branches.append((elif_cond, elif_body))
+            self.skip_newlines()
         if self.match(TokenType.ELSE):
             else_branch = self.block_or_statement()
         return IfStmt(condition, then_branch, elif_branches, else_branch)
