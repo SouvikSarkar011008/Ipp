@@ -1235,7 +1235,7 @@ assert s.endswith("world") == true
 
 ---
 
-### v1.8.0.1 — Fix: `str.format()` Named Placeholders Work
+### v1.8.0.1 — Fix: `str.format()` Named Placeholders Work ✅ DONE (already implemented)
 
 **User impact:** `"{name} says hi".format(name="Alice")` silently ignores named placeholders or crashes. Common string templating pattern.
 
@@ -1258,7 +1258,7 @@ assert "{:>10}".format("right") == "     right"
 
 ---
 
-### v1.8.0.2 — Fix: `str.count()`, `str.rfind()`, `str.rindex()` Methods Added
+### v1.8.0.2 — Fix: `str.count()`, `str.rfind()`, `str.rindex()` Methods Added ✅ DONE (already implemented)
 
 **File to change:** `vm.py`, string method dispatch table.
 
@@ -1279,7 +1279,7 @@ assert s.find("world") == 6
 
 ---
 
-### v1.8.0.3 — Enhancement: `str * n` Repetition Operator
+### v1.8.0.3 — Enhancement: `str * n` Repetition Operator ✅ DONE (already implemented)
 
 **Why here:** After string method dispatch is fixed, adding `"x" * 5 == "xxxxx"` is a 2-line change in the MUL opcode handler. Used constantly for game UI (health bars, padding, separators).
 
