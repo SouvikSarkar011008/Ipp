@@ -1666,7 +1666,7 @@ assert m == 2 and n2 == 1
 
 ---
 
-### v1.8.2.1 — Enhancement: Swap Pattern `var a, b = b, a`
+### v1.8.2.1 — Enhancement: Swap Pattern `var a, b = b, a` ✅ DONE
 
 **Why here:** Natural follow-up to multi-assign. The RHS is fully evaluated before any assignment begins, so swap works without a temp variable.
 
