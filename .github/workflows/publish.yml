@@ -53,8 +53,7 @@ jobs:
       tag-exists: ${{ steps.tag.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0       # need full history for tag check
+        # No fetch-depth needed — we don't check tags, we check PyPI
 
       - name: Extract version from ipp/main.py
         id: ver
@@ -68,16 +67,18 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      - name: Check if git tag already exists
+      - name: Check if version already published on PyPI
         id: tag
         run: |
-          TAG="v${{ steps.ver.outputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
+          VERSION="${{ steps.ver.outputs.version }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://pypi.org/pypi/ipp-lang/$VERSION/json")
+          if [ "$HTTP_CODE" = "200" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG already exists — skipping publish"
+            echo "Version $VERSION already published on PyPI — skipping publish"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag $TAG is new — will publish"
+            echo "Version $VERSION is new — will publish"
           fi
 
   # ── Job 3: Publish ────────────────────────────────────────────────────────────
@@ -85,9 +86,10 @@ jobs:
     name: Build & Publish to PyPI
     runs-on: ubuntu-latest
     needs: [test, check-version]
-    # Only publish on push to main, and only when the version tag is new
+    # Publish on push to main (including manual workflow_dispatch re-runs),
+    # but only when the version hasn't already been published to PyPI
     if: |
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main' &&
       needs.check-version.outputs.tag-exists == 'false'
     environment:
@@ -125,12 +127,17 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           TAG="v${{ env.VERSION }}"
-          git tag -a "$TAG" -m "Release $TAG — auto-tagged by CI"
-          git push origin "$TAG"
-          echo "Pushed tag $TAG"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists locally — skipping creation"
+          else
+            git tag -a "$TAG" -m "Release $TAG — auto-tagged by CI"
+            git push origin "$TAG"
+            echo "Pushed tag $TAG"
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        continue-on-error: true   # safe if release already exists from a prior run
         with:
           tag_name: v${{ env.VERSION }}
           name: "Ipp v${{ env.VERSION }}"
