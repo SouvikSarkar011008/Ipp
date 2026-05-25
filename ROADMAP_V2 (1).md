@@ -1453,7 +1453,7 @@ assert add(3, 4) == 7
 
 ---
 
-### v1.8.1.1 — Enhancement: `list.extend()` and `list.insert()` Methods
+### v1.8.1.1 — Enhancement: `list.extend()` and `list.insert()` Methods ✅ DONE
 
 **Why here:** After variadic is fixed, list mutation methods are the natural next step. `extend` and `insert` are the two most common list-mutation methods missing from the API.
 

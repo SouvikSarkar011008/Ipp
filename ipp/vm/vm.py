@@ -1403,6 +1403,25 @@ class VM:
                         self.stack[-1] = attr
                 else:
                     raise VMError(f"Property '{name}' not found on str")
+            elif isinstance(obj, list):
+                _LIST_METHODS = {
+                    'extend': lambda lst, other: lst.extend(other) or lst,
+                    'insert': lambda lst, idx, val: lst.insert(int(idx), val) or lst,
+                    'clear':  lambda lst: lst.clear() or lst,
+                    'copy':   lambda lst: list(lst),
+                }
+                if name in _LIST_METHODS:
+                    _fn = _LIST_METHODS[name]
+                    _bound_obj = obj
+                    self.stack[-1] = lambda *args, _f=_fn, _o=_bound_obj: _f(_o, *args)
+                elif hasattr(obj, name):
+                    attr = getattr(obj, name)
+                    if callable(attr) and not isinstance(attr, (str, int, float, bool)):
+                        self.stack[-1] = lambda *args, _a=attr: _a(*args)
+                    else:
+                        self.stack[-1] = attr
+                else:
+                    raise VMError(f"Property '{name}' not found on list")
             elif isinstance(obj, dict) and name in obj:
                 self.stack[-1] = obj[name]
             elif hasattr(obj, 'data') and isinstance(getattr(obj, 'data', None), dict):

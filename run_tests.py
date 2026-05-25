@@ -117,6 +117,7 @@ TESTS = [
     ("v1.8.0.4-str-padding","tests/v1_8_0_4/test_str_padding.ipp"),
     ("v1.8.0.5-str-predicates","tests/v1_8_0_5/test_str_predicates.ipp"),
     ("v1.8.1-variadic","tests/v1_8_1/test_variadic_fix.ipp"),
+    ("v1.8.1.1-list-mutation","tests/v1_8_1_1/test_list_mutation.ipp"),
 ]
 
 passed=failed=0

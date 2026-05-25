@@ -373,6 +373,15 @@ class IppList:
     def remove(self, item):
         self.elements.remove(item)
 
+    def extend(self, items):
+        self.elements.extend(list(items.elements) if isinstance(items, IppList) else items)
+
+    def clear(self):
+        self.elements.clear()
+
+    def copy(self):
+        return IppList(list(self.elements))
+
 
 class IppDict:
     def __init__(self, data=None):
