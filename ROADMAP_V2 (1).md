@@ -1393,7 +1393,7 @@ assert valid_username("bad name!") == false
 
 ---
 
-### v1.8.1 — Fix: Variadic `...args` Packs a List, Not a Count (BUG-007)
+### v1.8.1 — Fix: Variadic `...args` Packs a List, Not a Count (BUG-007) ✅ DONE (already fixed)
 
 **Root cause:** In `vm.py` `_call()`, the variadic parameter receives the integer count of extra arguments instead of a list of those arguments.
 
