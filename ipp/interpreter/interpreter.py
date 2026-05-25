@@ -878,6 +878,12 @@ class Interpreter:
             'pad_right':   lambda n, c=' ': s.ljust(int(n), c[0] if c else ' '),
             'center':      lambda n, c=' ': s.center(int(n), c[0] if c else ' '),
             'zfill':       lambda n: s.zfill(int(n)),
+            'is_digit':    lambda: s.isdigit(),
+            'is_alpha':    lambda: s.isalpha(),
+            'is_alnum':    lambda: s.isalnum(),
+            'is_space':    lambda: s.isspace(),
+            'is_upper':    lambda: s.isupper(),
+            'is_lower':    lambda: s.islower(),
         }
         if name in _map:
             return _map[name]

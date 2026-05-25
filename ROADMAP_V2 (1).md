@@ -1351,7 +1351,7 @@ assert score_display(99999) == "[   99999]"
 
 ---
 
-### v1.8.0.5 — Enhancement: `str.is_digit()`, `str.is_alpha()`, `str.is_alnum()`, `str.is_space()`
+### v1.8.0.5 — Enhancement: `str.is_digit()`, `str.is_alpha()`, `str.is_alnum()`, `str.is_space()` ✅ DONE
 
 **Why here:** Input validation. Game chat filters, username validators, config parsers all need these one-liners.
 

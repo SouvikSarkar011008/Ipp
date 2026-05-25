@@ -1366,6 +1366,12 @@ class VM:
                     'pad_right': lambda s, n, c=' ': s.ljust(int(n), c),
                     'center': lambda s, n, c=' ': s.center(int(n), c),
                     'zfill': lambda s, n: s.zfill(int(n)),
+                    'is_digit': lambda s: s.isdigit(),
+                    'is_alpha': lambda s: s.isalpha(),
+                    'is_alnum': lambda s: s.isalnum(),
+                    'is_space': lambda s: s.isspace(),
+                    'is_upper': lambda s: s.isupper(),
+                    'is_lower': lambda s: s.islower(),
                     'format': lambda s, *a, **kw: s.format(*a, **kw),
                     'len': lambda s: len(s),
                 }
