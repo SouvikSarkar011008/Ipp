@@ -109,6 +109,7 @@ TESTS = [
     ("v1.7.9.1.14-trunc-floor","tests/v1_7_9_1_14/test_trunc_floor.ipp"),
     ("v1.7.9.1.15-closure-loop","tests/v1_7_9_1_15/test_closure_loop.ipp"),
     ("v1.7.9.1.16-class-fields","tests/v1_7_9_1_16/test_class_fields.ipp"),
+    ("v1.7.9.1.17-assert-msg","tests/v1_7_9_1_17/test_assert_msg.ipp"),
 ]
 
 passed=failed=0

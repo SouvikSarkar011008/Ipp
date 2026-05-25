@@ -2091,18 +2091,15 @@ class VM:
             raise exc
 
         elif opcode == OpCode.ASSERT:
-            has_message = len(self.stack) >= 2
-            if has_message:
-                msg = self.stack.pop()
-                cond = self.stack.pop()
-            else:
-                msg = None
-                cond = self.stack.pop() if self.stack else None
+            cond = self.stack.pop()
             if not self._is_truthy(cond):
-                # BUG-09: use message as description, not as the error itself
-                if msg is not None:
-                    raise VMError(f"Assertion failed: {msg}")
                 raise VMError("Assertion failed")
+
+        elif opcode == OpCode.ASSERT_MSG:
+            msg = self.stack.pop()
+            cond = self.stack.pop()
+            if not self._is_truthy(cond):
+                raise VMError(f"Assertion failed: {msg}")
 
         elif opcode == OpCode.TRY:
             offset = frame.chunk.read_int(ip + 1)

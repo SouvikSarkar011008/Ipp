@@ -818,7 +818,9 @@ class Compiler:
         self.compile_expr(node.condition)
         if node.message:
             self.compile_expr(node.message)
-        self.chunk.write(OpCode.ASSERT, self.current_line)
+            self.chunk.write(OpCode.ASSERT_MSG, self.current_line)
+        else:
+            self.chunk.write(OpCode.ASSERT, self.current_line)
 
     def compile_with(self, node: WithStmt):
         self.push_scope()

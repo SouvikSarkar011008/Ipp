@@ -1,4 +1,7 @@
-"""v1.7.9.1.13: Verify class-level field declaration error message."""
+"""v1.7.9.1.13+v1.7.9.1.16: Verify class-level field declarations (BUG-024 part B).
+
+Before v1.7.9.1.16 these produced errors; now they are valid syntax.
+"""
 import sys, os
 sys.path.insert(0, os.getcwd())
 
@@ -6,27 +9,6 @@ from ipp.lexer.lexer import tokenize
 from ipp.parser.parser import parse
 
 errors = 0
-
-def check_err(source, desc, expect_contains="not yet supported"):
-    """Parse `source`, expect SyntaxError with `expect_contains` in message."""
-    global errors
-    try:
-        tokens = tokenize(source)
-        ast = parse(tokens)
-        print(f"FAIL: {desc} — expected SyntaxError, got no error")
-        errors += 1
-    except SyntaxError as e:
-        msg = str(e)
-        if expect_contains in msg:
-            print(f"OK: {desc}")
-            print(f"     {msg.split(chr(10))[0]}")
-        else:
-            print(f"FAIL: {desc}")
-            print(f"      Expected '{expect_contains}' in: {msg}")
-            errors += 1
-    except Exception as e:
-        print(f"FAIL: {desc} — unexpected {type(e).__name__}: {e}")
-        errors += 1
 
 def check_ok(source, desc):
     """Parse `source`, expect no error."""
@@ -39,27 +21,27 @@ def check_ok(source, desc):
         print(f"FAIL: {desc} — unexpected {type(e).__name__}: {e}")
         errors += 1
 
-# ── Basic error message tests ─────────────────────────────────────
+# ── Class-level var/let should now parse successfully ────────────
 
-check_err("class Bad { var x = 0 }", "var with initializer")
-check_err("class Bad { var x }", "var without initializer")
-check_err("class Bad { let x = 1 }", "let with initializer")
-check_err("class Bad { let x }", "let without initializer")
+check_ok("class Good { var x = 0 }", "var with initializer")
+check_ok("class Good { var x }", "var without initializer")
+check_ok("class Good { let x = 1 }", "let with initializer")
+check_ok("class Good { let x }", "let without initializer")
 
-# ── static var/let ─────────────────────────────────────────────────
+# ── static var/let (silently accepted, not truly static) ─────────
 
-check_err("class Bad { static var x = 0 }", "static var with initializer")
-check_err("class Bad { static let x = 0 }", "static let with initializer")
+check_ok("class Good { static var x = 0 }", "static var with initializer")
+check_ok("class Good { static let x = 0 }", "static let with initializer")
 
 # ── Multiple var/let declarations ─────────────────────────────────
 
-check_err("class Bad { var a = 1 var b = 2 }", "sequential var declarations")
-check_err("class Bad { let a = 1 let b = 2 }", "sequential let declarations")
-check_err("class Bad { var a = 1 let b = 2 }", "mixed var and let")
+check_ok("class Good { var a = 1 var b = 2 }", "sequential var declarations")
+check_ok("class Good { let a = 1 let b = 2 }", "sequential let declarations")
+check_ok("class Good { var a = 1 let b = 2 }", "mixed var and let")
 
 # ── var/let before valid methods ──────────────────────────────────
 
-check_err("""class Bad {
+check_ok("""class Good {
     var x = 0
     func init() { self.x = 0 }
     func get() { return self.x }
@@ -121,4 +103,4 @@ if errors:
     print(f"\nFAILED: {errors} test(s) failed")
     sys.exit(1)
 else:
-    print("\nv1.7.9.1.13: class field error message tests PASSED")
+    print("\nv1.7.9.1.13+v1.7.9.1.16: class field declaration tests PASSED")

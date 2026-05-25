@@ -159,6 +159,9 @@ class OpCode(IntEnum):
     # Exception type matching
     MATCH_EXC_TYPE = 105  # pops (type_str, exc) → pushes (exc, bool)
 
+    # Assert with message (v1.7.9.1.17)
+    ASSERT_MSG = 106  # pops (condition, message) — message is on stack below condition
+
 
 # ─── Operand size table (authoritative) ──────────────────────────────────────
 # Every opcode is exactly one of: 0-operand (size=1), 1-byte operand (size=2),
@@ -192,6 +195,8 @@ _SIZE1 = frozenset([
     OpCode.CONTAINS,
     # FIX: MATCH_EXC_TYPE has no operands
     OpCode.MATCH_EXC_TYPE,
+    # FIX: ASSERT_MSG has no operands
+    OpCode.ASSERT_MSG,
 ])
 
 _SIZE2 = frozenset([

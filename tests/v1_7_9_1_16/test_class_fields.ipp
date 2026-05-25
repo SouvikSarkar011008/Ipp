@@ -76,7 +76,7 @@ class Empty {}
 var e = Empty()
 print("  PASS")
 
-print("Test 7: Inheritance — fields set in parent init, accessed from child")
+print("Test 7: Inheritance - fields set in parent init, accessed from child")
 class Animal {
     var species = "unknown"
     func init() { self.species = "mammal" }

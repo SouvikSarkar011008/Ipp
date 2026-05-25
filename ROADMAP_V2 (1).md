@@ -1059,7 +1059,7 @@ assert p2.x == 0   # not shared
 
 ---
 
-### v1.7.9.1.17 — Enhancement: `assert` with Custom Error Message
+### v1.7.9.1.17 — Enhancement: `assert` with Custom Error Message ✅ DONE
 
 **User impact:** `assert hp > 0` fails with just "AssertionError" or nothing useful. Adding a message makes test failures and game invariants debuggable without a debugger attached.
 
