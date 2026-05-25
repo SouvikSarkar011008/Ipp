@@ -93,18 +93,19 @@ TESTS = [
     ("v1.7.8.3-inherit","tests/v1_7_8_3/test_len_inheritance.ipp"),
     ("v1.7.8.3-default","tests/v1_7_8_3/test_len_default.ipp"),
     ("v1.7.6.2-dict-get","tests/v1_7_6_2/test_dict_get.ipp"),
+    ("v1.7.9.1.12-isclose","tests/v1_7_9_1_12/test_isclose.ipp"),
 ]
 
 passed=failed=0
 failures=[]
 for name,path in TESTS:
     if not os.path.exists(path):
-        print(f"❌ {name}: FILE_NOT_FOUND"); failed+=1; failures.append((name,"FILE_NOT_FOUND")); continue
+        print(f"[FAIL] {name}: FILE_NOT_FOUND"); failed+=1; failures.append((name,"FILE_NOT_FOUND")); continue
     try:
-        vm=VM(); vm.run(compile_ast(parse(tokenize(open(path).read()))))
-        print(f"✅ {name}"); passed+=1
+        vm=VM(); vm._current_source_file=os.path.abspath(path); vm.run(compile_ast(parse(tokenize(open(path).read()))))
+        print(f"[PASS] {name}"); passed+=1
     except Exception as e:
         msg=f"{type(e).__name__}: {str(e)[:80]}"
-        print(f"❌ {name}: {msg}"); failed+=1; failures.append((name,msg))
+        print(f"[FAIL] {name}: {msg}"); failed+=1; failures.append((name,msg))
 print(f"\nPASSED:{passed} FAILED:{failed}")
 for n,e in failures: print(f"  {n}: {e}")

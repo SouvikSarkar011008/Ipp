@@ -552,6 +552,7 @@ class VM:
             'asin': math.asin, 'acos': math.acos, 'atan': math.atan, 'atan2': math.atan2,
             'pi': math.pi,
             'e': math.e,
+            'isclose': math.isclose,  # v1.7.9.1.12
             'json_parse': json.loads,
             'json_stringify': json.dumps,
             'md5': lambda s: hashlib.md5(str(s).encode()).hexdigest(),

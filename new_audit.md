@@ -35,7 +35,7 @@
 |----|----------|-------------|
 | BUG-023 | ★★ HIGH | Closures in loops capture by reference — all see the loop's final value |
 | BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message |
-| BUG-025 | ★ MEDIUM | No `math.isclose()` — float comparisons silently wrong (`0.1 + 0.2 != 0.3`) |
+| BUG-025 | ★ MEDIUM | No `math.isclose()` — float comparisons silently wrong (`0.1 + 0.2 != 0.3`) | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ LOW | `int()` truncates toward zero, undocumented — breaks negative tile coordinates |
 
 ---
@@ -980,14 +980,14 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | BUG-022 | ★ | C extension build fails; `vm_run()` is stub | **OPEN** |
 | BUG-023 | ★★ | Closure-in-loop captures by reference | **OPEN** *(new — this audit)* |
 | BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | **OPEN** *(new — this audit)* |
-| BUG-025 | ★ | No `math.isclose()` — float equality wrong | **OPEN** *(new — this audit)* |
+| BUG-025 | ★ | No `math.isclose()` — float equality wrong | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ | `int()` truncation vs floor undocumented | **OPEN** *(new — this audit, doc-only fix)* |
 | — | — | `dict.get(k, default)` w/string key broken | ✅ **FIXED v1.7.6.2** |
 | — | — | Test files claim PASSED for untested features | **OPEN** |
 
 ### Confirmed Fixed (verified in this audit)
 
-For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains.
+For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin.
 
 ## 13. New Bugs Found In This Audit
 
@@ -1068,9 +1068,9 @@ if self.check(TokenType.VAR) or self.check(TokenType.LET):
 
 ---
 
-### BUG-025 ★ MEDIUM: No `math.isclose()` — Float Equality Silently Wrong
+### ~~BUG-025~~ ✅ FIXED v1.7.9.1.12: No `math.isclose()` — Float Equality Silently Wrong
 
-**Confirmed in live test session (v1.7.9.1.11):**
+**Was confirmed in live test session (v1.7.9.1.11):**
 
 ```ipp
 print(0.1 + 0.2)              # prints: 0.30000000000000004
@@ -1095,7 +1095,7 @@ if elapsed == 1.0 {          # ❌ never true — elapsed is 0.9999999...
 }
 ```
 
-**Fix (1 line in `ipp/runtime/builtins.py` and `ipp/vm/vm.py`):**
+**Fix applied in v1.7.9.1.12** (1 line in `ipp/runtime/builtins.py` and `ipp/vm/vm.py`):
 ```python
 # In math builtins dict:
 'isclose': lambda a, b, rel_tol=1e-9: math.isclose(a, b, rel_tol=rel_tol),
@@ -1103,7 +1103,7 @@ if elapsed == 1.0 {          # ❌ never true — elapsed is 0.9999999...
 'isclose': lambda a, b, rel_tol=1e-9: math.isclose(a, b, rel_tol=rel_tol),
 ```
 
-**Estimated effort:** 1 line. **Risk:** Zero. Pure addition.
+**Verified:** Test `tests/v1_7_9_1_12/test_isclose.ipp` passes with 16 assertions. All 83 regression tests pass.
 
 ---
 

@@ -73,13 +73,13 @@ print(f'{passed} pass / {failed} fail')
 
 ## VERSION STATUS ✅
 
-Version is correctly `1.7.9.1.11` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 is closed.
+Version is correctly `1.7.9.1.12` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 is closed, BUG-025 is fixed.
 
 ---
 
 ## Phase A: Critical Crash Fixes (v1.7.6 – v1.7.9) ✅ COMPLETE
 
-All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.11 are done. See version history at the bottom for the full list of what each version did.
+All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.12 are done. See version history at the bottom for the full list of what each version did.
 
 ---
 
@@ -751,7 +751,7 @@ assert msg.contains("zero") == true or msg.contains("Division") == true
 
 ---
 
-### v1.7.9.1.12 — Fix: `math.isclose()` Builtin Added (BUG-025)
+### v1.7.9.1.12 — Fix: `math.isclose()` Builtin Added (BUG-025) ✅ DONE
 
 **User impact:** `0.1 + 0.2 == 0.3` silently returns `false`. Any game doing float accumulation (timers, physics, progress bars, lerp targets) will hit wrong comparison results with no error message.
 
@@ -9592,8 +9592,8 @@ server.listen()   # blocks until Ctrl+C
 - ROADMAP updated with v1.7.9.1.9 and v1.7.9.1.10 sections
 - **Files:** `main.py`, `ipp/main.py`, `pyproject.toml`, `ROADMAP_V2 (1).md`
 
-*Phase A (v1.7.6–v1.7.9.1.11): ✅ COMPLETE*
-*Phase A2 (v1.7.9.1.12–1.17): ~1 week, closes audit-v4 micro-bugs*
+*Phase A (v1.7.6–v1.7.9.1.12): ✅ COMPLETE*
+*Phase A2 (v1.7.9.1.13–1.17): ~1 week, closes audit-v4 micro-bugs*
 *Phase B (v1.8.0–v1.8.9): ~2–3 weeks, makes language reliable*
 *Phase C (v1.9.0–v1.9.5.1): ~10 days, standard library complete*
 *Phase C2 (v1.9.10–v1.9.13): ~1 week, multi-file projects unblocked*

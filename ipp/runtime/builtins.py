@@ -4019,6 +4019,7 @@ BUILTINS = {
     "atan2": ipp_atan2,
     "pi": math.pi,    # v1.5.31: use float constant
     "e": math.e,      # v1.5.31: use float constant
+    "isclose": lambda a, b, rel_tol=1e-9: math.isclose(a, b, rel_tol=rel_tol),  # v1.7.9.1.12
     "input": ipp_input,
     "exit": ipp_exit,
     "assert": ipp_assert,
