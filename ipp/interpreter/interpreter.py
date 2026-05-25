@@ -868,6 +868,45 @@ class Interpreter:
         
         raise RuntimeError(f"Cannot set index on '{type(obj).__name__}'. Only list and dict support index assignment.")
     
+    def _get_list_method(self, lst, name):
+        """Return callable for Ipp list aggregate methods."""
+        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat'):
+            return None
+        _self = self
+        class _ListMethodWrapper:
+            def __call__(_cls, fn=None):
+                if name == 'min':
+                    return min(lst.elements)
+                elif name == 'max':
+                    return max(lst.elements)
+                elif name == 'sum':
+                    return sum(lst.elements)
+                elif name == 'flat':
+                    result = []
+                    for sub in lst.elements:
+                        if isinstance(sub, IppList):
+                            result.extend(sub.elements)
+                        elif isinstance(sub, list):
+                            result.extend(sub)
+                        else:
+                            result.append(sub)
+                    return IppList(result)
+                elif name == 'any':
+                    if fn is None:
+                        return any(lst.elements)
+                    for elem in lst.elements:
+                        if _self.call_function(fn, [elem]):
+                            return True
+                    return False
+                elif name == 'all':
+                    if fn is None:
+                        return all(lst.elements)
+                    for elem in lst.elements:
+                        if not _self.call_function(fn, [elem]):
+                            return False
+                    return True
+        return _ListMethodWrapper()
+
     def _get_string_method(self, s, name):
         """Return callable for Ipp string methods that don't exist on Python str."""
         _map = {
@@ -909,6 +948,9 @@ class Interpreter:
         if isinstance(obj, IppModule):
             return obj.get(node.name)
         if isinstance(obj, IppList):
+            m = self._get_list_method(obj, node.name)
+            if m is not None:
+                return m
             return getattr(obj, node.name)
         if isinstance(obj, IppDict):
             val = obj.get(node.name)

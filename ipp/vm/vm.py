@@ -451,6 +451,27 @@ class ExceptionHandler:
 _SUSPEND = object()
 _RETURN_FRAME = object()
 
+
+class _ListPredicateWrapper:
+    """VM wrapper for list.any() / list.all() with optional predicate support."""
+    __slots__ = ('vm', 'method', 'lst')
+    def __init__(self, vm, method, lst):
+        self.vm = vm
+        self.method = method
+        self.lst = lst
+    def __call__(self, fn=None):
+        if fn is None:
+            return any(self.lst) if self.method == 'any' else all(self.lst)
+        for elem in self.lst:
+            result = self.vm._call_sync(fn, [elem])
+            if result:
+                if self.method == 'any':
+                    return True
+            else:
+                if self.method == 'all':
+                    return False
+        return False if self.method == 'any' else True
+
 # Opcode lookup cache - v1.5.26 fix for VM performance
 _OPCODE_CACHE = {}
 
@@ -1409,8 +1430,14 @@ class VM:
                     'insert': lambda lst, idx, val: lst.insert(int(idx), val) or lst,
                     'clear':  lambda lst: lst.clear() or lst,
                     'copy':   lambda lst: list(lst),
+                    'min':    lambda lst: min(lst),
+                    'max':    lambda lst: max(lst),
+                    'sum':    lambda lst: sum(lst),
+                    'flat':   lambda lst: [x for sub in lst for x in (sub if isinstance(sub, list) else [sub])],
                 }
-                if name in _LIST_METHODS:
+                if name in ('any', 'all'):
+                    self.stack[-1] = _ListPredicateWrapper(self, name, obj)
+                elif name in _LIST_METHODS:
                     _fn = _LIST_METHODS[name]
                     _bound_obj = obj
                     self.stack[-1] = lambda *args, _f=_fn, _o=_bound_obj: _f(_o, *args)
@@ -2219,6 +2246,40 @@ class VM:
                 fn(*args)
         except Exception:
             pass
+
+    def _call_sync(self, fn, args):
+        """Call a Closure synchronously and return the result."""
+        if isinstance(fn, Closure):
+            chunk = fn.chunk
+            proto = getattr(fn, '_proto', None)
+            old_frames = self.frames[:]
+            old_stack = self.stack[:]
+            old_running = self.running
+            old_return = self._return_value
+            base = len(self.stack)
+            for a in args:
+                self.stack.append(a)
+            variadic_param = getattr(proto, 'variadic_param', None) if proto else None
+            proto_param_count = len(getattr(proto, 'param_names', None) or []) if proto else 0
+            expected_args = proto_param_count or (len(chunk.locals) if hasattr(chunk, 'locals') else 0)
+            if not variadic_param and expected_args > len(args):
+                for _ in range(expected_args - len(args)):
+                    self.stack.append(None)
+            new_frame = VMFrame(chunk, closure=fn, function=fn, stack_base=base)
+            self._return_value = None
+            self.frames[:] = [new_frame]
+            try:
+                self.run()
+            finally:
+                result = self._return_value
+                self.frames[:] = old_frames
+                self.stack[:] = old_stack
+                self.running = old_running
+                self._return_value = old_return
+            return result
+        elif callable(fn):
+            return fn(*args)
+        return None
 
     def _call(self, callee, args, return_frame: VMFrame):
         """Push a new call frame for callee with given args."""

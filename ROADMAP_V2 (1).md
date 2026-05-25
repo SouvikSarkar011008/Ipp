@@ -1485,7 +1485,7 @@ assert len(lst) == 7    # original unchanged
 
 ---
 
-### v1.8.1.2 — Enhancement: `list.any()`, `list.all()`, `list.min()`, `list.max()`
+### v1.8.1.2 — Enhancement: `list.any()`, `list.all()`, `list.min()`, `list.max()` ✅ DONE
 
 **Why here:** Four single-line additions that remove the need for common manual loops in game code.
 
