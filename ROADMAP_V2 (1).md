@@ -1568,7 +1568,7 @@ assert [1,2,3,4,5].drop(2) == [3,4,5]
 
 ---
 
-### v1.8.1.4 — Enhancement: `list.find()`, `list.find_index()`, `list.contains()`
+### v1.8.1.4 — Enhancement: `list.find()`, `list.find_index()`, `list.contains()` ✅ DONE
 
 **Why here:** The final missing search methods. After these, the list API is comprehensive enough for most game use cases without needing manual loops for search.
 

@@ -870,7 +870,7 @@ class Interpreter:
     
     def _get_list_method(self, lst, name):
         """Return callable for Ipp list aggregate methods."""
-        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop'):
+        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop', 'find', 'find_index', 'contains', 'count'):
             return None
         _self = self
         class _ListMethodWrapper:
@@ -928,6 +928,36 @@ class Interpreter:
                 elif name == 'drop':
                     n = int(args[0]) if args else 0
                     return IppList(lst.elements[n:])
+                elif name == 'find':
+                    fn = args[0] if args else None
+                    if fn is None:
+                        return None
+                    for elem in lst.elements:
+                        if _self.call_function(fn, [elem]):
+                            return elem
+                    return None
+                elif name == 'find_index':
+                    fn = args[0] if args else None
+                    if fn is None:
+                        return -1
+                    for i, elem in enumerate(lst.elements):
+                        if _self.call_function(fn, [elem]):
+                            return i
+                    return -1
+                elif name == 'contains':
+                    val = args[0] if args else None
+                    return val in lst.elements
+                elif name == 'count':
+                    fn_or_val = args[0] if args else None
+                    if fn_or_val is None:
+                        return 0
+                    if isinstance(fn_or_val, IppFunction):
+                        count = 0
+                        for elem in lst.elements:
+                            if _self.call_function(fn_or_val, [elem]):
+                                count += 1
+                        return count
+                    return lst.elements.count(fn_or_val)
         return _ListMethodWrapper()
 
     def _get_string_method(self, s, name):

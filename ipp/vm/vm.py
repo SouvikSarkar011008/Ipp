@@ -472,6 +472,40 @@ class _ListPredicateWrapper:
                     return False
         return False if self.method == 'any' else True
 
+
+class _ListSearchWrapper:
+    """VM wrapper for list.find(), find_index(), count() with predicate support."""
+    __slots__ = ('vm', 'method', 'lst')
+    def __init__(self, vm, method, lst):
+        self.vm = vm
+        self.method = method
+        self.lst = lst
+    def __call__(self, fn_or_val=None):
+        if self.method == 'find':
+            if fn_or_val is None:
+                return None
+            for x in self.lst:
+                if self.vm._call_sync(fn_or_val, [x]):
+                    return x
+            return None
+        elif self.method == 'find_index':
+            if fn_or_val is None:
+                return -1
+            for i, x in enumerate(self.lst):
+                if self.vm._call_sync(fn_or_val, [x]):
+                    return i
+            return -1
+        elif self.method == 'count':
+            if fn_or_val is None:
+                return 0
+            if isinstance(fn_or_val, Closure):
+                count = 0
+                for x in self.lst:
+                    if self.vm._call_sync(fn_or_val, [x]):
+                        count += 1
+                return count
+            return self.lst.count(fn_or_val)
+
 # Opcode lookup cache - v1.5.26 fix for VM performance
 _OPCODE_CACHE = {}
 
@@ -1440,9 +1474,12 @@ class VM:
                     'unique':    lambda lst: list(dict.fromkeys(lst)),
                     'take':      lambda lst, n: lst[:int(n)],
                     'drop':      lambda lst, n: lst[int(n):],
+                    'contains':  lambda lst, val: val in lst,
                 }
                 if name in ('any', 'all'):
                     self.stack[-1] = _ListPredicateWrapper(self, name, obj)
+                elif name in ('find', 'find_index', 'count'):
+                    self.stack[-1] = _ListSearchWrapper(self, name, obj)
                 elif name in _LIST_METHODS:
                     _fn = _LIST_METHODS[name]
                     _bound_obj = obj
