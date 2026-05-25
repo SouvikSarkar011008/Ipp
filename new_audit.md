@@ -34,7 +34,7 @@
 | ID | Severity | Description |
 |----|----------|-------------|
 | BUG-023 | ★★ HIGH | Closures in loops capture by reference — all see the loop's final value |
-| BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message |
+| BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message | ⚠️ **Part A (error msg) FIXED v1.7.9.1.13** |
 | BUG-025 | ★ MEDIUM | No `math.isclose()` — float comparisons silently wrong (`0.1 + 0.2 != 0.3`) | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ LOW | `int()` truncates toward zero, undocumented — breaks negative tile coordinates |
 
@@ -979,7 +979,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | BUG-021 | ★ | `print("label:", val)` crashes everywhere | ✅ **FIXED v1.7.6.1** |
 | BUG-022 | ★ | C extension build fails; `vm_run()` is stub | **OPEN** |
 | BUG-023 | ★★ | Closure-in-loop captures by reference | **OPEN** *(new — this audit)* |
-| BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | **OPEN** *(new — this audit)* |
+| BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | ⚠️ **Part A (err msg) FIXED v1.7.9.1.13; Part B (feature) OPEN** |
 | BUG-025 | ★ | No `math.isclose()` — float equality wrong | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ | `int()` truncation vs floor undocumented | **OPEN** *(new — this audit, doc-only fix)* |
 | — | — | `dict.get(k, default)` w/string key broken | ✅ **FIXED v1.7.6.2** |
@@ -987,7 +987,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 
 ### Confirmed Fixed (verified in this audit)
 
-For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin.
+For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin, class-level field improved error message (BUG-024 part A).
 
 ## 13. New Bugs Found In This Audit
 
@@ -1028,43 +1028,20 @@ for i in range(3) {
 
 ---
 
-### BUG-024 ★★ HIGH: Class-Level Field Declarations Give Wrong Error Message
+### ~~BUG-024 Part A~~ ✅ FIXED v1.7.9.1.13: Class-Level Field Error Message
 
-**Confirmed in live test session (v1.7.9.1.11):**
+**Problem 1 (now fixed):** The error message was actively misleading. `"Expect '}' after class body → Check for missing quotes"` was completely wrong — there are no quotes involved whatsoever.
 
-```ipp
-class Counter {
-    var count = 0             # ❌ Parse error: Expect '}' after class body
-                              #    → Check for missing quotes
-}
-```
-
-**Two distinct problems:**
-
-1. **The feature doesn't work at all.** Class-level `var` declarations are not supported. All fields must be assigned inside `__init__()`. GDScript, Python, JavaScript, Java, and C# all support class-level field declarations natively.
-
-2. **The error message is actively misleading.** `"Expect '}' after class body → Check for missing quotes"` is completely wrong — there are no quotes involved whatsoever. A developer who sees this will spend time auditing their string syntax while the actual answer is "class-level var declarations aren't implemented."
-
-**Fix A (documentation, 5 minutes):** Add to `ERRORS.md`:
-```
-"Expect '}' after class body" inside a class definition
-→ Class-level field declarations are not yet supported.
-  Use self.field = value inside __init__() instead.
-```
-
-**Fix B (error message, ~10 lines in `parser.py`):**
+**Fix B applied in v1.7.9.1.13** (~10 lines in `parser.py`):
 ```python
 if self.check(TokenType.VAR) or self.check(TokenType.LET):
-    raise ParseError(
-        "Class-level field declarations are not yet supported. "
-        "Assign fields with 'self.name = value' inside __init__() instead.",
-        self.peek()
+    raise SyntaxError(
+        "Class-level 'var'/'let' declarations are not yet supported. "
+        "Assign fields with 'self.name = value' inside __init__() instead."
     )
 ```
 
-**Fix C (full feature, ~30 lines in `parser.py` + `compiler.py`):** Parse `var name = expr` in class body and lower it to an `__init__` assignment automatically.
-
-**Estimated effort:** Fix A: 5 minutes. Fix B: 10 lines. Fix C: ~30 lines.
+**Problem 2 (still open):** The feature itself still doesn't work. Class-level `var`/`let` declarations are not supported. All fields must be assigned inside `__init__()`. GDScript, Python, JavaScript, Java, and C# all support class-level field declarations natively. This is Fix C in a future version.
 
 ---
 

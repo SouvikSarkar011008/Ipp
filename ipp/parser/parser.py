@@ -73,6 +73,13 @@ class Parser:
             elif self.match(TokenType.FUNC):
                 method = self.function_declaration(is_static=is_static)
                 methods.append(method)
+            elif self.check(TokenType.VAR) or self.check(TokenType.LET):
+                kw = "var" if self.check(TokenType.VAR) else "let"
+                self.advance()
+                field_name = self.peek().lexeme if not self.is_at_end() else "field"
+                raise SyntaxError(
+                    f"Class-level '{kw}' declarations are not yet supported. "
+                    f"Assign fields with 'self.{field_name} = value' inside __init__() instead.")
             else:
                 break
             self.skip_newlines()

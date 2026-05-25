@@ -94,6 +94,7 @@ TESTS = [
     ("v1.7.8.3-default","tests/v1_7_8_3/test_len_default.ipp"),
     ("v1.7.6.2-dict-get","tests/v1_7_6_2/test_dict_get.ipp"),
     ("v1.7.9.1.12-isclose","tests/v1_7_9_1_12/test_isclose.ipp"),
+    ("v1.7.9.1.13-class-field-err","tests/v1_7_9_1_13/test_class_field_error.ipp"),
 ]
 
 passed=failed=0

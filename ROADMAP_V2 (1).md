@@ -73,13 +73,13 @@ print(f'{passed} pass / {failed} fail')
 
 ## VERSION STATUS ✅
 
-Version is correctly `1.7.9.1.12` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 is closed, BUG-025 is fixed.
+Version is correctly `1.7.9.1.13` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 is closed, BUG-025 is fixed, BUG-024 part A is fixed.
 
 ---
 
 ## Phase A: Critical Crash Fixes (v1.7.6 – v1.7.9) ✅ COMPLETE
 
-All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.12 are done. See version history at the bottom for the full list of what each version did.
+All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.13 are done. See version history at the bottom for the full list of what each version did.
 
 ---
 
@@ -791,7 +791,7 @@ assert isclose(100.0, 150.0, rel_tol=0.5) == true   # within 50%
 
 ---
 
-### v1.7.9.1.13 — Fix: Class-Level Field Declaration Error Message (BUG-024 part A)
+### v1.7.9.1.13 — Fix: Class-Level Field Declaration Error Message (BUG-024 part A) ✅ DONE
 
 **User impact:** `class C { var x = 0 }` gives `"Parse error: Expect '}' after class body → Check for missing quotes"`. This message is actively wrong — there are no quotes. Developers waste time auditing their string syntax.
 
@@ -9591,8 +9591,8 @@ server.listen()   # blocks until Ctrl+C
 - ROADMAP updated with v1.7.9.1.9 and v1.7.9.1.10 sections
 - **Files:** `main.py`, `ipp/main.py`, `pyproject.toml`, `ROADMAP_V2 (1).md`
 
-*Phase A (v1.7.6–v1.7.9.1.12): ✅ COMPLETE*
-*Phase A2 (v1.7.9.1.13–1.17): ~1 week, closes audit-v4 micro-bugs*
+*Phase A (v1.7.6–v1.7.9.1.13): ✅ COMPLETE*
+*Phase A2 (v1.7.9.1.14–1.17): ~1 week, closes audit-v4 micro-bugs*
 *Phase B (v1.8.0–v1.8.9): ~2–3 weeks, makes language reliable*
 *Phase C (v1.9.0–v1.9.5.1): ~10 days, standard library complete*
 *Phase C2 (v1.9.10–v1.9.13): ~1 week, multi-file projects unblocked*
