@@ -1362,6 +1362,10 @@ class VM:
                     'to_lower': lambda s: s.lower(),
                     'to_int': lambda s: int(s),
                     'to_float': lambda s: float(s),
+                    'pad_left':  lambda s, n, c=' ': s.rjust(int(n), c),
+                    'pad_right': lambda s, n, c=' ': s.ljust(int(n), c),
+                    'center': lambda s, n, c=' ': s.center(int(n), c),
+                    'zfill': lambda s, n: s.zfill(int(n)),
                     'format': lambda s, *a, **kw: s.format(*a, **kw),
                     'len': lambda s: len(s),
                 }

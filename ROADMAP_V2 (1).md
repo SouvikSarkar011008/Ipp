@@ -1318,7 +1318,7 @@ assert health_bar(0, 100) == "[..........]"
 
 ---
 
-### v1.8.0.4 — Enhancement: `str.pad_left()`, `str.pad_right()`, `str.center()`
+### v1.8.0.4 — Enhancement: `str.pad_left()`, `str.pad_right()`, `str.center()` ✅ DONE
 
 **Why here:** After string method dispatch is fixed, padding is one line each. Used constantly for game UI text alignment (score displays, health bars, menu columns).
 

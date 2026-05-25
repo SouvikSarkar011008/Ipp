@@ -876,6 +876,8 @@ class Interpreter:
             'repeat':      lambda n: s * int(n),
             'pad_left':    lambda n, c=' ': s.rjust(int(n), c[0] if c else ' '),
             'pad_right':   lambda n, c=' ': s.ljust(int(n), c[0] if c else ' '),
+            'center':      lambda n, c=' ': s.center(int(n), c[0] if c else ' '),
+            'zfill':       lambda n: s.zfill(int(n)),
         }
         if name in _map:
             return _map[name]

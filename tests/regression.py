@@ -161,6 +161,7 @@ TESTS = [
     ("v1.8.0.1-str-format", "tests/v1_8_0_1/test_str_format.ipp"),
     ("v1.8.0.2-str-search", "tests/v1_8_0_2/test_str_search.ipp"),
     ("v1.8.0.3-str-repeat", "tests/v1_8_0_3/test_str_repeat.ipp"),
+    ("v1.8.0.4-str-padding", "tests/v1_8_0_4/test_str_padding.ipp"),
     ("v1.7.9.1.9-highlighter", "tests/v1_7_9_1_9/test_highlighter.ipp"),
     ("v1.7.9.1.9-highlight-cmd","tests/v1_7_9_1_9/test_highlight_cmd.ipp"),
     ("v1.7.9.1.9-bundle",      "tests/v1_7_9_1_9/test_playground_bundle.py"),
