@@ -759,10 +759,11 @@ assert msg.contains("zero") == true or msg.contains("Division") == true
 
 **Exact fix — 1 line:**
 ```python
-# In the math builtin dict:
+# In interpreter BUILTINS dict (ipp/runtime/builtins.py):
 'isclose': lambda a, b, rel_tol=1e-9: math.isclose(a, b, rel_tol=rel_tol),
-# Also expose as a top-level global builtin:
-'isclose': lambda a, b, rel_tol=1e-9: math.isclose(a, b, rel_tol=rel_tol),
+# In VM builtin table (ipp/vm/vm.py), pass raw Python function:
+'isclose': math.isclose,
+# Note: Ipp has no `math.` namespace — only top-level isclose() is exposed.
 ```
 
 **Test file: `tests/v1_7_9_1_12/test_isclose.ipp`**
@@ -770,22 +771,20 @@ assert msg.contains("zero") == true or msg.contains("Division") == true
 # Float arithmetic is imprecise
 assert 0.1 + 0.2 != 0.3              # raw comparison correctly returns false
 
-# math.isclose handles it correctly
-assert math.isclose(0.1 + 0.2, 0.3) == true
-assert math.isclose(1.0, 1.0000000001) == true
-assert math.isclose(1.0, 1.1) == false
-
-# Top-level version
+# isclose handles it correctly (no math. namespace in Ipp — top-level only)
 assert isclose(0.1 + 0.2, 0.3) == true
+assert isclose(1.0, 1.0000000001) == true
+assert isclose(1.0, 1.1) == false
 
 # Game use case: timer accumulation
 var elapsed = 0.0
 for i in range(10) { elapsed = elapsed + 0.1 }
 assert isclose(elapsed, 1.0) == true   # elapsed == 1.0 would fail
 
-# Tolerance control
-assert math.isclose(1.0, 1.05, rel_tol=0.1) == true    # within 10%
-assert math.isclose(1.0, 1.05, rel_tol=0.01) == false   # outside 1%
+# Tolerance control via rel_tol kwarg
+assert isclose(1.0, 1.05, rel_tol=0.1) == true     # within 10%
+assert isclose(1.0, 1.05, rel_tol=0.01) == false    # outside 1%
+assert isclose(100.0, 150.0, rel_tol=0.5) == true   # within 50%
 ```
 
 **Regression risk:** Zero. Pure addition.

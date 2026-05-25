@@ -1,4 +1,4 @@
-# v1.7.9.1.12 — math.isclose() builtin
+# v1.7.9.1.12 — isclose() builtin
 # Float arithmetic is imprecise; isclose handles it correctly
 
 # --- Basic comparisons ---
@@ -8,14 +8,28 @@ assert isclose(0.1 + 0.2, 0.3) == true
 assert isclose(1.0, 1.0000000001) == true
 assert isclose(1.0, 1.1) == false
 
-# --- Symmetry ---
+# --- Symmetry (a isclose b == b isclose a) ---
 assert isclose(0.3, 0.1 + 0.2) == true
 assert isclose(1.1, 1.0) == false
+assert isclose(0.0, 0.0) == true
+assert isclose(0.0, -0.0) == true
 
 # --- Equal values ---
 assert isclose(42.0, 42.0) == true
 assert isclose(-1.0, -1.0) == true
-assert isclose(0.0, -0.0) == true
+assert isclose(0.0, 0.0) == true
+
+# --- rel_tol tolerance control ---
+assert isclose(1.0, 1.05, rel_tol=0.1) == true     # within 10%
+assert isclose(1.0, 1.05, rel_tol=0.01) == false    # outside 1%
+assert isclose(100.0, 150.0, rel_tol=0.5) == true   # within 50%
+assert isclose(100.0, 300.0, rel_tol=0.5) == false  # outside 50% (|100-300|=200 > 0.5*300=150)
+
+# --- Edge: near-zero with default rel_tol ---
+# isclose(0.0, x) with default rel_tol=1e-9 is always false for x != 0
+# because rel_tol * max(0, x) = 1e-9 * x, and we need x <= rel_tol * x,
+# which requires 1 <= rel_tol. This matches Python's math.isclose behavior.
+# (Users needing zero-comparison should add abs_tol support.)
 
 # --- Game use case: timer accumulation ---
 var elapsed = 0.0
