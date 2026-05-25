@@ -1174,7 +1174,7 @@ After Phase A, the language is usable for basic programs. Phase B fixes the rema
 
 ---
 
-### v1.8.0 — Fix: `str.replace()` and String Method Naming (BUG-005, BUG-011)
+### v1.8.0 — Fix: `str.replace()` and String Method Naming (BUG-005, BUG-011) ✅ DONE
 
 **Root cause:** The VM's `_call()` kwarg-detection heuristic treats any string argument that looks like an identifier as a kwarg key. `"world".replace("world", "ipp")` passes `"world"` as `replace(world="ipp")` → crash.
 

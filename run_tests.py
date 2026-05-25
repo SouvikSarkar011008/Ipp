@@ -110,6 +110,7 @@ TESTS = [
     ("v1.7.9.1.15-closure-loop","tests/v1_7_9_1_15/test_closure_loop.ipp"),
     ("v1.7.9.1.16-class-fields","tests/v1_7_9_1_16/test_class_fields.ipp"),
     ("v1.7.9.1.17-assert-msg","tests/v1_7_9_1_17/test_assert_msg.ipp"),
+    ("v1.8.0-str-methods","tests/v1_8_0/test_string_methods.ipp"),
 ]
 
 passed=failed=0
