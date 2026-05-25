@@ -107,6 +107,7 @@ TESTS = [
     ("v1.7.9.1.12-isclose","tests/v1_7_9_1_12/test_isclose.ipp"),
     ("v1.7.9.1.13-class-field-err","tests/v1_7_9_1_13/test_class_field_error.ipp"),
     ("v1.7.9.1.14-trunc-floor","tests/v1_7_9_1_14/test_trunc_floor.ipp"),
+    ("v1.7.9.1.15-closure-loop","tests/v1_7_9_1_15/test_closure_loop.ipp"),
 ]
 
 passed=failed=0

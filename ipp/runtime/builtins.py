@@ -516,7 +516,9 @@ def ipp_repr(v):
 
 def ipp_int(s, base=10):
     try:
-        return int(s, base)
+        if isinstance(s, str):
+            return int(s, base)
+        return int(s)
     except (ValueError, TypeError):
         return None
 

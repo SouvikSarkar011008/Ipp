@@ -479,7 +479,12 @@ class Compiler:
     def compile_for(self, node: ForStmt):
         """
         FIX BUG-7: rewritten using only real Chunk/Compiler API.
-        Locals layout: [iter_list, index, loop_var?]
+        FIX BUG-023: per-iteration scope for loop variable so closures capture the
+        correct value (each iteration gets its own upvalue cell).
+
+        Locals layout: [iter_list, index] in outer scope;
+                       [loop_var?] in per-iteration scope;
+                       [body_locals...] in body scope.
         """
         self.push_scope()
 
@@ -491,12 +496,8 @@ class Compiler:
         self.chunk.add_constant(0, self.current_line)
         idx_slot = self.define_local("__for_idx__")
 
-        # slot 2: loop variable
-        if node.variable:
-            self.chunk.write(OpCode.NIL, self.current_line)
-            var_slot = self.define_local(node.variable)
-        else:
-            var_slot = None
+        # NO loop variable pre-defined here — defined per-iteration so each
+        # closure captures its own upvalue cell (BUG-023 fix)
 
         loop_start = len(self.chunk.code)
 
@@ -505,7 +506,7 @@ class Compiler:
             'break_jumps': [],
             'continue_target': None,
             'continue_jumps': [],
-            'base_local_count': len(self.locals),  # for stack cleanup on continue/break
+            'base_local_count': len(self.locals),  # = 2 (iter, idx only)
         })
 
         # bounds check: idx < len(list)
@@ -530,10 +531,10 @@ class Compiler:
         self.chunk.write(idx_slot, self.current_line)
         self.chunk.write(OpCode.GET_INDEX, self.current_line)
 
-        if var_slot is not None:
-            self.chunk.write(OpCode.SET_LOCAL, self.current_line)
-            self.chunk.write(var_slot, self.current_line)
-            self.chunk.write(OpCode.POP, self.current_line)  # FIX: SET_LOCAL doesn't pop; clear TOS
+        # ── Per-iteration scope for loop variable (BUG-023) ──
+        if node.variable:
+            self.push_scope()
+            self.define_local(node.variable)
         else:
             self.chunk.write(OpCode.POP, self.current_line)
 
@@ -544,7 +545,11 @@ class Compiler:
         self._emit_scope_pops()      # clean up body-local vars before idx++
         self._pop_scope_no_emit()    # remove from tracking without double-emit
 
-        # BUG-21/27: Set continue_target BEFORE idx++ so continue patches here
+        if node.variable:
+            self.pop_scope()  # pop iteration scope - CLOSE_UPVALUE if captured
+
+        # BUG-21/27: Set continue_target AFTER iteration-scope cleanup so
+        # continue jumps past the per-iteration scope
         continue_target = len(self.chunk.code)
         self.loop_stack[-1]['continue_target'] = continue_target
         # Patch all forward continue jumps now that target is known
@@ -705,11 +710,15 @@ class Compiler:
         if not self.loop_stack:
             self.error("'break' outside of loop")
         loop_info = self.loop_stack[-1]
-        # Pop any locals declared inside the loop body since the loop started
         base = loop_info.get('base_local_count', 0)
         excess = len(self.locals) - base
-        for _ in range(excess):
-            self.chunk.write(OpCode.POP, self.current_line)
+        # FIX BUG-023: use CLOSE_UPVALUE for captured locals, POP for regular ones
+        for i in range(excess):
+            local = self.locals[base + i]
+            if local.is_captured:
+                self.chunk.write(OpCode.CLOSE_UPVALUE, self.current_line)
+            else:
+                self.chunk.write(OpCode.POP, self.current_line)
         jump = self.chunk.emit_jump(OpCode.JUMP, self.current_line)
         self.loop_stack[-1]['break_jumps'].append(jump)
 
@@ -717,11 +726,15 @@ class Compiler:
         if not self.loop_stack:
             self.error("'continue' outside of loop")
         loop_info = self.loop_stack[-1]
-        # Pop any locals declared inside the loop body since the loop started
         base = loop_info.get('base_local_count', 0)
         excess = len(self.locals) - base
-        for _ in range(excess):
-            self.chunk.write(OpCode.POP, self.current_line)
+        # FIX BUG-023: use CLOSE_UPVALUE for captured locals, POP for regular ones
+        for i in range(excess):
+            local = self.locals[base + i]
+            if local.is_captured:
+                self.chunk.write(OpCode.CLOSE_UPVALUE, self.current_line)
+            else:
+                self.chunk.write(OpCode.POP, self.current_line)
         continue_target = loop_info.get('continue_target')
         if continue_target is not None:
             self.chunk.emit_loop(continue_target, self.current_line)

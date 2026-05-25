@@ -73,13 +73,13 @@ print(f'{passed} pass / {failed} fail')
 
 ## VERSION STATUS ✅
 
-Version is correctly `1.7.9.1.14` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 closed, BUG-025 fixed, BUG-024 part A fixed, BUG-026 fixed.
+Version is correctly `1.7.9.1.15` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 closed, BUG-025 fixed, BUG-024 part A fixed, BUG-026 fixed, BUG-023 fixed.
 
 ---
 
 ## Phase A: Critical Crash Fixes (v1.7.6 – v1.7.9) ✅ COMPLETE
 
-All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.14 are done. See version history at the bottom for the full list of what each version did.
+All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.15 are done. See version history at the bottom for the full list of what each version did.
 
 ---
 
@@ -876,7 +876,7 @@ assert int("3") == 3
 
 ---
 
-### v1.7.9.1.15 — Fix: Closures in Loops Capture Correct Value (BUG-023)
+### v1.7.9.1.15 — Fix: Closures in Loops Capture Correct Value (BUG-023) ✅ DONE
 
 **User impact:** All closures created inside a `for` loop see the loop variable's final value, not the value at creation time.
 

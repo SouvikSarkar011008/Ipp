@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.7.9.1.14-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.7.9.1.15-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -291,8 +291,8 @@ print(p)  # (3, 4)
 ### Core (20)
 `print`, `len`, `type`, `input`, `exit`, `assert`, `str`, `int`, `float`, `bool`, `to_number`, `to_int`, `to_float`, `to_bool`, `to_string`, `abs`, `min`, `max`, `sum`, `range`
 
-### Math & Trigonometry (23)
-`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `log`, `log10`, `degrees`, `radians`, `pi`, `e`, `sqrt`, `pow`, `round`, `floor`, `ceil`, `lerp`, `clamp`, `distance`, `normalize`, `dot`, `cross`, `sign`, `smoothstep`, `move_towards`, `angle`, `factorial`, `gcd`, `lcm`, `hypot`, `floor_div`, `isclose`
+### Math & Trigonometry (35)
+`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `log`, `log10`, `degrees`, `radians`, `pi`, `e`, `sqrt`, `pow`, `round`, `floor`, `ceil`, `lerp`, `clamp`, `distance`, `normalize`, `dot`, `cross`, `sign`, `smoothstep`, `move_towards`, `angle`, `factorial`, `gcd`, `lcm`, `hypot`, `floor_div`, `isclose`, `trunc`
 
 ### Random (5)
 `random`, `randint`, `randfloat`, `choice`, `shuffle`
