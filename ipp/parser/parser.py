@@ -61,6 +61,7 @@ class Parser:
 
         methods = []
         properties = []
+        fields = []
         self.consume(TokenType.LEFT_BRACE, "Expect '{' before class body")
         self.skip_newlines()
 
@@ -74,17 +75,35 @@ class Parser:
                 method = self.function_declaration(is_static=is_static)
                 methods.append(method)
             elif self.check(TokenType.VAR) or self.check(TokenType.LET):
-                kw = "var" if self.check(TokenType.VAR) else "let"
+                is_let = self.check(TokenType.LET)
                 self.advance()
-                field_name = self.peek().lexeme if not self.is_at_end() else "field"
-                raise SyntaxError(
-                    f"Class-level '{kw}' declarations are not yet supported. "
-                    f"Assign fields with 'self.{field_name} = value' inside __init__() instead.")
+                field_name = self.consume(TokenType.IDENTIFIER,
+                                          "Expect field name").lexeme
+                default = None
+                if self.match(TokenType.EQUAL):
+                    default = self.expression()
+                fields.append((field_name, default, is_let))
             else:
                 break
             self.skip_newlines()
 
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body")
+
+        # Inject field assignments into __init__/init (BUG-024 part B)
+        if fields:
+            init_method = None
+            for m in methods:
+                if isinstance(m, FunctionDecl) and m.name in ('__init__', 'init'):
+                    init_method = m
+                    break
+            if init_method is None:
+                init_method = FunctionDecl('init', [], [])
+                methods.insert(0, init_method)
+            for field_name, default, is_let in fields:
+                value = default if default is not None else NilLiteral()
+                assign = ExprStmt(SetExpr(SelfExpr(), field_name, value))
+                init_method.body.insert(0, assign)
+
         return ClassDecl(name.lexeme, methods, superclass, properties)
 
     def property_declaration(self):

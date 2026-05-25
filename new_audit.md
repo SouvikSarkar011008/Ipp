@@ -28,13 +28,14 @@
 | BUG-013 `len(IppSet)` fails | v1.7.9.1 | ✅ Verified — `len(set([1,2,3]))` returns 3 |
 | BUG-019 Version string mismatch | v1.7.9.1.10 | ✅ Verified — both files say `1.7.9.1.11` |
 | BUG-021 `print("label:", val)` crashes | v1.7.6.1 | ✅ Verified — multi-arg print works |
+| BUG-024 Part B Class-level field declarations | v1.7.9.1.16 | ✅ Verified — `var x = 0` in class body works |
 
 ### Newly Discovered in This Audit (live code execution)
 
 | ID | Severity | Description |
 |----|----------|-------------|
 | BUG-023 | ★★ HIGH | Closures in loops capture by reference — all see the loop's final value | ✅ **FIXED v1.7.9.1.15** |
-| BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message | ⚠️ **Part A (error msg) FIXED v1.7.9.1.13** |
+| BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message | ⚠️ **Part A (error msg) FIXED v1.7.9.1.13; Part B (feature) FIXED v1.7.9.1.16** |
 | BUG-025 | ★ MEDIUM | No `math.isclose()` — float comparisons silently wrong (`0.1 + 0.2 != 0.3`) | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ LOW | `int()` truncates toward zero, undocumented — breaks negative tile coordinates | ✅ **FIXED v1.7.9.1.14** |
 
@@ -979,7 +980,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | BUG-021 | ★ | `print("label:", val)` crashes everywhere | ✅ **FIXED v1.7.6.1** |
 | BUG-022 | ★ | C extension build fails; `vm_run()` is stub | **OPEN** |
 | BUG-023 | ★★ | Closure-in-loop captures by reference | ✅ **FIXED v1.7.9.1.15** |
-| BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | ⚠️ **Part A (err msg) FIXED v1.7.9.1.13; Part B (feature) OPEN** |
+| BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | ⚠️ **Part A (err msg) FIXED v1.7.9.1.13; Part B (feature) FIXED v1.7.9.1.16** |
 | BUG-025 | ★ | No `math.isclose()` — float equality wrong | ✅ **FIXED v1.7.9.1.12** |
 | BUG-026 | ★ | `int()` truncation vs floor undocumented | ✅ **FIXED v1.7.9.1.14** |
 | — | — | `dict.get(k, default)` w/string key broken | ✅ **FIXED v1.7.6.2** |
@@ -987,7 +988,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 
 ### Confirmed Fixed (verified in this audit)
 
-For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin, class-level field improved error message (BUG-024 part A), `trunc()` builtin + `int()` truncation docs (BUG-026), closure-in-loop capture fix (BUG-023).
+For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin, class-level field improved error message (BUG-024 part A), `trunc()` builtin + `int()` truncation docs (BUG-026), closure-in-loop capture fix (BUG-023), class-level field declarations (BUG-024 part B).
 
 ## 13. New Bugs Found In This Audit
 

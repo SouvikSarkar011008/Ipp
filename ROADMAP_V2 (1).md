@@ -73,13 +73,13 @@ print(f'{passed} pass / {failed} fail')
 
 ## VERSION STATUS ✅
 
-Version is correctly `1.7.9.1.15` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 closed, BUG-025 fixed, BUG-024 part A fixed, BUG-026 fixed, BUG-023 fixed.
+Version is correctly `1.7.9.1.16` in `main.py`, `ipp/main.py`, and `pyproject.toml`. BUG-019 closed, BUG-025 fixed, BUG-024 part A fixed, BUG-026 fixed, BUG-023 fixed, BUG-024 part B (class-level fields) fixed.
 
 ---
 
 ## Phase A: Critical Crash Fixes (v1.7.6 – v1.7.9) ✅ COMPLETE
 
-All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.15 are done. See version history at the bottom for the full list of what each version did.
+All four critical crash bugs are fixed. Versions v1.7.6 through v1.7.9.1.16 are done. See version history at the bottom for the full list of what each version did.
 
 ---
 
@@ -959,7 +959,7 @@ assert efns[2]() == 2
 
 ---
 
-### v1.7.9.1.16 — Feature: Class-Level Field Declarations (BUG-024 part B)
+### v1.7.9.1.16 — Feature: Class-Level Field Declarations (BUG-024 part B) ✅ DONE
 
 **User impact:** `class Counter { var count = 0 }` should work. Python, GDScript, JavaScript, C#, Java all support this. Currently crashes even after v1.7.9.1.13 improves the error message.
 
