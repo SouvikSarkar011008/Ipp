@@ -1614,7 +1614,7 @@ assert first_alive.hp == 50
 
 ---
 
-### v1.8.2 — Fix: `var a, b = 1, 2` Literal Multi-Assign (BUG-006)
+### v1.8.2 — Fix: `var a, b = 1, 2` Literal Multi-Assign (BUG-006) ✅ DONE
 
 **Root cause:** The parser's `var_declaration()` supports `var a, b = expr()` where the RHS is a function call returning a tuple. But it does not support `var a, b = expr, expr` with multiple RHS expressions.
 

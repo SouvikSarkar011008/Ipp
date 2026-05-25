@@ -121,6 +121,7 @@ TESTS = [
     ("v1.8.1.2-list-aggregates","tests/v1_8_1_2/test_list_aggregates.ipp"),
     ("v1.8.1.3-list-transforms","tests/v1_8_1_3/test_list_transforms.ipp"),
     ("v1.8.1.4-list-search","tests/v1_8_1_4/test_list_search.ipp"),
+    ("v1.8.2-multi-assign","tests/v1_8_2/test_multi_assign.ipp"),
 ]
 
 passed=failed=0

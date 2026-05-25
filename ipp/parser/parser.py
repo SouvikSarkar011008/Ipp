@@ -207,7 +207,13 @@ class Parser:
                 if not self.match(TokenType.COMMA):
                     break
             self.consume(TokenType.EQUAL, "Expect '=' in multi-variable declaration")
-            initializer = self.expression()
+            values = [self.expression()]
+            while self.match(TokenType.COMMA):
+                values.append(self.expression())
+            if len(values) > 1:
+                initializer = ListLiteral(values)
+            else:
+                initializer = values[0]
             decl = MultiVarDecl(names, initializer)
             decl.line = line
             return decl
