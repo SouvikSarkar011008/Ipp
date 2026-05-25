@@ -36,7 +36,7 @@
 | BUG-023 | ★★ HIGH | Closures in loops capture by reference — all see the loop's final value |
 | BUG-024 | ★★ HIGH | `class C { var x = 0 }` — wrong parse error, actively misleading message | ⚠️ **Part A (error msg) FIXED v1.7.9.1.13** |
 | BUG-025 | ★ MEDIUM | No `math.isclose()` — float comparisons silently wrong (`0.1 + 0.2 != 0.3`) | ✅ **FIXED v1.7.9.1.12** |
-| BUG-026 | ★ LOW | `int()` truncates toward zero, undocumented — breaks negative tile coordinates |
+| BUG-026 | ★ LOW | `int()` truncates toward zero, undocumented — breaks negative tile coordinates | ✅ **FIXED v1.7.9.1.14** |
 
 ---
 
@@ -981,13 +981,13 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | BUG-023 | ★★ | Closure-in-loop captures by reference | **OPEN** *(new — this audit)* |
 | BUG-024 | ★★ | Class-level `var x = 0` — wrong parse error | ⚠️ **Part A (err msg) FIXED v1.7.9.1.13; Part B (feature) OPEN** |
 | BUG-025 | ★ | No `math.isclose()` — float equality wrong | ✅ **FIXED v1.7.9.1.12** |
-| BUG-026 | ★ | `int()` truncation vs floor undocumented | **OPEN** *(new — this audit, doc-only fix)* |
+| BUG-026 | ★ | `int()` truncation vs floor undocumented | ✅ **FIXED v1.7.9.1.14** |
 | — | — | `dict.get(k, default)` w/string key broken | ✅ **FIXED v1.7.6.2** |
 | — | — | Test files claim PASSED for untested features | **OPEN** |
 
 ### Confirmed Fixed (verified in this audit)
 
-For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin, class-level field improved error message (BUG-024 part A).
+For-in (list/range/dict), while, do-while, continue/break, match (`=>` and `default`), closures, recursion, default params, named args, multiple return (from func), decorators, pipeline `|>`, ternary, optional chaining `?.`, nullish coalescing `??`, list/dict comprehensions, f-strings, let immutability, static methods, operator overloading (Ipp classes), signals/events, mat4/vec4/quat constructors (not arithmetic), bytecode cache, tail call, all core math builtins, str methods (upper/lower/split/find/strip/startswith/endswith/join/format), list methods (append/pop/remove/sort/reverse/index/count), dict methods (keys/values/items/get/update), set.add/remove/contains, `math.isclose()` / `isclose()` builtin, class-level field improved error message (BUG-024 part A), `trunc()` builtin + `int()` truncation docs (BUG-026).
 
 ## 13. New Bugs Found In This Audit
 
@@ -1084,9 +1084,9 @@ if elapsed == 1.0 {          # ❌ never true — elapsed is 0.9999999...
 
 ---
 
-### BUG-026 ★ LOW: `int()` Truncates Toward Zero — Undocumented, Breaks Negative Coordinates
+### ~~BUG-026~~ ✅ FIXED v1.7.9.1.14: `int()` Truncates Toward Zero — Undocumented, Breaks Negative Coordinates
 
-**Confirmed in live test session (v1.7.9.1.11):**
+**Was confirmed in live test session (v1.7.9.1.11):**
 
 ```ipp
 print(int(3.9))    # → 3  (truncation toward zero — same as Python)
@@ -1104,12 +1104,11 @@ var tile_x = floor(world_x / tile_size) # ✅ correct
 
 This is not a code bug (it matches Python's behavior exactly) but an **undocumented gotcha** that silently breaks game coordinate math for any world with negative coordinates.
 
-**Fix (documentation only, no code change):**
-- Add `trunc()` as an explicit alias for `int()` that signals "truncation"
-- Add to docs and REPL `.help` output: "`int()` truncates toward zero. Use `floor()` for negative-safe integer conversion."
-- Add `trunc()` builtin: `'trunc': lambda x: math.trunc(x)`
-
-**Estimated effort:** 5 minutes + 1 line for `trunc()`.
+**Fix applied in v1.7.9.1.14:**
+- Added `trunc()` as an explicit alias for `int()` that signals "truncation"
+- Added comment on `int()` entry: "truncates toward zero — use floor() for negative-safe conversion"
+- Added `trunc()` builtin: `'trunc': lambda x: math.trunc(x)`
+- Added comprehensive test in `tests/v1_7_9_1_14/test_trunc_floor.ipp`
 
 ---
 

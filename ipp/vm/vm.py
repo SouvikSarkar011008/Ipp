@@ -532,6 +532,7 @@ class VM:
             'eval': lambda src: __import__('ipp.runtime.builtins', fromlist=['_ipp_eval'])._ipp_eval(src),
             'repr': lambda v: _repr_impl(v),
             'int': int,
+            'trunc': math.trunc,    # v1.7.9.1.14 — explicit truncation alias
             'float': float,
             'bool': bool,
             'to_number': lambda s: float(s) if '.' in str(s) else int(s),
@@ -1941,22 +1942,85 @@ class VM:
             from ipp.interpreter.interpreter import IppList as _IppList2
             if isinstance(a, _IppList2): a = a.elements
             if isinstance(b, _IppList2): b = b.elements
-            self.stack.append(a == b)
+            # FIX: dispatch to __eq__ on Ipp class instances
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__eq__')
+                if method:
+                    result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a is b)
+            elif isinstance(b, IppInstance):
+                method = b.cls.get_method('__eq__')
+                if method:
+                    result = self._call_method(b, BoundMethod(b, method), [a], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(a is b)
+            else:
+                self.stack.append(a == b)
         elif opcode == OpCode.NOT_EQUAL:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a != b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__ne__') or a.cls.get_method('__eq__')
+                if method:
+                    eq_result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(not eq_result)
+                else:
+                    self.stack.append(a is not b)
+            elif isinstance(b, IppInstance):
+                method = b.cls.get_method('__ne__') or b.cls.get_method('__eq__')
+                if method:
+                    eq_result = self._call_method(b, BoundMethod(b, method), [a], None)
+                    self.stack.append(not eq_result)
+                else:
+                    self.stack.append(a is not b)
+            else:
+                self.stack.append(a != b)
         elif opcode == OpCode.LESS:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a < b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__lt__')
+                if method:
+                    result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(False)
+            else:
+                self.stack.append(a < b)
         elif opcode == OpCode.LESS_EQUAL:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a <= b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__le__')
+                if method:
+                    result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(False)
+            else:
+                self.stack.append(a <= b)
         elif opcode == OpCode.GREATER:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a > b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__gt__')
+                if method:
+                    result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(False)
+            else:
+                self.stack.append(a > b)
         elif opcode == OpCode.GREATER_EQUAL:
             b, a = self.stack.pop(), self.stack.pop()
-            self.stack.append(a >= b)
+            if isinstance(a, IppInstance):
+                method = a.cls.get_method('__ge__')
+                if method:
+                    result = self._call_method(a, BoundMethod(a, method), [b], None)
+                    self.stack.append(result)
+                else:
+                    self.stack.append(False)
+            else:
+                self.stack.append(a >= b)
 
         elif opcode == OpCode.CONTAINS:
             # FIX: 'item in collection' — stack: item, collection → bool

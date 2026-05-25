@@ -9,6 +9,17 @@ import subprocess
 import sys
 import os
 
+_orig_print = print
+def _safe_print(*args, **kwargs):
+    """Print with encoding fallback for Windows cp1252 consoles."""
+    text = ' '.join(str(a) for a in args)
+    try:
+        _orig_print(text, **kwargs)
+    except UnicodeEncodeError:
+        cleaned = text.encode('ascii', errors='replace').decode('ascii')
+        _orig_print(cleaned, **kwargs)
+print = _safe_print
+
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Clean stale bytecode cache files before running — prevents false failures
@@ -142,6 +153,7 @@ TESTS = [
     ("v1.7.9.1.12-isclose", "tests/v1_7_9_1_12/test_isclose.ipp"),
     ("v1.7.9.1.13-class-field-err", "tests/v1_7_9_1_13/test_class_field_error.ipp"),
     ("v1.7.9.1.13-class-field-err-msg", "tests/v1_7_9_1_13/test_class_field_error_msg.py"),
+    ("v1.7.9.1.14-trunc-floor", "tests/v1_7_9_1_14/test_trunc_floor.ipp"),
     ("v1.7.9.1.9-highlighter", "tests/v1_7_9_1_9/test_highlighter.ipp"),
     ("v1.7.9.1.9-highlight-cmd","tests/v1_7_9_1_9/test_highlight_cmd.ipp"),
     ("v1.7.9.1.9-bundle",      "tests/v1_7_9_1_9/test_playground_bundle.py"),

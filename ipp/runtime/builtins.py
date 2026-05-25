@@ -3987,7 +3987,8 @@ BUILTINS = {
     "to_bool": ipp_to_bool,
     "str": ipp_str,
     "repr": ipp_repr,
-    "int": ipp_int,
+    "int": ipp_int,                      # truncates toward zero — use floor() for negative-safe conversion
+    "trunc": lambda x: math.trunc(x),    # v1.7.9.1.14 — explicit truncation alias; identical to int()
     "float": ipp_float,
     "bool": ipp_bool,
     "set": ipp_set,

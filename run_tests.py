@@ -1,4 +1,15 @@
 import sys, types, os, io, contextlib
+
+_orig_print = print
+def _safe_print(*args, **kwargs):
+    """Print with encoding fallback for Windows cp1252 consoles."""
+    text = ' '.join(str(a) for a in args)
+    try:
+        _orig_print(text, **kwargs)
+    except UnicodeEncodeError:
+        cleaned = text.encode('ascii', errors='replace').decode('ascii')
+        _orig_print(cleaned, **kwargs)
+print = _safe_print
 tk = types.ModuleType('tkinter')
 class W:
     def __init__(self,*a,**k): pass
@@ -95,6 +106,7 @@ TESTS = [
     ("v1.7.6.2-dict-get","tests/v1_7_6_2/test_dict_get.ipp"),
     ("v1.7.9.1.12-isclose","tests/v1_7_9_1_12/test_isclose.ipp"),
     ("v1.7.9.1.13-class-field-err","tests/v1_7_9_1_13/test_class_field_error.ipp"),
+    ("v1.7.9.1.14-trunc-floor","tests/v1_7_9_1_14/test_trunc_floor.ipp"),
 ]
 
 passed=failed=0

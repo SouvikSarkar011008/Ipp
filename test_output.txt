@@ -1,0 +1,1296 @@
+2026-05-25 11:37:02,555 - test - INFO - Test log message
+Ternary: yes
+Ternary false: no
+Match: 2
+AND: 1
+OR: 7
+XOR: 6
+SHL: 16
+SHR: 4
+Floor div: 3
+Try/catch: caught_finally
+v0.5.0 tests complete!
+[PASS] v05
+Power 2**10: 1024
+Power 3**3: 27
+Power 5**2: 25
+Type annotations: OK
+Enum UP: UP
+Enum DOWN: DOWN
+Direction: UP
+v0.6.0 tests complete!
+[PASS] v06
+Squares: [1, 4, 9, 16, 25]
+Evens: [2, 4, 6, 8, 10]
+Dict doubled: {1: 2, 2: 4, 3: 6, 4: 8, 5: 10}
+Dict: {1: 10, 2: 20, 3: 30}
+Matrix: [[1, 2, 3, 4], [2, 4, 6, 8], [3, 6, 9, 12], [4, 8, 12, 16]]
+Doubled: [2, 4, 6, 8, 10]
+Chars: ['h', 'e', 'l', 'l', 'o']
+v0.7.0 tests complete!
+[PASS] v07
+Nullish nil: default
+Nullish value: hello
+Nullish 0: 0
+Nullish empty: 
+Nullish false: false
+Nullish chain: fallback
+Opt chain nil: nil
+Opt chain dict: Alice
+Opt chain nested: deep
+Spread copy: [1, 2, 3]
+Spread with elements: [0, 1, 2, 3, 4]
+Spread multiple: [1, 2, 3, 4, 5, 6]
+Tuple: (1, 2, 3)
+Tuple mixed: (1, 'hello', True)
+Tuple single: 42
+Tuple empty: ()
+v0.8.0 tests complete!
+[PASS] v08
+Do-while: 6
+Caught: test error
+Caught number: 42
+v0.9.0 tests complete!
+[PASS] v09
+Person: Alice
+v0.10.0 tests complete!
+[PASS] v10
+=== Testing v0.11.0 Standard Library ===
+
+--- DateTime Tests ---
+2026-05-25T11:37:02.553702
+2026
+5
+25
+11
+37
+2
+2026-05-25 11:37:02
+2026-06-04T11:37:02.553702
+
+--- Path Tests ---
+/home/user/file.txt
+/home/user
+file.txt
+folder\subfolder\file.txt
+true
+
+--- Hash Tests ---
+5d41402abc4b2a76b9719d911017c592
+2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d
+9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043
+5394835728824251638
+
+--- Base64 Tests ---
+SGVsbG8sIFdvcmxkIQ==
+Hello, World!
+
+--- CSV Tests ---
+[['Alice', '25', 'NYC'], ['Bob', '30', 'LA']]
+2
+
+--- OS Tests ---
+nt
+C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp
+
+--- Complex Number Tests ---
+3+4i
+1+2i
+4+6i
+2+2i
+-5+10i
+2.2-0.4i
+5.0
+3-4i
+
+v0.11.0 tests complete!
+
+=== Testing v0.11.2 Additional Libraries ===
+
+--- XML Tests ---
+{'item': 'value'}
+
+--- UUID Tests ---
+1a901922-d54d-4bc8-bb80-de3933d153e4
+00000000-0000-0000-0000-000000000000
+
+--- URL Tests ---
+https
+example.com
+/path
+hello%20world
+hello world
+
+--- Collections Tests ---
+Deque([1, 2, 3])
+Deque([1, 2, 3, 4])
+1
+4
+4
+
+--- Logging Tests ---
+
+v0.11.2 tests complete!
+[PASS] v11
+=== Testing v0.12.0 Module System ===
+Hello, World!
+30
+42
+
+--- Alias Import Test ---
+Hello, Alice!
+20
+utils
+1.0.0
+
+--- Selective Import Test ---
+Hello, Bob!
+42
+
+v0.12.0 tests complete!
+[PASS] v12
+=== Testing v1.0.0 Bytecode VM ===
+
+--- Simple Math Test ---
+2 ** 10 = 1024
+15 // 4 = 3
+10 & 7 = 2
+
+--- List Operations ---
+Sum: 15
+Doubled: [2, 4, 6, 8, 10]
+
+--- String Operations ---
+Hello, Ipp!
+Upper: HELLO, IPP!
+
+--- Function Call ---
+5! = 120
+
+--- Class Test ---
+Point(3, 4)
+
+v1.0.0 tests complete!
+[PASS] v1.0
+=== Testing v1.0.1 VM Stabilization ===
+
+--- Simple Math Test ---
+2 ** 10 = 1024
+15 // 4 = 3
+10 & 7 = 2
+5 | 3 = 7
+1 << 3 = 8
+8 >> 2 = 2
+
+--- List Operations ---
+List: [1, 2, 3, 4, 5]
+Length: 5
+After update: [10, 2, 3, 4, 5]
+Sum: 24
+
+--- String Operations ---
+Hello, Ipp!
+
+--- Function Call ---
+add(5, 3) = 8
+5! = 120
+
+--- While Loop ---
+Sum 0..4 = 10
+
+--- If/Else ---
+max(3, 7) = 7
+max(10, 5) = 10
+
+--- Dict Operations ---
+Person: {'name': 'Alice', 'age': 30}
+Name: Alice
+Updated: {'name': 'Alice', 'age': 30, 'city': 'NYC'}
+
+--- Nested Functions ---
+outer(10)(5) = 15
+
+--- Recursion ---
+fibonacci(10) = 55
+
+--- Ternary Operator ---
+5 > 3 ? 'yes' : 'no' = yes
+
+--- Nullish Coalescing ---
+nil ?? 'default' = default
+
+--- Built-in Functions ---
+abs(-5) = 5
+min(3, 7) = 3
+max(3, 7) = 7
+floor(3.7) = 3
+ceil(3.2) = 4
+sqrt(16) = 4.0
+
+--- Range Function ---
+range(5) = [0, 1, 2, 3, 4]
+range(1, 6) = [1, 2, 3, 4, 5]
+range(0, 10, 2) = [0, 2, 4, 6, 8]
+
+--- Try/Catch ---
+Caught: test error
+Finally block executed
+
+--- Do-While ---
+Do-while sum 0..4 = 10
+
+--- Match Statement ---
+Day 2 = 2
+
+v1.0.1 tests complete!
+[PASS] v1.0.1
+=== Testing v1.1.0 Performance Optimization ===
+
+--- Math Operations ---
+Sum 0..999 = 499500
+fib(15) = 610
+
+--- List Operations ---
+List length: 100
+Sum of doubled: 9900
+
+--- String Operations ---
+String length: 50
+
+--- Function Calls ---
+Function call sum: 4950
+
+--- Class Operations ---
+Counter value: 50
+
+--- Dict Operations ---
+Dict size: 100
+
+--- Closure Performance ---
+Closure sum: 5950
+
+--- Nested Loops ---
+Nested loop sum: 900
+
+--- Recursion ---
+Recursive sum: 4950
+
+v1.1.0 tests complete!
+[PASS] v1.1.0
+=== Testing v1.1.1 Bug Fixes ===
+
+--- Dict String Key Assignment ---
+Dict size: 3
+Name: Alice
+Age: 30
+City: NYC
+
+--- List Index Assignment ---
+Original: [1, 2, 3, 4, 5]
+After update: [10, 2, 103, 4, 5]
+
+--- Nested Dict ---
+User: Bob
+Score: 100
+
+--- Dict Iteration ---
+Sum of dict values: 6
+
+--- List of Dicts ---
+First person: Alice, age 26
+Second person: Bob, age 30
+
+--- Update Existing Keys ---
+Click count: 2
+
+--- Dict with Numeric Keys ---
+Row 0: [1, 2, 3]
+Row 1: [4, 5, 6]
+
+v1.1.1 tests complete!
+[PASS] v1.1.1
+=== v1.3.2 Bug Fix Tests ===
+
+--- Class instantiation ---
+1
+2
+3
+4
+6
+
+--- __str__ method ---
+Point(5, 10)
+Point(5, 10)
+
+--- Private members ---
+1000
+1000
+1234
+Private access blocked: true
+
+--- Recursion limit ---
+55
+Recursion limit hit: true
+
+=== All v1.3.2 tests passed! ===
+=== v1.3.2 Bug Fix Tests ===
+
+--- Class instantiation ---
+1
+2
+3
+4
+6
+
+--- __str__ method ---
+Point(5, 10)
+Point(5, 10)
+
+--- Private members ---
+1000
+1000
+1234
+Private access blocked: true
+
+--- Recursion limit ---
+55
+Recursion limit hit: true
+
+=== All v1.3.2 tests passed! ===
+[PASS] v1.3.2
+=== v1.3.3 Bug Fix Tests ===
+
+--- and/or precedence ---
+true
+true
+false
+true
+false
+true
+true
+false
+true
+false
+true
+true
+both match
+y mismatch caught
+or works
+1
+7
+6
+16
+2
+
+--- nested list function calls ---
+3
+3
+3
+5
+
+=== v1.3.3 tests passed! ===
+[PASS] v1.3.3
+=== Testing v1.3.4 Core Builtins ===
+
+--- Print Tests ---
+Hello, World!
+42
+true
+false
+nil
+Multiple args 123
+
+--- Length Tests ---
+3
+5
+2
+
+--- Type Tests ---
+number
+number
+string
+bool
+nil
+list
+dict
+
+--- Type Conversion Tests ---
+42
+3.14
+42
+123
+true
+false
+42
+100
+3.14
+true
+
+--- Math Functions ---
+5
+1
+9
+15
+4
+3
+4
+4.0
+1024
+
+--- Trigonometry ---
+0.0
+1.0
+0.0
+0.0
+0.0
+0.0
+0.7853981633974483
+179.9998479605043
+3.141592653589793
+
+--- Logarithms ---
+1.0
+2.0
+
+--- Constants ---
+3.141592653589793
+2.718281828459045
+
+--- Random ---
+0.7888349788669502
+2
+0.402460145957676
+5
+
+--- Range ---
+[0, 1, 2, 3, 4]
+[1, 2, 3, 4, 5]
+[0, 2, 4, 6, 8]
+
+--- Assert ---
+Assert passed!
+
+--- Input (skipped) ---
+input() skipped - requires user interaction
+
+=== v1.3.4 Core Builtins tests complete! ===
+[PASS] v1.3.4-core
+=== Testing v1.3.4 String Functions ===
+
+--- Basic String Operations ---
+Hello, World!
+HELLO, WORLD!
+hello, world!
+13
+
+--- Split/Join ---
+['a', 'b', 'c']
+x-y-z
+
+--- Strip ---
+hello
+
+--- Replace ---
+hello ipp
+bbb
+
+--- Starts/Ends With ---
+true
+true
+true
+true
+
+--- Find/Index ---
+6
+6
+e
+
+--- Substring ---
+hello
+
+--- Count ---
+2
+true
+
+--- Split Lines ---
+['line1', 'line2', 'line3']
+
+--- ASCII ---
+65
+A
+
+=== v1.3.4 String Functions tests complete! ===
+[PASS] v1.3.4-str
+=== Testing v1.3.4 File I/O ===
+
+--- Write File ---
+Write result: true
+
+--- Read File ---
+Read content: Hello from Ipp v1.3.4!
+
+--- File Exists ---
+true
+false
+
+--- Append File ---
+Append result: true
+After append: Hello from Ipp v1.3.4!
+Appended line!
+
+--- Delete File ---
+Delete result: true
+
+--- List Directory ---
+['misc', 'regression.py', 'runner.ipp', 'v05', 'v06', 'v07', 'v08', 'v09', 'v1', 'v10', 'v11', 'v12', 'v1_0_1', 'v1_1_0', 'v1_1_1', 'v1_3_10', 'v1_3_2', 'v1_3_3', 'v1_3_4', 'v1_3_6', 'v1_3_7', 'v1_3_8', 'v1_3_9', 'v1_4_0', 'v1_5_0', 'v1_5_10', 'v1_5_11', 'v1_5_12', 'v1_5_13', 'v1_5_14', 'v1_5_15', 'v1_5_16', 'v1_5_2', 'v1_5_21', 'v1_5_22', 'v1_5_23', 'v1_5_24', 'v1_5_25', 'v1_5_26', 'v1_5_27', 'v1_5_28', 'v1_5_29', 'v1_5_3', 'v1_5_30', 'v1_5_31', 'v1_5_32', 'v1_5_33', 'v1_5_34', 'v1_5_35', 'v1_5_36', 'v1_5_37', 'v1_5_38', 'v1_5_4', 'v1_5_5', 'v1_5_6', 'v1_5_7', 'v1_5_8', 'v1_5_9', 'v1_6_0', 'v1_6_1', 'v1_6_10', 'v1_6_11', 'v1_6_12', 'v1_6_13', 'v1_6_14', 'v1_6_15', 'v1_6_2', 'v1_6_3', 'v1_6_4', 'v1_6_5', 'v1_6_6', 'v1_6_7', 'v1_6_8', 'v1_6_9', 'v1_7_0', 'v1_7_1', 'v1_7_2', 'v1_7_3', 'v1_7_4', 'v1_7_5', 'v1_7_6', 'v1_7_6_1', 'v1_7_6_2', 'v1_7_7', 'v1_7_7_1', 'v1_7_8', 'v1_7_8_1', 'v1_7_8_2', 'v1_7_8_3', 'v1_7_9', 'v1_7_9_1', 'v1_7_9_1_1', 'v1_7_9_1_12', 'v1_7_9_1_13', 'v1_7_9_1_2', 'v1_7_9_1_3', 'v1_7_9_1_4', 'v1_7_9_1_5', 'v1_7_9_1_9', 'v1_7_9_2', 'v2_0_0', '__pycache__']2026-05-25 11:37:02,759 - test_logger - INFO - This is an info message
+2026-05-25 11:37:02,759 - test_logger - WARNING - This is a warning message
+2026-05-25 11:37:02,759 - test_logger - ERROR - This is an error message
+
+
+--- Mkdir ---
+Mkdir result: true
+Directory created successfully, cleanup skipped on Windows
+
+=== v1.3.4 File I/O tests complete! ===
+[PASS] v1.3.4-fileio
+=== Testing v1.3.4 Data Formats ===
+
+--- JSON Tests ---
+{'name': 'Alice', 'age': 30, 'city': 'NYC'}
+Alice
+30
+"{\"name\": \"Alice\", \"age\": 30, \"city\": \"NYC\"}"
+
+--- XML Tests ---
+{'item': 'value'}
+<item text="{'item': 'value'}" />
+
+--- YAML Tests ---
+{'name': 'Alice', 'age': 30, 'city': 'NYC'}
+age: 30
+city: NYC
+name: Alice
+
+
+--- TOML Tests ---
+{'name': 'Alice', 'age': 30}
+name = "Alice"
+age = 30
+
+
+--- CSV Tests ---
+[['Alice', '25', 'NYC'], ['Bob', '30', 'LA']]
+2
+[{'name': 'Alice', 'age': '25', 'city': 'NYC'}, {'name': 'Bob', 'age': '30', 'city': 'LA'}]
+Alice,25,NYC
+Bob,30,LA
+
+
+--- Regex Tests ---
+true
+123
+hello ipp
+
+--- Hash Tests ---
+5d41402abc4b2a76b9719d911017c592
+2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d
+9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043
+5394835728824251638
+
+--- Base64 Tests ---
+SGVsbG8sIFdvcmxkIQ==
+Hello, World!
+
+--- GZIP Tests ---
+H4sIAAAAAAACCvNIzcnJ11EIzy/KSVEEANDDSuwNAAAA
+Hello, World!
+
+--- ZIP Tests ---
+UEsDBBQAAAAIAAAAIVjLMSgsCgAAAAgAAAAJAAAAZmlsZTEudHh0S87PK0nNKzEEAFBLAwQUAAAACAAAACFYcWAhtQoAAAAIAAAACQAAAGZpbGUyLnR4dEvOzytJzSsxAgBQSwECFAAUAAAACAAAACFYyzEoLAoAAAAIAAAACQAAAAAAAAAAAAAAgAEAAAAAZmlsZTEudHh0UEsBAhQAFAAAAAgAAAAhWHFgIbUKAAAACAAAAAkAAAAAAAAAAAAAAIABMQAAAGZpbGUyLnR4dFBLBQYAAAAAAgACAG4AAABiAAAAAAA=
+{'file1.txt': 'content1', 'file2.txt': 'content2'}
+
+=== v1.3.4 Data Formats tests complete! ===
+[PASS] v1.3.4-datafmt
+=== Testing v1.3.4 Math Library ===
+
+--- Game Dev Math ---
+lerp(0, 10, 0.5): 5.0
+lerp(0, 100, 0.25): 25.0
+clamp(5, 0, 10): 5
+clamp(15, 0, 10): 10
+clamp(-5, 0, 10): 0
+map_range(0.5, 0, 1, 0, 100): 50.0
+distance(0, 0, 3, 4): 5.0
+distance_3d(0, 0, 0, 1, 2, 2): 3.0
+normalize(3, 4): (0.6, 0.8)
+dot(1, 0, 0, 1): 0
+dot(1, 0, 1, 0): 1
+cross(1, 0, 0, 1): 1
+sign(5): 1
+sign(-5): -1
+sign(0): 0
+smoothstep(0, 1, 0.5): 0.5
+move_towards(0, 10, 3): 3
+move_towards(0, 10, 15): 10
+angle(0, 0, 1, 0): 0.0
+angle(0, 0, 0, 1): 1.5707963267948966
+deg_to_rad(180): 3.141592653589793
+rad_to_deg(3.14159): 179.99984796050427
+
+--- Advanced Math ---
+factorial(5): 120
+factorial(10): 3628800
+gcd(12, 8): 4
+gcd(100, 75): 25
+lcm(4, 6): 12
+lcm(12, 18): 36
+hypot(3, 4): 5.0
+hypot(5, 12): 13.0
+floor_div(7, 3): 2
+floor_div(10, 3): 3
+
+--- Vector2 Tests ---
+vec2(3, 4)
+vec2(4, 6)
+vec2(2, 2)
+vec2(6, 8)
+
+--- Vector3 Tests ---
+vec3(1, 2, 3)
+vec3(5, 7, 9)
+vec3(-3, -3, -3)
+
+--- Color Tests ---
+color(255, 128, 64, 255)
+
+--- Rect Tests ---
+rect(0, 0, 100, 50)
+
+--- Complex Numbers ---
+3+4i
+1+2i
+4+6i
+2+2i
+-5+10i
+2.2-0.4i
+5.0
+3-4i
+
+=== v1.3.4 Math Library tests complete! ===
+[PASS] v1.3.4-math
+=== Testing v1.3.4 Collections & Data Structures ===
+
+--- Set Tests ---
+{1, 2, 3}
+{1, 2, 3, 4}
+true
+false
+{1, 3, 4}
+3
+0
+
+--- Deque Tests ---
+Deque([1, 2, 3])
+Deque([1, 2, 3, 4])
+1
+4
+4
+Popped: 1
+Deque([2, 3, 4])
+
+--- Ordered Dict Tests ---
+{}
+
+--- Dict Operations ---
+['a', 'b', 'c']
+[1, 2, 3]
+[('a', 1), ('b', 2), ('c', 3)]
+true
+false
+
+--- UUID Tests ---
+291c677e-6d73-4417-8ad3-ac25e1130b41
+00000000-0000-0000-0000-000000000000
+
+--- DateTime Tests ---
+2026-05-25T11:37:02.759291
+2026
+5
+25
+11
+37
+2
+
+--- Path Tests ---
+/home/user
+file.txt
+folder\subfolder\file.txt
+true
+
+--- OS Tests ---
+nt
+C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp
+
+--- URL Tests ---
+https
+example.com
+/path
+hello%20world
+hello world
+
+--- Time Tests ---
+1779689222.759292
+698599.1905326
+
+=== v1.3.4 Collections & Data Structures tests complete! ===
+[PASS] v1.3.4-coll
+=== Testing v1.3.4 Advanced Features ===
+
+--- Logging Tests ---
+
+--- Threading Tests ---
+thread function exists: function
+thread_sleep function exists: function
+thread_current function exists: function
+Current thread: MainThread
+
+--- Printf/Sprintf Tests ---
+Hello Alice, you are 30 years old
+sprintf result: Value: 42, Name: test
+
+--- Argparse Tests ---
+argparse function exists: function
+args_add function exists: function
+args_parse function exists: function
+
+=== v1.3.4 Advanced Features tests complete! ===
+[PASS] v1.3.4-adv
+=== Testing v1.3.7 REPL Enhancements ===
+
+--- .load Test ---
+This file tests that .load command works correctly
+When loaded via .load, variables should persist in session
+test_value: 42
+
+--- .save Test ---
+Save command should write history to file
+
+--- .doc Test ---
+Doc command should show builtin documentation
+Available builtins: function function function
+
+--- .time Test ---
+Sum: 499500 Time: 0.03135514259338379
+Sum 0..999: 499500
+Elapsed: 0.03135514259338379 seconds
+
+--- .which Test ---
+print type: function
+test_value type: number
+
+--- .last Test ---
+Last result stored: 499500
+
+--- .undo Test ---
+Undo should restore previous env state
+
+--- .alias Test ---
+Alias command creates custom shortcuts
+
+--- .edit Test ---
+Edit opens last command in editor
+
+--- .profile Test ---
+Profile shows performance stats
+
+--- Multi-line Paste Test ---
+Multi-line function result: 3
+
+--- \$_ Test ---
+Computed value: 200
+Result accessible via \$_ in REPL
+
+=== v1.3.7 REPL Enhancement tests complete! ===
+[PASS] v1.3.7-repl
+=== v1.3.7 VM Bug Fix Tests ===
+
+--- VM-BUG-1: Function calls ---
+7
+30
+Hello, World
+
+--- VM-BUG-2: Dict index ---
+1
+2
+3
+4
+10
+30
+
+--- VM-BUG-3: Try/catch ---
+caught
+true
+
+--- VM-BUG-4: Class properties ---
+Rex
+Woof
+Rex says Woof
+1
+4
+4
+6
+
+--- VM-BUG-5: Named args ---
+localhost:8080
+db:9090
+
+--- VM-BUG-6: Recursion ---
+55
+5040
+
+--- VM-BUG-7: For loops ---
+10
+15
+a-b-c-
+
+=== All v1.3.7 VM tests passed! ===
+[PASS] v1.3.7-vm
+=== Testing v1.3.8 Networking + Collections ===
+
+--- HTTP Server Test ---
+http_serve function exists: function
+HTTP server function available (manual start required)
+
+--- PriorityQueue Tests ---
+PriorityQueue([])
+PriorityQueue([high, medium, low])
+Peek: first
+Peek again: first
+Pop: first
+Peek after pop: second
+
+--- Tree Tests ---
+Tree(root, 3 children)
+Children: 3
+Get child 0: Tree(child1, 0 children)
+Get child 1: Tree(child2, 0 children)
+Preorder: ['root', 'child1', 'child2', 'child3']
+Postorder: ['child1', 'child2', 'child3', 'root']
+BFS: ['root', 'child1', 'child2', 'child3']
+Find 'root': true
+Find 'child2': true
+Find 'missing': false
+Depth: 2
+Nested tree depth: 3
+Nested preorder: ['A', 'B', 'C', 'D']
+Nested BFS: ['A', 'B', 'C', 'D']
+Before remove: 2
+After remove: 1
+
+--- Graph Tests ---
+Graph(4 nodes, 5 edges)
+Node count: 4
+Edge count: 5
+Has node 'A': true
+Has node 'Z': false
+Has edge A->B: true
+Has edge A->D: false
+Neighbors of A: ['B', 'C']
+Neighbors of B: ['A', 'C', 'D']
+DFS from A: ['A', 'B', 'C', 'D']
+BFS from A: ['A', 'B', 'C', 'D']
+Shortest path A->D: ['A', 'B', 'C', 'D']
+Shortest path A->C: ['A', 'B', 'C']
+Directed graph: Graph(3 nodes, 2 edges)
+X neighbors: ['Y']
+Y neighbors: ['Z']
+Has edge X->Y: true
+Has edge Y->X: false
+Before remove: 3 nodes, 2 edges
+After remove edge: 1 edges
+After remove node: 1 nodes
+
+=== v1.3.8 Networking + Collections tests complete! ===
+[PASS] v1.3.8
+=== Testing v1.3.9 REPL Error Handling ===
+
+--- Error Suggestion System Tests ---
+print type: function
+len type: function
+http_get type: function
+PriorityQueue type: function
+Tree type: function
+Graph type: function
+http_get exists: function
+
+--- Type Inspection ---
+num type: number
+str type: string
+bool type: bool
+list type: list
+dict type: dict
+
+--- Available Builtins ---
+Builtins available for suggestions
+print: function
+len: function
+type: function
+upper: function
+split: function
+join: function
+abs: function
+sqrt: function
+json_parse: function
+md5: function
+sha256: function
+http_get: function
+http_post: function
+http_put: function
+http_delete: function
+smtp_connect: function
+ftp_connect: function
+PriorityQueue: function
+Tree: function
+Graph: function
+http_serve: function
+
+--- Error Recovery Tests ---
+Safe calculation: 3
+Error caught successfully
+Error was caught: true
+
+=== v1.3.9 REPL Error Handling tests complete! ===
+[PASS] v1.3.9
+=== Testing v1.4.0 Generators ===
+
+--- Basic Generator Test ---
+Generator type: generator
+v1: 0
+v2: 1
+v3: 2
+v4: 3
+v5: 4
+v6: nil
+
+--- Range Generator Test ---
+r1: 0
+r2: 1
+r3: 2
+r4: 3
+r5: 4
+r6: nil
+
+--- For-in with Generator Test ---
+0
+1
+1
+2
+3
+5
+8
+13
+
+--- is_generator Test ---
+is_generator(gen): true
+is_generator(42): false
+is_generator([1,2,3]): false
+
+--- Generator with Parameters Test ---
+3x1: 3
+3x2: 6
+3x3: 9
+3x4: 12
+3x5: nil
+
+--- Multiple Generators Test ---
+g1: 0
+g2: 10
+g1: 1
+g2: 11
+g1: 2
+g2: 12
+
+=== v1.4.0 Generator tests complete! ===
+[PASS] v1.4.0
+=== Testing v1.5.0 Additional Builtins ===
+
+--- Random ---
+normal: -0.14409032957792836
+normal(5, 2): 4.654192799336961
+
+--- Time ---
+now: 2026-05-25T11:37:02.832242
+delta: 3.00002284348011e-07
+format_duration(65): 1m 5s
+format_duration(3665): 1h 1m 5s
+
+--- Color ---
+from_hex #FF0000: [255, 0, 0, 255]
+to_hex 255,0,0: #FF0000FF
+hsl 0,1,0.5: {'r': 255, 'g': 0, 'b': 0, 'a': 255}
+
+--- Easing ---
+ease_in 0.5: 0.5
+ease_out 0.5: 0.5
+bounce 0.5: 0.7187499999999996
+spring 0.5: 0.7790836678334934
+
+--- String ---
+words hello world: ['hello', 'world']
+truncate abcdefghijk 5: ab...
+pad_left 42 5 0: 00042
+pad_right 42 5 0: 42000
+
+--- List ---
+reverse: [9, 5, 1, 4, 1, 3]
+binary_search [1,3,5,7] 5: 2
+binary_search [1,3,5,7] 4: -1
+zip_with: [[1, 'a'], [2, 'b'], [3, 'c']]
+
+--- Regex ---
+find_all hello123world456 [0-9]+: ['123', '456']
+sub hello world world ipp: hello ipp
+escape hello.world: hello\.world
+
+--- Path ---
+glob *.ipp: ['test.ipp', 'test_both.ipp', 'test_class.ipp', 'test_comprehension.ipp', 'test_do_debug.ipp', 'test_do_simple.ipp', 'test_export.ipp', 'test_expr.ipp', 'test_load.ipp', 'test_match.ipp', 'test_repeat.ipp', 'test_simple.ipp', 'test_stack_fix.ipp', 'test_str.ipp', 'test_vm_cmd.ipp', 'test_vm_for.ipp', 'test_while.ipp', 'test_while2.ipp']
+
+--- Grid ---
+neighbors grid 1 1: [(0, 1), (2, 1), (1, 0), (1, 2)]
+flood_fill grid 0 0: [(0, 1), (2, 1), (0, 0), (3, 1), (0, 3), (2, 0), (3, 0), (2, 3), (0, 2), (3, 3), (2, 2), (1, 0), (1, 3)]
+pathfind grid (0,0) (2,2): [(0, 0), (1, 0), (2, 0), (2, 1), (2, 2)]
+
+--- Debug ---
+assert_eq passed
+inspect [1,2,3]: [1, 2, 3]
+
+=== v1.5.0 Additional Builtins tests complete! ===
+[PASS] v1.5.0
+=== Testing v1.5.0 Async/Await ===
+
+--- Async Function Declaration ---
+
+--- Coroutine Creation ---
+coroutine: <coroutine fetch_data>
+is_coroutine: true
+
+--- Async Run ---
+coro2: <coroutine quick_task>
+Task started
+Task done
+async_run result: 42
+result type: number
+
+--- Sleep ---
+Before sleep
+After sleep
+
+--- Multiple Coroutines ---
+Worker1 started
+Worker1 finished
+Worker2 started
+Worker2 finished
+Results: Worker1 done Worker2 done
+
+--- Async with Return ---
+Sum 0..99: 4950
+
+=== v1.5.0 Async/Await tests complete! ===
+[PASS] v1.5.0-async
+v1.5.21: For-in loop tests PASSED
+[PASS] v1.5.21
+v1.5.22: pi and e constants tests PASSED
+[PASS] v1.5.22
+v1.5.23: let immutability tests PASSED
+[PASS] v1.5.23
+vec2(1, 2)
+v1.5.24: __str__ method tests PASSED
+[PASS] v1.5.24
+v1.5.25: Static methods tests PASSED
+[PASS] v1.5.25
+v1.5.26: continue in while tests PASSED
+[PASS] v1.5.26
+v1.5.27: continue in for-in tests PASSED
+[PASS] v1.5.27
+v1.5.28: MultiVarDecl tests PASSED
+[PASS] v1.5.28
+v1.5.29: List comprehension tests PASSED
+[PASS] v1.5.29
+v1.5.30: Dict comprehension tests PASSED
+[PASS] v1.5.30
+v1.5.31: Global cache tests PASSED
+[PASS] v1.5.31
+v1.5.32: SET_INDEX stack fix tests PASSED
+[PASS] v1.5.32
+v1.5.33: do-while syntax tests PASSED
+[PASS] v1.5.33
+v1.5.34: Multiple catch blocks tests PASSED
+[PASS] v1.5.34
+v1.5.35: Variadic parameters tests PASSED
+[PASS] v1.5.35
+v1.5.36: F-strings tests PASSED
+[PASS] v1.5.36
+v1.5.37: VM import system tests PASSED
+[PASS] v1.5.37
+v1.5.38: Spread operator tests PASSED
+[PASS] v1.5.38
+v1.6.0: Operator overloading tests PASSED
+[PASS] v1.6.0
+v1.6.1: Exception type hierarchy tests PASSED
+[PASS] v1.6.1
+v1.6.2: Decorator execution tests PASSED
+[PASS] v1.6.2
+v1.6.3: Multiple return values tests PASSED
+[PASS] v1.6.3
+v1.6.4: Named function arguments tests PASSED
+[PASS] v1.6.4
+v1.6.5: Property accessor tests PASSED
+[PASS] v1.6.5
+Clicked at 100, 200
+v1.6.6: Signal/Event system tests PASSED
+[PASS] v1.6.6
+v1.6.7: List slicing tests PASSED
+[PASS] v1.6.7
+sync: 
+30
+async: 
+12
+v1.6.9: Async/Await tests PASSED
+[PASS] v1.6.9
+Created set:
+{1, 2, 3}
+v1.6.10: IppSet tests PASSED
+[PASS] v1.6.10
+v1.6.11: TAIL_CALL tests PASSED
+[PASS] v1.6.11
+Sorted:
+[1, 1, 3, 4, 5, 9]
+Reversed:
+[9, 5, 4, 3, 1, 1]
+v1.6.12: Fluent list methods tests PASSED
+[PASS] v1.6.12
+v1.6.13: String Format Method tests PASSED
+[PASS] v1.6.13
+v1.6.14: Bytecode caching tests PASSED
+Note: .ipc cache file created automatically on first run
+[PASS] v1.6.14
+v1.7.1: Opcode unit tests PASSED
+All VM opcodes tested via Ipp code execution
+[PASS] v1.7.1
+Caught: Division by zero at line 6
+Test passed!
+[PASS] v1.7.9-div
+Caught: list index out of range
+Test passed!
+[PASS] v1.7.9-idx
+Caught: Property 'field' not found on NoneType
+Test passed!
+[PASS] v1.7.9-nil
+Caught: custom error
+Test passed!
+[PASS] v1.7.9-throw
+str(Point(3, 4)) = (3, 4)
+[PASS] v1.7.8.1-basic
+'point is: ' + str(p) = point is: (3, 4)
+str(p) + ' is a point' = (3, 4) is a point
+str(p) + ' -> ' + str(p) = (3, 4) -> (3, 4)
+[PASS] v1.7.8.1-concat
+Circle: Circle r=5
+Rectangle: Rectangle 10x20
+[PASS] v1.7.8.1-inherit
+NoStr: <NoStr instance>
+AlsoNoStr: <AlsoNoStr instance>
+Default __str__ test passed!
+[PASS] v1.7.8.1-default
+p1: (1, 2)
+p2: (3, 4)
+p3: (5, 6)
+List: [<Point instance>, <Point instance>, <Point instance>]
+Dict a: (1, 2)
+Dict b: (3, 4)
+[PASS] v1.7.8.1-coll
+repr('hello') = "hello"
+repr(42) = 42
+repr(3.14) = 3.14
+repr(true) = true
+repr(false) = false
+repr(nil) = nil
+Basic types test passed!
+[PASS] v1.7.8.2-builtin
+repr(Vec(1,2)) = Vec(1, 2)
+repr(Person) = Person{name='Alice', age=30}
+Custom __repr__ test passed!
+[PASS] v1.7.8.2-method
+repr(NoRepr) = <NoRepr instance>
+Default repr test passed!
+[PASS] v1.7.8.2-default
+repr([1,2,3]) = [1, 2, 3]
+repr([Point, Point]) = [P(1,2), P(3,4)]
+repr(dict) = {"a": 1, "b": 2}
+Collections repr test passed!
+[PASS] v1.7.8.2-coll
+Animal repr: Animal(generic)
+Dog repr: Dog(Rex, Labrador)
+Inheritance test passed!
+[PASS] v1.7.8.2-inherit
+Person repr: Person(Alice, 30)
+Test passed!
+[PASS] v1.7.8.2-adv
+Employee repr: Bob lives at 123 Main, Boston
+Address repr: 123 Main, Boston
+Test passed!
+[PASS] v1.7.8.2-nested
+Team repr: Team(Developers, 3 members)
+Test passed!
+[PASS] v1.7.8.2-coll-adv
+Before len call
+__len__ called
+After len call, result: 0
+Test passed!
+[PASS] v1.7.8.3-basic
+Empty stack: 0
+Stack with 3: 3
+Inheritance __len__ test passed!
+[PASS] v1.7.8.3-inherit
+Trying len on class without __len__:
+Default __len__ test passed!
+[PASS] v1.7.8.3-default
+[PASS] v1.7.6.2-dict-get
+v1.7.9.1.12: isclose tests PASSED
+[PASS] v1.7.9.1.12-isclose
+Traceback (most recent call last):
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\run_tests.py", line 106, in <module>
+    vm=VM(); vm._current_source_file=os.path.abspath(path); vm.run(compile_ast(parse(tokenize(open(path).read()))))
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 991, in parse
+    return Parser(tokens).parse()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 17, in parse
+    statements.append(self.declaration())
+                      ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 41, in declaration
+    return self.class_declaration()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 71, in class_declaration
+    prop = self.property_declaration()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 105, in property_declaration
+    self.consume(TokenType.RIGHT_BRACE, "Expect '}' after getter")
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 959, in consume
+    self.error(message)
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\ipp\parser\parser.py", line 987, in error
+    raise SyntaxError(msg)
+SyntaxError: Parse error at line 64, col 33: Expect '}' after getter \u2192 Check for missing quotes
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Shreyasi Sarkar\Documents\opencode\Ipp\run_tests.py", line 110, in <module>
+    print(f"[FAIL] {name}: {msg}"); failed+=1; failures.append((name,msg))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Shreyasi Sarkar\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 105: character maps to <undefined>
