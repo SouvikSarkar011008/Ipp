@@ -1430,10 +1430,16 @@ class VM:
                     'insert': lambda lst, idx, val: lst.insert(int(idx), val) or lst,
                     'clear':  lambda lst: lst.clear() or lst,
                     'copy':   lambda lst: list(lst),
-                    'min':    lambda lst: min(lst),
-                    'max':    lambda lst: max(lst),
-                    'sum':    lambda lst: sum(lst),
-                    'flat':   lambda lst: [x for sub in lst for x in (sub if isinstance(sub, list) else [sub])],
+                    'min':       lambda lst: min(lst),
+                    'max':       lambda lst: max(lst),
+                    'sum':       lambda lst: sum(lst),
+                    'flat':      lambda lst: [x for sub in lst for x in (sub if isinstance(sub, list) else [sub])],
+                    'zip':       lambda lst, other: [list(pair) for pair in zip(lst, other)],
+                    'enumerate': lambda lst, start=0: [[i, v] for i, v in enumerate(lst, start)],
+                    'flatten':   lambda lst: [x for sub in lst for x in (sub if isinstance(sub, list) else [sub])],
+                    'unique':    lambda lst: list(dict.fromkeys(lst)),
+                    'take':      lambda lst, n: lst[:int(n)],
+                    'drop':      lambda lst, n: lst[int(n):],
                 }
                 if name in ('any', 'all'):
                     self.stack[-1] = _ListPredicateWrapper(self, name, obj)

@@ -119,6 +119,7 @@ TESTS = [
     ("v1.8.1-variadic","tests/v1_8_1/test_variadic_fix.ipp"),
     ("v1.8.1.1-list-mutation","tests/v1_8_1_1/test_list_mutation.ipp"),
     ("v1.8.1.2-list-aggregates","tests/v1_8_1_2/test_list_aggregates.ipp"),
+    ("v1.8.1.3-list-transforms","tests/v1_8_1_3/test_list_transforms.ipp"),
 ]
 
 passed=failed=0

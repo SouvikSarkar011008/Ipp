@@ -870,18 +870,18 @@ class Interpreter:
     
     def _get_list_method(self, lst, name):
         """Return callable for Ipp list aggregate methods."""
-        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat'):
+        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop'):
             return None
         _self = self
         class _ListMethodWrapper:
-            def __call__(_cls, fn=None):
-                if name == 'min':
+            def __call__(_cls, *args, **kw):
+                if name in ('min',):
                     return min(lst.elements)
-                elif name == 'max':
+                elif name in ('max',):
                     return max(lst.elements)
-                elif name == 'sum':
+                elif name in ('sum',):
                     return sum(lst.elements)
-                elif name == 'flat':
+                elif name in ('flat', 'flatten'):
                     result = []
                     for sub in lst.elements:
                         if isinstance(sub, IppList):
@@ -892,6 +892,7 @@ class Interpreter:
                             result.append(sub)
                     return IppList(result)
                 elif name == 'any':
+                    fn = args[0] if args else None
                     if fn is None:
                         return any(lst.elements)
                     for elem in lst.elements:
@@ -899,12 +900,34 @@ class Interpreter:
                             return True
                     return False
                 elif name == 'all':
+                    fn = args[0] if args else None
                     if fn is None:
                         return all(lst.elements)
                     for elem in lst.elements:
                         if not _self.call_function(fn, [elem]):
                             return False
                     return True
+                elif name == 'zip':
+                    other = args[0] if args else []
+                    other_el = other.elements if isinstance(other, IppList) else other
+                    return IppList([IppList([a, b]) for a, b in zip(lst.elements, other_el)])
+                elif name == 'enumerate':
+                    start = args[0] if args else 0
+                    return IppList([IppList([i, v]) for i, v in enumerate(lst.elements, int(start))])
+                elif name == 'unique':
+                    seen = set()
+                    result = []
+                    for x in lst.elements:
+                        if x not in seen:
+                            seen.add(x)
+                            result.append(x)
+                    return IppList(result)
+                elif name == 'take':
+                    n = int(args[0]) if args else 0
+                    return IppList(lst.elements[:n])
+                elif name == 'drop':
+                    n = int(args[0]) if args else 0
+                    return IppList(lst.elements[n:])
         return _ListMethodWrapper()
 
     def _get_string_method(self, s, name):

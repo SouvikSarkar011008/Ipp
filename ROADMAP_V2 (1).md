@@ -1527,7 +1527,7 @@ assert nested.flat() == [1,2,3,4,5]
 
 ---
 
-### v1.8.1.3 — Enhancement: `list.zip()`, `list.enumerate()`, `list.flatten()`, `list.unique()`
+### v1.8.1.3 — Enhancement: `list.zip()`, `list.enumerate()`, `list.flatten()`, `list.unique()` ✅ DONE
 
 **Why here:** After basic list aggregates, these four transform methods complete the functional toolkit needed to avoid manual loops in almost all common game-data processing patterns.
 
