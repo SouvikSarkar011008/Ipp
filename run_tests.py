@@ -123,6 +123,7 @@ TESTS = [
     ("v1.8.1.4-list-search","tests/v1_8_1_4/test_list_search.ipp"),
     ("v1.8.2-multi-assign","tests/v1_8_2/test_multi_assign.ipp"),
     ("v1.8.2.1-swap","tests/v1_8_2_1/test_swap.ipp"),
+    ("v1.8.3-map-filter-reduce","tests/v1_8_3/test_fluent_real.ipp"),
 ]
 
 passed=failed=0

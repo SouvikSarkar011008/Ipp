@@ -506,6 +506,33 @@ class _ListSearchWrapper:
                 return count
             return self.lst.count(fn_or_val)
 
+
+class _ListMapFilterReduceWrapper:
+    """VM wrapper for list.map(), filter(), reduce() with Ipp function call support."""
+    __slots__ = ('vm', 'method', 'lst')
+    def __init__(self, vm, method, lst):
+        self.vm = vm
+        self.method = method
+        self.lst = lst
+    def __call__(self, fn, init=None):
+        if self.method == 'map':
+            return [self.vm._call_sync(fn, [x]) for x in self.lst]
+        elif self.method == 'filter':
+            return [x for x in self.lst if self.vm._call_sync(fn, [x])]
+        elif self.method == 'reduce':
+            it = iter(self.lst)
+            if init is None:
+                try:
+                    acc = next(it)
+                except StopIteration:
+                    raise VMError("reduce() of empty list with no initial value")
+            else:
+                acc = init
+            for x in it:
+                acc = self.vm._call_sync(fn, [acc, x])
+            return acc
+
+
 # Opcode lookup cache - v1.5.26 fix for VM performance
 _OPCODE_CACHE = {}
 
@@ -1480,6 +1507,8 @@ class VM:
                     self.stack[-1] = _ListPredicateWrapper(self, name, obj)
                 elif name in ('find', 'find_index', 'count'):
                     self.stack[-1] = _ListSearchWrapper(self, name, obj)
+                elif name in ('map', 'filter', 'reduce'):
+                    self.stack[-1] = _ListMapFilterReduceWrapper(self, name, obj)
                 elif name in _LIST_METHODS:
                     _fn = _LIST_METHODS[name]
                     _bound_obj = obj

@@ -1703,7 +1703,7 @@ assert n == 2
 
 ---
 
-### v1.8.3 — Fix: `list.map()`, `list.filter()`, `list.reduce()` (BUG-008)
+### v1.8.3 — Fix: `list.map()`, `list.filter()`, `list.reduce()` (BUG-008) ✅ DONE
 
 **File to change:** `vm.py`, wherever list methods are dispatched.
 

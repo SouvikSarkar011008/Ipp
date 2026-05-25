@@ -870,7 +870,7 @@ class Interpreter:
     
     def _get_list_method(self, lst, name):
         """Return callable for Ipp list aggregate methods."""
-        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop', 'find', 'find_index', 'contains', 'count'):
+        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop', 'find', 'find_index', 'contains', 'count', 'map', 'filter', 'reduce'):
             return None
         _self = self
         class _ListMethodWrapper:
@@ -958,6 +958,26 @@ class Interpreter:
                                 count += 1
                         return count
                     return lst.elements.count(fn_or_val)
+                elif name == 'map':
+                    fn = args[0]
+                    return IppList([_self.call_function(fn, [elem]) for elem in lst.elements])
+                elif name == 'filter':
+                    fn = args[0]
+                    return IppList([elem for elem in lst.elements if _self.call_function(fn, [elem])])
+                elif name == 'reduce':
+                    fn = args[0]
+                    init = args[1] if len(args) > 1 else None
+                    it = iter(lst.elements)
+                    if init is None:
+                        try:
+                            acc = next(it)
+                        except StopIteration:
+                            raise RuntimeError("reduce() of empty list with no initial value")
+                    else:
+                        acc = init
+                    for x in it:
+                        acc = _self.call_function(fn, [acc, x])
+                    return acc
         return _ListMethodWrapper()
 
     def _get_string_method(self, s, name):
