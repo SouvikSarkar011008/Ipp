@@ -77,7 +77,7 @@ Every test in this audit is written without semicolons. Results marked ✅ were 
 | Functions & Closures | 7/10 | 7/10 | 9/10 | 9/10 | 8/10 | 8/10 |
 | Standard Library Completeness | 4/10 | 4/10 | 7/10 | 10/10 | 8/10 | 6/10 |
 | Standard Library Consistency | 4/10 | 3/10 | 8/10 | 10/10 | 9/10 | 8/10 |
-| Game-Specific Features | 5/10 | 5/10 | 6/10 | 2/10 | 10/10 | 7/10 |
+| Game-Specific Features | 5/10 ⚠️ | 5/10 | 6/10 | 2/10 | 10/10 | 7/10 |
 | Raw Performance | 1/10 | 1/10 | 10/10 | 5/10 | 8/10 | 10/10 |
 | VM Correctness | 6/10 | 4/10 | 10/10 | 10/10 | 9/10 | 10/10 |
 | Error Handling | 6/10 | 3/10 | 7/10 | 9/10 | 9/10 | 9/10 |
@@ -92,6 +92,8 @@ Every test in this audit is written without semicolons. Results marked ✅ were 
 **Score improved 62 → 79 (+17 points) since v3 audit.**
 
 **⚠️ Module/Import (3/10):** No `import` system exists. Roadmap Phase C2 (v1.9.10–v1.9.13) addresses this.
+
+**⚠️ Game-Specific (5/10):** Scene tree is flat stack (v2.0.9.1 adds proper hierarchy). No physics engine (v2.0.18.2 adds pymunk). No export targets (v2.1.6–v2.1.8). Hot reload resets state (v2.0.6.2 fixes). Resource annotations missing (v2.0.20.4).
 
 **⚠️ Ecosystem (1/10):** No packages, no registry, no formatter, no VSCode extension. HTTP client + WebSocket + Canvas are implemented but not yet packaged or documented. Roadmap Phase D2 (v2.0.12–v2.0.18) ships 7 bundled stdlib packages. Phase D3 (v2.0.19–v2.0.21) packages network and canvas. Phase F (v2.2.0–v2.2.5) adds registry and dev tooling. Every Ipp program is a single file. This is the largest gap between Ipp and any language you could actually build a project in. Roadmap Phase C2 (v1.9.10–v1.9.13) addresses this directly. Primary gains: fixing BUG-001/002/003/004 (the four critical crashes) added ~12 points across VM Correctness, Control Flow, OOP, and Error Handling. Syntax Clarity rose because semicolons no longer crash. Still a D+ because 18 bugs remain open and performance has not improved.
 
@@ -892,6 +894,7 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 | `ipp-net` | HTTP client/server, WebSocket, FTP, SMTP, leaderboard | Phase D3 v2.0.19 |
 | `ipp-canvas` | Canvas game loop, sprites, tilemap renderer, camera | Phase D3 v2.0.20 |
 | `ipp-ui` | Label, Button, ProgressBar, Panel widgets on canvas | Phase D3 v2.0.21 |
+| `ipp-physics` | 2D physics via pymunk: rigid bodies, colliders, joints, raycast | Phase D2 v2.0.18.2 |
 
 ### Tier 1 — Game Dev Blockers (Missing Features)
 
@@ -942,6 +945,9 @@ At 4 bugs/week fixed, the checklist could complete in ~2 months of focused work.
 - You need to **split your code across multiple files** (no `import` system — v1.9.10 planned)
 - You need **any standard game math beyond vec2/3/4** (no AABB, no color, no seeded RNG — v2.0.15 planned)
 - You need **file I/O or JSON** (no file reading or writing at all — v2.0.12 planned)
+- You need **2D physics** (no collision, no rigid bodies — v2.0.18.2 planned)
+- You need **a proper scene tree** (only flat stack exists — v2.0.9.1 planned)
+- You need **export to desktop/web/mobile** (no build targets yet — v2.1.6–v2.1.8 planned)
 - You need **a test framework** (none exists — v2.0.14 planned)
 
 ---

@@ -3894,6 +3894,92 @@ ipp.patch_method(Enemy, "take_damage", func(self, dmg) {
 
 ---
 
+---
+
+### v2.0.6.2 — Feature: Hot Reload — State Snapshot and Restore
+
+**What:** The gap in the current v2.0.6 spec: the file watcher recompiles changed functions but
+does NOT preserve game state — every save resets the game from `main.ipp`. This version adds a
+state snapshot before recompile and restore afterward, so `player.hp`, `score`, `current_level`,
+and all live variables survive a hot reload.
+
+**Implementation — three steps every reload cycle:**
+```python
+# In ipp/runtime/hotreload.py:
+
+def snapshot_globals(vm):
+    """Deep-copy all serialisable globals before recompile."""
+    import copy
+    snap = {}
+    for k, v in vm.globals.items():
+        if callable(v): continue          # skip functions/builtins
+        try: snap[k] = copy.deepcopy(v)
+        except: pass                      # skip unserializable (canvas handles, etc.)
+    return snap
+
+def restore_globals(vm, snap):
+    """Write snapshot back, skipping newly-defined names."""
+    for k, v in snap.items():
+        if k in vm.globals:               # only restore names that still exist
+            vm.globals[k] = v
+
+# In the watch loop:
+old_snap = snapshot_globals(vm)
+recompile_changed_files(vm)              # existing v2.0.6 / v2.0.6.1 work
+restore_globals(vm, old_snap)
+emit_signal("hot_reload_complete")       # ipp-signal: game code can hook this
+```
+
+**Opt-out for intentional reset:**
+```ipp
+# Mark a variable as non-persistent — it resets on every reload
+@no_persist
+var frame_count = 0
+
+# Mark a class instance as non-persistent
+@no_persist
+var current_session = Session()
+```
+
+**Test file: `tests/v2_0_6_2/test_hot_reload_state.ipp`**
+```ipp
+var score = 0
+var player_hp = 100
+var level = 3
+
+score = 500
+player_hp = 45
+
+# Simulate hot reload
+var snap = _hot_reload_snapshot()
+score = 0        # simulate recompile reset
+player_hp = 100
+_hot_reload_restore(snap)
+
+assert score == 500       # ✅ restored
+assert player_hp == 45    # ✅ restored
+assert level == 3         # ✅ restored
+
+# @no_persist vars reset intentionally
+@no_persist
+var frame_count = 0
+frame_count = 999
+var snap2 = _hot_reload_snapshot()
+_hot_reload_restore(snap2)
+assert frame_count == 0   # ✅ reset as expected
+```
+
+**C/Rust:** `snapshot_globals` and `restore_globals` stay Python — they use `copy.deepcopy` on Python
+dicts. The C VM exposes `vm.globals` as a Python dict via its PyO3/ctypes bridge, so this layer is
+unchanged.
+
+**Bootstrapped Ipp:** `@no_persist` compiles to a metadata tag on the variable declaration.
+Snapshot/restore becomes a standard library function in `ipp-debug` that serialises globals to
+a temp `.ipp` save file (using the savegame format from v2.0.12.1) then reloads it.
+
+**Regression risk:** Low. Snapshot/restore only runs during `--watch` mode. Normal `ipp run` is
+completely unaffected.
+
 ### v2.0.7 — Feature: f-string Format Spec (`{value:.2f}`, `{value:>10}`)
 
 **What:** Extend the existing f-string parser to handle Python-style format specs inside `{}`.
@@ -3924,6 +4010,64 @@ assert f"{pct:.1%}" == "87.5%"
 ```
 
 ---
+
+---
+
+### v2.0.6.3 — Feature: Hot Reload — `on_reload` Hook and Reload-Safe Patterns
+
+**What:** After state is preserved, game code often needs to re-bind event listeners, re-register
+signals, or rebuild derived state (cached path-finding grids, sorted enemy lists) that was computed
+at startup. `on_reload()` is called by the VM immediately after every hot reload so games can do
+this without duplicating handlers.
+
+```ipp
+var _enemies = []
+var _signals_bound = false
+
+func setup() {
+    _enemies = spawn_initial_enemies()
+    bind_input_handlers()
+    _signals_bound = true
+}
+
+func on_reload() {
+    # Called automatically after every hot reload
+    # State (@no_persist vars) already reset, other vars already restored
+    bind_input_handlers()          # re-bind — closures were recompiled
+    # _enemies is still alive (state preserved) — no re-spawn needed
+    print("[reload] Handlers rebound. Enemies preserved:", len(_enemies))
+}
+```
+
+**Files to change:** `ipp/vm/vm.py` — after `restore_globals`, check if `on_reload` is defined in
+globals and call it.
+
+**Test file: `tests/v2_0_6_3/test_on_reload.ipp`**
+```ipp
+var reload_count = 0
+var setup_count = 0
+
+func on_reload() {
+    reload_count = reload_count + 1
+}
+
+func setup() { setup_count = setup_count + 1 }
+
+setup()
+assert setup_count == 1
+assert reload_count == 0
+
+_simulate_hot_reload()
+assert reload_count == 1
+assert setup_count == 1   # setup() NOT called again — only on_reload()
+
+_simulate_hot_reload()
+assert reload_count == 2
+```
+
+**Regression risk:** Zero. Only calls `on_reload()` if it exists in globals.
+
+
 
 ### v2.0.7.1 — Feature: Template Strings `t"..."` for Safe HTML/SQL
 
@@ -4154,6 +4298,276 @@ assert scene.depth() == 1
 
 ---
 
+### v2.0.9.1 — Feature: Scene Tree — Node Hierarchy with Lifecycle Methods
+
+**What:** The flat scene stack (v2.0.9) becomes a proper node tree. Every game object is a `Node`
+with a `parent`, a list of `children`, and three lifecycle methods: `_ready()` (called once when
+added to tree), `_update(dt)` (called every frame), `_draw()` (called every frame after update).
+Nodes propagate calls down the tree automatically — you never manually loop over children.
+
+**Why every game language needs this:** GDScript, Unity, and Cocos2D are all tree-based for a
+reason — it maps perfectly to game object ownership (player owns weapon, weapon owns particle
+effect). Flat lists break when objects have sub-components. Ipp's current flat scene has no answer
+for "the enemy's health bar should update when the enemy updates."
+
+```ipp
+class Node {
+    func init(name="Node") {
+        self.name = name
+        self.parent = nil
+        self.children = []
+        self._in_tree = false
+    }
+
+    func add_child(child) {
+        child.parent = self
+        self.children.append(child)
+        if self._in_tree {
+            child._enter_tree()
+            child._ready()
+        }
+        return child
+    }
+
+    func remove_child(child) {
+        self.children = self.children.filter(func(c) { return c != child })
+        child.parent = nil
+        child._exit_tree()
+    }
+
+    func get_node(path) {
+        # "/" separates child names: get_node("HUD/HealthBar")
+        var parts = path.split("/")
+        var current = self
+        for part in parts {
+            current = current.children.find(func(c) { return c.name == part })
+            if current == nil { return nil }
+        }
+        return current
+    }
+
+    func _enter_tree() {
+        self._in_tree = true
+        for child in self.children { child._enter_tree() }
+    }
+
+    func _exit_tree() {
+        self._in_tree = false
+        for child in self.children { child._exit_tree() }
+    }
+
+    # Override these in subclasses:
+    func _ready()     { }
+    func _update(dt)  { for child in self.children { child._update(dt) } }
+    func _draw()      { for child in self.children { child._draw() } }
+    func _on_destroy(){ }
+
+    func destroy() {
+        self._on_destroy()
+        if self.parent != nil { self.parent.remove_child(self) }
+        for child in self.children.copy() { child.destroy() }
+    }
+
+    prop root {
+        get {
+            var n = self
+            while n.parent != nil { n = n.parent }
+            return n
+        }
+    }
+}
+```
+
+`canvas_run()` integration: the root node's `_update(dt)` and `_draw()` are called each frame
+automatically when a root node is registered with `scene.set_root(node)`.
+
+**Test file: `tests/v2_0_9_1/test_node_tree.ipp`**
+```ipp
+class Counter extends Node {
+    func init(name) {
+        self.name = name
+        self.updates = 0
+        self.children = []; self.parent = nil; self._in_tree = false
+    }
+    func _update(dt) {
+        self.updates = self.updates + 1
+        super._update(dt)   # propagates to children
+    }
+}
+
+var root = Counter("root")
+var child_a = Counter("child_a")
+var child_b = Counter("child_b")
+var grandchild = Counter("grandchild")
+
+root.add_child(child_a)
+root.add_child(child_b)
+child_a.add_child(grandchild)
+
+# Simulate 3 frames
+for i in range(3) { root._update(0.016) }
+
+assert root.updates == 3
+assert child_a.updates == 3
+assert child_b.updates == 3
+assert grandchild.updates == 3     # propagated through child_a
+
+# get_node path traversal
+assert root.get_node("child_a") == child_a
+assert root.get_node("child_a/grandchild") == grandchild
+assert root.get_node("child_b/missing") == nil
+
+# destroy removes from parent
+child_b.destroy()
+assert len(root.children) == 1
+assert root.children[0].name == "child_a"
+```
+
+**C/Rust rewrite:** `Node` is a pure Ipp class — zero C/Rust-specific work. The tree traversal
+is Ipp calling Ipp. Canvas integration (`scene.set_root`) registers one Python callback in
+`canvas_run()`.
+
+**Bootstrapped Ipp:** `Node` is already written in Ipp. The bootstrapped compiler handles it
+identically to any other class.
+
+**Regression risk:** Low. Existing v2.0.9 scene stack unchanged. `Node` is a new class.
+
+---
+
+---
+
+### v2.0.9.2 — Feature: Scene Tree — Built-in Node Types
+
+**What:** Core node subclasses that 95% of games need. Written entirely in Ipp on top of `Node`.
+
+```ipp
+# Spatial2D: a Node with position, rotation, scale
+class Spatial2D extends Node {
+    func init(name="Spatial2D") {
+        self.name = name; self.children = []; self.parent = nil; self._in_tree = false
+        self.position = vec2(0, 0)
+        self.rotation = 0.0   # radians
+        self.scale    = vec2(1, 1)
+        self.visible  = true
+    }
+    prop global_position {
+        get {
+            if self.parent != nil and self.parent is Spatial2D {
+                return self.parent.global_position + self.position
+            }
+            return self.position
+        }
+    }
+}
+
+# Sprite2D: Spatial2D + draws an image
+class Sprite2D extends Spatial2D {
+    func init(name="Sprite2D", image=nil) {
+        self.name=name; self.children=[]; self.parent=nil; self._in_tree=false
+        self.position=vec2(0,0); self.rotation=0.0; self.scale=vec2(1,1); self.visible=true
+        self.image = image
+        self.frame = 0
+    }
+    func _draw() {
+        if self.visible and self.image != nil {
+            import { draw_image } from "ipp-canvas"
+            var gp = self.global_position
+            draw_image(gp.x, gp.y, self.image)
+        }
+        super._draw()
+    }
+}
+
+# CollisionRect2D: Spatial2D + AABB collision
+class CollisionRect2D extends Spatial2D {
+    func init(name="Col2D", w=32, h=32) {
+        self.name=name; self.children=[]; self.parent=nil; self._in_tree=false
+        self.position=vec2(0,0); self.rotation=0.0; self.scale=vec2(1,1); self.visible=false
+        self.w=w; self.h=h
+    }
+    func get_rect() {
+        import { rect } from "ipp-math2d"
+        var gp = self.global_position
+        return rect(gp.x - self.w/2, gp.y - self.h/2, self.w, self.h)
+    }
+    func overlaps(other) {
+        return self.get_rect().intersects(other.get_rect())
+    }
+}
+
+# Label2D: Spatial2D + draws text
+class Label2D extends Spatial2D {
+    func init(name="Label", text="", color="white") {
+        self.name=name; self.children=[]; self.parent=nil; self._in_tree=false
+        self.position=vec2(0,0); self.rotation=0.0; self.scale=vec2(1,1); self.visible=true
+        self.text=text; self.color=color; self.font_size=12
+    }
+    func _draw() {
+        if self.visible {
+            import { text } from "ipp-canvas"
+            var gp = self.global_position
+            text(gp.x, gp.y, self.text, self.color)
+        }
+        super._draw()
+    }
+}
+
+# Timer: Node + fires a signal after N seconds
+class Timer extends Node {
+    func init(name="Timer", duration=1.0, one_shot=true) {
+        self.name=name; self.children=[]; self.parent=nil; self._in_tree=false
+        self.duration=duration; self.one_shot=one_shot
+        self.elapsed=0.0; self.running=false
+        import { Signal } from "ipp-signal"
+        self.timeout = Signal()
+    }
+    func start() { self.elapsed=0.0; self.running=true }
+    func stop()  { self.running=false }
+    func _update(dt) {
+        if self.running {
+            self.elapsed = self.elapsed + dt
+            if self.elapsed >= self.duration {
+                self.timeout.emit()
+                if self.one_shot { self.running=false }
+                else { self.elapsed = self.elapsed - self.duration }
+            }
+        }
+        super._update(dt)
+    }
+}
+```
+
+**Test file: `tests/v2_0_9_2/test_node_types.ipp`**
+```ipp
+# Spatial2D global position propagates through tree
+var root = Spatial2D("root")
+root.position = vec2(100, 50)
+var child = Spatial2D("child")
+child.position = vec2(10, 5)
+root.add_child(child)
+assert child.global_position.x == 110
+assert child.global_position.y == 55
+
+# CollisionRect2D overlap detection
+var a = CollisionRect2D("a", 32, 32)
+a.position = vec2(0, 0)
+var b = CollisionRect2D("b", 32, 32)
+b.position = vec2(20, 0)   # overlapping
+assert a.overlaps(b) == true
+b.position = vec2(64, 0)   # not overlapping
+assert a.overlaps(b) == false
+
+# Timer fires after duration
+var fired = false
+var t = Timer("t", duration=1.0)
+t.timeout.connect(func() { fired = true })
+t.start()
+for i in range(62) { t._update(0.016) }   # ~0.992s — not yet
+assert fired == false
+t._update(0.016)    # crosses 1.0s
+assert fired == true
+```
+
 ### v2.0.8.4 — Feature: `story {}` — Narrative Branching Syntax
 
 **What:** First-class dialogue and branching narrative syntax. A `story` block is a named, resumable narrative flow with characters, player choices, conditions, and flags. It shares variables and closures with the surrounding Ipp code natively — no bridge to Ink or Yarn needed.
@@ -4264,6 +4678,69 @@ if resources.is_loaded("assets/player.png") {
 ```
 
 ---
+
+---
+
+### v2.0.9.3 — Feature: Scene Tree — `@group` Tagging and Global Scene Queries
+
+**What:** Tag nodes with groups and query all nodes in a group from anywhere. The standard pattern
+for "hit all enemies", "hide all UI elements", "pause all animated objects".
+
+```ipp
+class Enemy extends Spatial2D {
+    @group("enemies")
+    @group("damageable")
+    func init(name, hp) {
+        self.name=name; self.hp=hp
+        self.children=[]; self.parent=nil; self._in_tree=false
+        self.position=vec2(0,0); self.rotation=0.0; self.scale=vec2(1,1); self.visible=true
+    }
+    func take_damage(amt) { self.hp = self.hp - amt }
+}
+
+# Query all nodes in a group
+var all_enemies = scene.get_group("enemies")
+for e in all_enemies { e.take_damage(10) }
+
+# Check membership
+var orc = Enemy("orc", 50)
+assert orc.in_group("enemies") == true
+assert orc.in_group("friendlies") == false
+```
+
+**Files to change:** `ipp/parser/parser.py` (parse `@group("name")` on class), `ipp/vm/vm.py`
+(maintain a `groups` dict in the scene root, populated when nodes enter the tree).
+
+**Test file: `tests/v2_0_9_3/test_groups.ipp`**
+```ipp
+class Enemy extends Spatial2D {
+    @group("enemies")
+    func init(name, hp) {
+        self.name=name; self.hp=hp
+        self.children=[]; self.parent=nil; self._in_tree=false
+        self.position=vec2(0,0); self.rotation=0.0; self.scale=vec2(1,1); self.visible=true
+    }
+}
+
+var root = Node("root")
+scene.set_root(root)
+
+var e1 = Enemy("orc", 50)
+var e2 = Enemy("goblin", 30)
+root.add_child(e1)
+root.add_child(e2)
+
+var enemies = scene.get_group("enemies")
+assert len(enemies) == 2
+for e in enemies { e.hp = e.hp - 10 }
+assert e1.hp == 40
+assert e2.hp == 20
+
+e1.destroy()
+assert len(scene.get_group("enemies")) == 1
+```
+
+
 
 ### v2.0.11 — Feature: Entity-Component-System (ECS) Core
 
@@ -6032,6 +6509,197 @@ assert caught.contains("did you mean") == false
 
 ---
 
+---
+
+### v2.0.18.2 — Package: `ipp-physics` — 2D Physics via pymunk
+
+**What:** A 2D physics package wrapping `pymunk` (Python Box2D-compatible library). Rigid bodies,
+static bodies, collision detection with callbacks, gravity, friction, joints. Requires
+`pip install pymunk`. No other Ipp package depends on it — purely opt-in.
+
+**Why pymunk and not Box2D directly:** `pymunk` is a mature, well-documented Python wrapper around
+Chipmunk2D (same physics used in early Angry Birds). One `pip install` gives you rigid bodies,
+collision shapes, constraints, and a step function. Box2D's Python bindings are fragile.
+
+`ipp/stdlib/ipp-physics/physics.ipp`:
+```ipp
+# Space: the physics world
+export class Space {
+    func init(gravity_x=0, gravity_y=980) {
+        self._space = physics_space_new(gravity_x, gravity_y)
+        self._bodies = []
+        self._handlers = {}
+    }
+
+    func step(dt) {
+        physics_space_step(self._space, dt)
+    }
+
+    func set_collision_handler(type_a, type_b, fn) {
+        self._handlers[str(type_a) + "_" + str(type_b)] = fn
+        physics_set_handler(self._space, type_a, type_b, fn)
+    }
+
+    func add(body) {
+        self._bodies.append(body)
+        physics_space_add(self._space, body._body, body._shape)
+        return body
+    }
+
+    func remove(body) {
+        self._bodies = self._bodies.filter(func(b) { return b != body })
+        physics_space_remove(self._space, body._body, body._shape)
+    }
+}
+
+# RigidBody: dynamic moving object
+export class RigidBody {
+    func init(mass=1.0, moment=nil) {
+        self._body = physics_body_new(mass, moment ?? physics_moment_circle(mass, 0, 10))
+        self._shape = nil
+        self.collision_type = 0
+    }
+    func add_circle(radius, offset_x=0, offset_y=0) {
+        self._shape = physics_shape_circle(self._body, radius, offset_x, offset_y)
+        physics_shape_set_type(self._shape, self.collision_type)
+        return self
+    }
+    func add_box(w, h) {
+        self._shape = physics_shape_box(self._body, w, h)
+        physics_shape_set_type(self._shape, self.collision_type)
+        return self
+    }
+    prop position {
+        get { return physics_body_position(self._body) }
+        set(v) { physics_body_set_position(self._body, v[0], v[1]) }
+    }
+    prop velocity {
+        get { return physics_body_velocity(self._body) }
+        set(v) { physics_body_set_velocity(self._body, v[0], v[1]) }
+    }
+    prop angle {
+        get { return physics_body_angle(self._body) }
+    }
+    func apply_impulse(x, y) { physics_body_apply_impulse(self._body, x, y) }
+}
+
+# StaticBody: immovable wall/floor
+export class StaticBody {
+    func init() {
+        self._body = physics_static_body_new()
+        self._shape = nil
+        self.collision_type = 0
+    }
+    func add_segment(x1, y1, x2, y2, radius=2) {
+        self._shape = physics_shape_segment(self._body, x1, y1, x2, y2, radius)
+        return self
+    }
+    func add_box(x, y, w, h) {
+        self._shape = physics_shape_box(self._body, w, h)
+        self.position = [x + w/2, y + h/2]
+        return self
+    }
+    prop position {
+        get { return physics_body_position(self._body) }
+        set(v) { physics_body_set_position(self._body, v[0], v[1]) }
+    }
+}
+```
+
+**Python builtins backing (`ipp/runtime/physics_builtins.py`):**
+```python
+try:
+    import pymunk
+    _HAS_PYMUNK = True
+except ImportError:
+    _HAS_PYMUNK = False
+    # Stub everything — import without crash, just no-op physics
+
+def physics_space_new(gx, gy):
+    if not _HAS_PYMUNK: return None
+    space = pymunk.Space()
+    space.gravity = (gx, gy)
+    return space
+
+def physics_space_step(space, dt):
+    if space: space.step(dt)
+
+def physics_body_new(mass, moment):
+    if not _HAS_PYMUNK: return None
+    return pymunk.Body(mass, moment)
+
+def physics_shape_circle(body, radius, ox, oy):
+    if not _HAS_PYMUNK: return None
+    return pymunk.Circle(body, radius, (ox, oy))
+
+def physics_body_position(body):
+    if not body: return [0, 0]
+    return [body.position.x, body.position.y]
+
+# ... etc for all shape/body operations
+```
+
+**Test file: `tests/v2_0_18_2/test_physics.ipp`**
+```ipp
+import { Space, RigidBody, StaticBody } from "ipp-physics"
+
+# Basic physics simulation
+var world = Space(gravity_x=0, gravity_y=980)
+
+# Floor
+var floor = StaticBody()
+floor.add_segment(0, 500, 600, 500, 2)
+world.add(floor)
+
+# Ball falling under gravity
+var ball = RigidBody(mass=1.0)
+ball.add_circle(15)
+ball.position = [300, 100]
+world.add(ball)
+
+var initial_y = ball.position[1]
+
+# Simulate 60 frames
+for i in range(60) { world.step(1.0 / 60.0) }
+
+# Ball fell due to gravity
+assert ball.position[1] > initial_y
+
+# Ball hit floor and stopped falling (approx)
+for i in range(180) { world.step(1.0 / 60.0) }
+assert ball.position[1] < 510    # resting on floor, not falling through
+
+# Collision callback fires
+var collisions = []
+world.set_collision_handler(1, 2, func(a, b) {
+    collisions.append("hit")
+})
+
+var ball2 = RigidBody(mass=1.0)
+ball2.collision_type = 1
+ball2.add_circle(10)
+ball2.position = [300, 200]
+world.add(ball2)
+
+var wall = StaticBody()
+wall.collision_type = 2
+wall.add_segment(300, 0, 300, 600, 5)
+world.add(wall)
+
+ball2.apply_impulse(1000, 0)
+for i in range(30) { world.step(1.0/60.0) }
+assert len(collisions) > 0
+```
+
+**C/Rust rewrite:** `pymunk` stays Python. The `physics_*` builtins are Python callables accessed
+via the same FFI path as all other builtins. A future v3.x could swap pymunk for a native Jolt or
+Box2D binding — the Ipp-level `Space/RigidBody/StaticBody` API stays identical.
+
+**Bootstrapped Ipp:** The `ipp-physics` package is already Ipp code. The `physics_*` builtins are
+provided via an FFI module. No change at all.
+
+**Regression risk:** Zero. New package, optional dependency. Silently stubs if pymunk not installed.
+
 ## Phase D3: Network & Canvas Packages (v2.0.19 – v2.0.22)
 
 > **What already exists:** `http_get`, `http_post`, `http_put`, `http_delete`, `websocket_connect/send/receive/close`, and `canvas_open/rect/circle/line/text/clear/show` are all implemented in Python and registered in the VM. None of them have been documented, properly tested, or packaged with a clean Ipp API. This phase does that — then builds `ipp-net` and `ipp-canvas` and `ipp-ui` on top.
@@ -6053,6 +6721,61 @@ assert caught.contains("did you mean") == false
 > Network & Canvas features moved to **Phase D3 (v2.0.19–v2.0.21)**.
 
 ---
+
+---
+
+### v2.0.18.3 — Enhancement: `ipp-physics` — Joints, Raycasting, and Debug Draw
+
+**What:** Three physics additions that complete the toolkit for most 2D games.
+
+```ipp
+# Joints (constraints between bodies)
+export class PinJoint {
+    func init(body_a, body_b, anchor_a=[0,0], anchor_b=[0,0]) {
+        self._joint = physics_pin_joint(body_a._body, body_b._body, anchor_a, anchor_b)
+    }
+}
+
+export class SpringJoint {
+    func init(body_a, body_b, rest_length, stiffness, damping) {
+        self._joint = physics_spring_joint(
+            body_a._body, body_b._body, rest_length, stiffness, damping)
+    }
+}
+
+# Raycast
+export func raycast(space, from_pos, to_pos, collision_type=nil) {
+    return physics_raycast(space._space, from_pos, to_pos, collision_type)
+}
+
+# Debug draw: overlay collision shapes on canvas
+export func debug_draw(space, canvas_ctx=nil) {
+    physics_debug_draw(space._space)
+}
+```
+
+**Test file: `tests/v2_0_18_3/test_physics_extras.ipp`**
+```ipp
+import { Space, RigidBody, StaticBody, raycast } from "ipp-physics"
+
+var world = Space()
+
+var wall = StaticBody()
+wall.add_segment(200, 0, 200, 400, 2)
+wall.collision_type = 1
+world.add(wall)
+
+# Raycast hits the wall
+var hit = raycast(world, [0, 200], [400, 200])
+assert hit != nil
+assert hit["position"][0] >= 199 and hit["position"][0] <= 201
+
+# Raycast misses
+var miss = raycast(world, [0, 0], [0, 400])
+assert miss == nil
+```
+
+
 
 ### v2.0.19 — Package: `ipp-net` — HTTP Client, Fixes, and Wire-Up
 
@@ -6681,6 +7404,180 @@ router.stop()
 
 ---
 
+---
+
+### v2.0.19.6 — Feature: `ipp-net` Multiplayer — Room System and Game State Sync
+
+**What:** A higher-level multiplayer abstraction on top of `WSServer` (v2.4.3). A `Room` manages
+a lobby, player connections, a shared game state dict, and a locked-step tick. This covers 90%
+of indie game multiplayer needs: turn-based games, small real-time games (<8 players),
+co-op games, and board game adaptations.
+
+**Realistic scope:** No client prediction, no lag compensation, no delta encoding. Those are
+AAA concerns. For indie games: authoritative server, state broadcast every tick, clients send
+input events, server applies them and broadcasts the new state. Latency: fine for LAN and
+low-latency internet. Good enough for turn-based, fine for casual real-time, not for shooters.
+
+`ipp/stdlib/ipp-net/multiplayer.ipp`:
+```ipp
+import { WSServer } from "net.ipp"
+import { Signal } from "ipp-signal"
+
+export class Room {
+    func init(port=8765, max_players=4, tick_rate=20) {
+        self.port = port
+        self.max_players = max_players
+        self.tick_ms = 1000 / tick_rate
+        self._players = {}         # client_id -> player_data dict
+        self._state = {}           # shared authoritative game state
+        self._server = WSServer(port=port)
+        self._tick_count = 0
+
+        # Signals
+        self.on_player_join    = Signal()
+        self.on_player_leave   = Signal()
+        self.on_input          = Signal()
+        self.on_tick           = Signal()
+    }
+
+    func set_state(key, val) {
+        self._state[key] = val
+        self._broadcast_state()
+    }
+
+    func get_state(key, default=nil) {
+        return self._state.get(key) ?? default
+    }
+
+    prop player_count { get { return len(self._players) } }
+    prop players      { get { return self._players } }
+    prop is_full      { get { return self.player_count >= self.max_players } }
+
+    func start(on_tick_fn=nil) {
+        self._server.on_connect(func(cid) {
+            if self.is_full {
+                self._server.send(cid, json_stringify({"type": "room_full"}))
+                self._server.disconnect(cid)
+                return
+            }
+            self._players[cid] = {"id": cid, "ready": false}
+            self._server.send(cid, json_stringify({
+                "type": "welcome", "your_id": cid,
+                "state": self._state, "players": self._players
+            }))
+            self._broadcast(json_stringify({"type": "player_joined", "id": cid}), except=cid)
+            self.on_player_join.emit(cid)
+        })
+
+        self._server.on_message(func(cid, raw) {
+            var msg = json_parse(raw)
+            if msg["type"] == "input" {
+                self.on_input.emit(cid, msg.get("data"))
+            } elif msg["type"] == "ready" {
+                self._players[cid]["ready"] = true
+            }
+        })
+
+        self._server.on_disconnect(func(cid) {
+            self._players.delete(cid)
+            self._broadcast(json_stringify({"type": "player_left", "id": cid}))
+            self.on_player_leave.emit(cid)
+        })
+
+        # Tick loop (runs in background thread at tick_rate fps)
+        if on_tick_fn != nil {
+            schedule(func() {
+                self._tick_count = self._tick_count + 1
+                on_tick_fn(self)
+                self._broadcast_state()
+                self.on_tick.emit(self._tick_count)
+            }, every=self.tick_ms / 1000.0)
+        }
+
+        self._server.listen()
+    }
+
+    func _broadcast(msg, except=nil) {
+        for cid in self._players.keys() {
+            if cid != except { self._server.send(cid, msg) }
+        }
+    }
+
+    func _broadcast_state() {
+        var msg = json_stringify({"type": "state", "state": self._state,
+                                   "tick": self._tick_count})
+        self._broadcast(msg)
+    }
+
+    func stop() { self._server.stop() }
+}
+```
+
+**Example — 2-player turn-based game server:**
+```ipp
+import { Room } from "ipp-net/multiplayer"
+
+var room = Room(port=8765, max_players=2, tick_rate=1)
+
+room.set_state("board", [[0,0,0],[0,0,0],[0,0,0]])
+room.set_state("current_turn", nil)
+room.set_state("winner", nil)
+
+room.on_player_join.connect(func(pid) {
+    if room.player_count == 2 {
+        room.set_state("current_turn", pid)
+        print("Game started!")
+    }
+})
+
+room.on_input.connect(func(pid, data) {
+    var turn = room.get_state("current_turn")
+    if pid != turn { return }    # not your turn
+    var board = room.get_state("board")
+    board[data["row"]][data["col"]] = pid
+    room.set_state("board", board)
+    # Switch turns
+    var other = room.players.keys().find(func(p) { return p != pid })
+    room.set_state("current_turn", other)
+})
+
+room.start()
+```
+
+**Test file: `tests/v2_0_19_6/test_room.ipp`**
+```ipp
+import { Room } from "ipp-net/multiplayer"
+
+var room = Room(port=18090, max_players=2)
+var join_log = []
+var leave_log = []
+
+room.on_player_join.connect(func(pid) { join_log.append(pid) })
+room.on_player_leave.connect(func(pid) { leave_log.append(pid) })
+
+# Room starts empty
+assert room.player_count == 0
+assert room.is_full == false
+
+# State management
+room.set_state("score", 0)
+assert room.get_state("score") == 0
+room.set_state("score", 100)
+assert room.get_state("score") == 100
+
+# Default for missing key
+assert room.get_state("missing", "default") == "default"
+```
+
+**C/Rust rewrite:** `WSServer` stays Python-backed (asyncio + websockets). The `Room` class is
+Ipp — no C/Rust work at all. The tick loop uses `schedule()` which also stays Python.
+
+**Bootstrapped Ipp:** `Room` is already Ipp. Zero change.
+
+**Regression risk:** Zero. New sub-package. Requires `pip install websockets`.
+
+
+
 ### v2.0.20 — Package: `ipp-canvas` — Canvas Drawing with Game Loop Integration
 
 **What:** Package the existing canvas builtins into `ipp-canvas`, and fix the critical game loop integration problem. Currently `canvas_open()` opens a tkinter window and each `draw_*` call calls `window.update()` manually. This blocks tkinter's event loop — keyboard/mouse events are never processed during drawing, and the window freezes if you don't call `canvas_show()` frequently enough.
@@ -7214,6 +8111,504 @@ ui.click(0, 0)        # outside — no crash
 
 ---
 
+---
+
+### v2.0.20.4 — Feature: `@texture`, `@sound`, `@tilemap` Resource Annotations
+
+**What:** Three decorators that load a media file at class-definition time, bind it to a field,
+and auto-reload it during hot reload. The canonical GDScript pattern of `@export var sprite =
+preload("res://player.png")` — but cleaner, and integrated with Ipp's hot reload system.
+
+```ipp
+class Player extends Sprite2D {
+    @texture("assets/player.png")
+    var sprite = nil                 # auto-loaded into canvas image registry as "Player.sprite"
+
+    @sound("assets/jump.wav")
+    var jump_sfx = nil               # auto-loaded, plays with jump_sfx.play()
+
+    @tilemap("assets/world.tmj")
+    var world_map = nil              # auto-parsed into TilemapRenderer instance
+
+    func _ready() {
+        self.image = self.sprite     # bind to Sprite2D image field
+    }
+    func jump() {
+        self.jump_sfx.play()
+        self.position.y = self.position.y - 5
+    }
+}
+```
+
+**How each annotation works:**
+
+`@texture(path)` — on class load, calls `canvas_image_load(path, "ClassName.field_name")`.
+Stores the image key in the field. On hot reload, reloads the image file in-place.
+
+`@sound(path)` — loads audio file using Python's `pygame.mixer` (if available) or `winsound` /
+`afplay` fallback. Returns a `Sound` object with `.play()`, `.stop()`, `.volume` property.
+
+`@tilemap(path)` — parses a Tiled `.tmj` JSON tilemap file into a `TilemapRenderer` (v2.0.20.2)
+instance automatically. Handles tile layers, object layers, tilesets.
+
+**Files to change:**
+- `ipp/parser/parser.py` — parse `@texture/sound/tilemap("path")` on `var` declarations
+- `ipp/runtime/resources.py` (new) — registry of loaded resources, reload-on-change logic
+- `ipp/vm/compiler.py` — emit resource load call in class `__init__`
+- `ipp/runtime/sound.py` (new) — Sound class wrapping pygame.mixer or fallback
+
+**Resource file: `ipp/runtime/resources.py`:**
+```python
+import os
+
+_resources = {}   # key -> {type, path, value, mtime}
+
+def load_texture(path, key):
+    from ipp.runtime.canvas import canvas_image_load
+    val = canvas_image_load(path, key)
+    _resources[key] = {'type': 'texture', 'path': path, 'value': val,
+                        'mtime': os.path.getmtime(path)}
+    return val
+
+def load_sound(path, key):
+    try:
+        import pygame
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+        sound = pygame.mixer.Sound(path)
+        val = IppSound(sound)
+    except ImportError:
+        val = IppSound(None)   # silent stub — no pygame installed
+    _resources[key] = {'type': 'sound', 'path': path, 'value': val,
+                        'mtime': os.path.getmtime(path)}
+    return val
+
+def load_tilemap(path, key):
+    import json
+    with open(path) as f:
+        data = json.load(f)
+    # Parse Tiled JSON format into TilemapRenderer-compatible structure
+    val = parse_tiled_json(data)
+    _resources[key] = {'type': 'tilemap', 'path': path, 'value': val,
+                        'mtime': os.path.getmtime(path)}
+    return val
+
+def reload_changed():
+    """Called by hot reload watcher — reloads any resource whose file changed."""
+    for key, res in _resources.items():
+        try:
+            new_mtime = os.path.getmtime(res['path'])
+            if new_mtime != res['mtime']:
+                if res['type'] == 'texture': load_texture(res['path'], key)
+                elif res['type'] == 'sound': load_sound(res['path'], key)
+                elif res['type'] == 'tilemap': load_tilemap(res['path'], key)
+        except: pass
+```
+
+**Test file: `tests/v2_0_20_4/test_annotations.ipp`**
+```ipp
+# Annotations register resources without crash even when files don't exist
+# (graceful degradation — nil value, no crash)
+class TestEntity extends Node {
+    @texture("tests/v2_0_20_4/fixtures/dummy.png")
+    var sprite = nil
+
+    @sound("tests/v2_0_20_4/fixtures/dummy.wav")
+    var sfx = nil
+    
+    func init() {
+        self.name = "TestEntity"
+        self.children = []; self.parent = nil; self._in_tree = false
+    }
+}
+
+var e = TestEntity()
+# sprite is either a valid image key or nil (if file missing) — never an error
+assert e.sprite == nil or type(e.sprite) == "string"
+# sfx is either a Sound object or nil
+assert e.sfx == nil or type(e.sfx) == "object"
+
+# Sound object API when available
+if e.sfx != nil {
+    assert type(e.sfx.play) == "function"
+    assert type(e.sfx.stop) == "function"
+}
+```
+
+**C/Rust rewrite:** Resource loading stays Python (file I/O + pygame/PIL). The `@texture` etc.
+annotations compile to constructor calls — the C VM dispatches them via the same FFI path as
+all other builtins.
+
+**Bootstrapped Ipp:** `@texture(path)` compiles to `self.sprite = load_texture(path, "ClassName.sprite")`
+injected into `__init__`. Pure desugaring — the bootstrapped compiler handles it identically to
+`@config`.
+
+**Regression risk:** Low. New decorator names. Requires `pip install pygame` for sound (gracefully
+skips if absent).
+
+
+
+## Phase E: Architecture and Performance (v2.1.0+)
+
+---
+
+### v2.1.0 — Merge Interpreter Into VM (Archive Tree-Walker)
+
+Move `ipp/interpreter/interpreter.py` to `ipp/interpreter/legacy.py`. All execution goes through the VM. This is required before any native rewrite because it makes the VM the single source of truth.
+
+**Checklist before doing this:**
+- All Phase A–D tests pass in VM mode
+
+- No feature exists only in the interpreter
+
+---
+
+### v2.1.1 — Per-Opcode Unit Test Suite
+
+One test file per opcode group. This is the foundation for the C extension.
+
+```
+tests/opcodes/test_arithmetic.ipp
+tests/opcodes/test_comparison.ipp
+tests/opcodes/test_jumps.ipp
+tests/opcodes/test_closures.ipp
+tests/opcodes/test_classes.ipp
+tests/opcodes/test_exceptions.ipp
+tests/opcodes/test_iteration.ipp
+```
+
+---
+
+### v2.1.2 — Bytecode Serialization Format
+
+`ipp compile game.ipp` → `game.ippbc` (versioned binary format).
+`ipp run game.ippbc` → loads pre-compiled bytecode, skips parsing and compilation.
+Enables the C extension to receive a stable, documented format.
+
+---
+
+### v2.1.3 — Static Linter (`ipp check`)
+
+```
+ipp check game.ipp
+→ game.ipp:12: warning: 'extends' is equivalent to ':'
+→ game.ipp:25: error: undefined variable 'playr' (did you mean 'player'?)
+→ game.ipp:40: warning: function 'f' called with 3 args but defined with 2
+```
+
+---
+
+### v2.1.4 — C Extension VM Core
+
+**Prerequisites (all must be true first):**
+- [ ] Phases A–D complete
+- [ ] v2.1.1 opcode tests pass
+- [ ] v2.1.2 bytecode format exists and is versioned
+- [ ] Interpreter archived (v2.1.0 done)
+
+**What to implement in `src/ippc/vm.c`:**
+1. Fix build errors (currently fails to compile)
+2. Implement `vm_run()` to decode the v2.1.2 bytecode format
+3. Implement opcode dispatch loop
+4. Port arithmetic, comparison, jump opcodes first
+5. Port closure, class, method dispatch
+6. Port exception handling
+7. Run v2.1.1 opcode tests against C VM
+
+**Performance target:** `fib(20)` ≤ 50ms (vs 569ms currently — 10× improvement).
+
+---
+
+### v2.1.5 — Rust VM (Optional Parallel Path)
+
+If the C extension reaches its performance target and the team wants to go further:
+
+- Use `PyO3` for Python FFI
+- Use `cranelift` for optional JIT
+- Run same v2.1.1 test suite against Rust VM
+- Performance target: `fib(20)` ≤ 5ms (matching Lua 5.4)
+
+**This is a 3–6 month project. Do not start before v2.1.4 is stable.**
+
+---
+
+---
+
+### v2.1.6 — Feature: `ipp build --target desktop` — Standalone Executable
+
+**What:** `ipp build --target desktop game.ipp` produces a self-contained executable that runs
+on Windows/macOS/Linux without a Python installation. Uses PyInstaller — one command, handles
+all Python dependencies, canvas (tkinter), pymunk, websockets, and PIL automatically.
+
+**Files to change:** `ipp/cli.py` — add `build` subcommand; `ipp/build/desktop.py` (new).
+
+```python
+# ipp/build/desktop.py
+import subprocess, os, shutil
+
+def build_desktop(entry_file, output_name=None, one_file=True):
+    """Package an Ipp game as a standalone executable."""
+    try:
+        import PyInstaller
+    except ImportError:
+        raise RuntimeError("pip install pyinstaller first")
+    
+    name = output_name or os.path.splitext(os.path.basename(entry_file))[0]
+    args = [
+        "pyinstaller",
+        "--name", name,
+        "--windowed",           # no console window (GUI game)
+        "--add-data", "ipp/stdlib:ipp/stdlib",   # bundle stdlib packages
+    ]
+    if one_file:
+        args.append("--onefile")
+    
+    # Auto-detect and add required hidden imports
+    args += ["--hidden-import", "ipp.vm.vm",
+             "--hidden-import", "ipp.runtime.canvas",
+             "--hidden-import", "ipp.network.http"]
+    
+    # Create a launcher script that calls ipp.run(entry_file)
+    launcher = f"_build_launcher_{name}.py"
+    with open(launcher, 'w') as f:
+        f.write(f'from ipp.main import main_run
+main_run("{entry_file}")
+')
+    
+    args.append(launcher)
+    subprocess.run(args, check=True)
+    os.remove(launcher)
+    print(f"Built: dist/{name}" + (".exe" if os.name == 'nt' else ""))
+```
+
+**CLI usage:**
+```bash
+ipp build --target desktop game.ipp
+ipp build --target desktop game.ipp --name "My Game" --one-file
+```
+
+**Output:** `dist/MyGame` (macOS/Linux) or `dist/MyGame.exe` (Windows). Double-click to run.
+No Python needed on the target machine.
+
+**Test:**
+```bash
+cd tests/v2_1_5
+ipp build --target desktop hello.ipp --name hello_test
+./dist/hello_test   # or dist/hello_test.exe on Windows
+echo $?   # should be 0
+```
+
+**C/Rust rewrite:** When the C extension VM (v2.1.4) exists, PyInstaller bundles the `.so`/`.dll` instead of the Python VM. Smaller binary, faster startup. Same `ipp build` command — the build script detects which VM is available.
+
+**Regression risk:** Zero. New CLI subcommand.
+
+## Documentation Fix Checklist
+
+These are zero-code changes that unblock new users immediately. Do them alongside Phase A:
+
+| Doc | Problem | Fix |
+|-----|---------|-----|
+| `README.md` | Shows `class Cat extends Animal` | ✅ Fixed in v1.7.7 — confirm README example is updated |
+| `README.md` | Shows `func method(self, x)` | ✅ Fixed in v1.7.8 — confirm README example is updated |
+| `README.md` | Shows `lst.push(x)` | Change to `lst.append(x)` |
+| `README.md` | Shows `lst.len()` | Change to `len(lst)` |
+| `TUTORIAL.md` | Shows `case x:` in match | Change to `case x =>` |
+| `TUTORIAL.md` | Shows `func method(self, ...)` | Update to no-self style until v1.7.8 |
+| `REPL_TUTORIAL.md` | All OOP examples use `extends` | Add `# use : syntax for now` comment |
+| All docs | Examples use `;` as separator | Remove semicolons (or note they work from v1.7.6+) |
+
+---
+
+---
+
+### v2.1.7 — Feature: `ipp build --target web` — Browser Export via Pyodide
+
+**What:** `ipp build --target web game.ipp` produces a self-contained `index.html` + assets that runs in a browser using Pyodide (Python compiled to WebAssembly). The Ipp web playground already uses Pyodide — this formalises it into a build command.
+
+**Output structure:**
+```
+dist/web/
+  index.html       ← auto-generated shell page
+  pyodide/         ← Pyodide runtime (~8MB gzipped)
+  ipp/             ← Ipp runtime + stdlib packages
+  game.ipp         ← your game source
+  assets/          ← copied from your project's assets/
+```
+
+**Canvas dual-backend:** `canvas_*` builtins detect `js` (the Pyodide JS bridge) and route draw calls to an HTML5 Canvas element instead of tkinter. The game code is completely unchanged between desktop and web builds.
+
+`ipp/runtime/canvas.py` dual-backend:
+```python
+try:
+    import js   # only present in Pyodide
+    _BACKEND = "web"
+except ImportError:
+    _BACKEND = "tkinter"
+
+def canvas_rect(x, y, w, h, color):
+    if _BACKEND == "web":
+        js.eval(f"ctx.fillStyle='{color}';ctx.fillRect({x},{y},{w},{h})")
+    else:
+        if _canvas:
+            _canvas.create_rectangle(x, y, x+w, y+h, fill=color)
+```
+
+**Files to change:** `ipp/runtime/canvas.py` (dual backend), `ipp/build/web.py` (new), `ipp/cli.py` (`--target web`).
+
+**CLI:**
+```bash
+ipp build --target web game.ipp
+# Produces dist/web/ — open dist/web/index.html in any browser
+```
+
+**C/Rust rewrite:** When the C extension VM exists, it compiles to WASM directly via Emscripten. The canvas web backend stays identical. `ipp build --target web` detects the C VM and uses it automatically.
+
+**Bootstrapped Ipp:** The web backend is a standard Ipp/Python module. The bootstrapped compiler's output runs under Pyodide identically.
+
+**Regression risk:** Low. Dual-backend canvas is additive. Tkinter path completely unchanged.
+
+---
+
+### v2.1.8 — Feature: `ipp build --target android` — Android APK via Briefcase
+
+**What:** `ipp build --target android game.ipp` builds an Android APK using BeeWare's Briefcase. Canvas on Android uses the `kivy` rendering backend. Marked **experimental** — first run takes 10+ minutes (Android SDK download).
+
+**Requirements:** `pip install briefcase`, Android SDK, Java JDK. The command checks for all three and gives step-by-step instructions for anything missing.
+
+```bash
+ipp build --target android game.ipp
+# First run: ~15 minutes (SDK download + first compile)
+# Output: dist/android/MyGame.apk
+# Install: adb install dist/android/MyGame.apk
+```
+
+**Touch input mapping:** Touch events on Android map to `input.just_pressed("TOUCH")` with `input.touch_position()` returning `[x, y]`. The same input API works on desktop (mouse click) and mobile (touch).
+
+**Files to change:** `ipp/build/android.py` (new), `ipp/runtime/canvas.py` (kivy backend stub), `ipp/cli.py` (`--target android`).
+
+**CI:** This test is skipped unless `ANDROID_SDK_ROOT` is set. Marked experimental in docs.
+
+**Regression risk:** Zero. New CLI subcommand. Android-specific code gated behind `--target android`.
+
+
+## Version History Summary
+
+| Version | Status | Description |
+|---------|--------|-------------|
+| v1.7.9.1.11 | **CURRENT** | All Phase A fixes done. Next: Phase A2 (v1.7.9.1.12+). |
+| v1.7.6 | Planned | Fix semicolons (BUG-001) |
+| v1.7.7 | Planned | `extends` keyword (BUG-002) |
+| v1.7.8 | Planned | Explicit `self` param (BUG-003) |
+| v1.7.9 | Planned | try/catch runtime errors (BUG-004) |
+| v1.8.0 | Planned | `str.replace()` + `str.contains()` (BUG-005, BUG-011) |
+| v1.8.1 | Planned | Variadic `...args` as list (BUG-007) |
+| v1.8.2 | Planned | `var a, b = 1, 2` literals (BUG-006) |
+| v1.8.3 | Planned | `list.map/filter/reduce` (BUG-008) |
+| v1.8.4 | Planned | `len(set)` (BUG-013) |
+| v1.8.5 | Planned | `vec4 + vec4` arithmetic (BUG-014) |
+| v1.8.6 | Planned | Spread `[0,...a,4]` (BUG-015) |
+| v1.8.7 | Planned | `prop get { }` body (BUG-009) |
+| v1.8.8 | Planned | `is` operator everywhere (BUG-010) |
+| v1.8.9 | Planned | Typed exception field access (BUG-017) |
+| v1.9.0 | Planned | `list[a..b]` syntax (BUG-018) |
+| v1.9.1 | Planned | `global` keyword |
+| v1.9.2 | Planned | `map/filter/reduce` global builtins |
+| v1.9.3 | Planned | Multi-line strings `"""` |
+| v1.9.4 | Planned | Async return value |
+| v1.9.5 | Planned | Set operations |
+| v2.0.0 | Planned | Native game loop |
+| v2.0.1–v2.0.8 | Planned | Game dev features |
+| v2.1.0–v2.1.3 | Planned | Architecture cleanup |
+| v2.1.4 | Planned | C extension VM |
+| v2.1.5 | Planned | Rust VM (optional) |
+
+---
+
+---
+
+## v1.7.9.1.x — UX & Game Dev (Planned after current bug-fix sprint)
+
+These features are confirmed for implementation after all regression tests pass.
+
+### v1.7.9.1.1 — Keyboard Input Support
+**Goal:** Allow interactive programs (games, simulations, interactive tools) to respond to keyboard events in real-time.
+- `key_pressed("up")` / `key_pressed("down")` / `key_pressed("space")` etc. — poll key state
+- `on_keydown(key, handler)` / `on_keyup(key, handler)` — event-driven key binding
+- `get_key()` — blocking single-char read (cross-platform: Windows msvcrt + Unix termios)
+- `get_key_async()` — non-blocking key read, returns `nil` if no key pressed
+- Arrow keys, function keys, special keys (ESC, ENTER, BACKSPACE) as named constants
+- Integration with the existing `signal`/`emit` system so game loop can `on_keydown("up", move_paddle_up)`
+- Example use case: pong paddles via up/down arrows, quit on ESC
+- **Files:** `ipp/runtime/keyboard.py` (new), registered as builtins in `vm.py`
+
+### v1.7.9.1.2 — REPL: Fix ANSI Escape Codes on Windows
+**Goal:** `.help` and coloured output must not show raw escape sequences on Windows terminals that don't support ANSI.
+- Detect Windows console capability via `os.get_terminal_size()` + `ctypes` `GetConsoleMode` check
+- Auto-enable ANSI via `ENABLE_VIRTUAL_TERMINAL_PROCESSING` on Windows 10+
+- Fall back to plain text if ANSI unavailable (same logic as `.colors off`)
+- Strip escape codes from Quick Reference table in `.help` — render them clean regardless of colour mode
+- Add `_strip_ansi(text)` helper to `main.py` and `ipp/main.py`
+- Show user-friendly `.colors off` suggestion only when escape codes are actually detected, not always
+- **Files:** `main.py`, `ipp/main.py`
+
+### v1.7.9.1.3 — Web Playground Enhancement
+**Goal:** Make `web-playground/index.html` a fully usable online IDE for Ipp.
+- Syntax highlighting for Ipp keywords, strings, comments, numbers using CodeMirror or custom tokenizer
+- Live output panel with proper error formatting (line numbers, underlines)
+- Share button: encode program to URL fragment (`#code=base64...`) for easy sharing
+- Example programs dropdown (fibonacci, pong simulation, list comp, class demo, async)
+- Dark/light theme toggle matching the REPL colour themes
+- Mobile-friendly layout with resizable panels
+- Persistent storage via `localStorage` (last program auto-saved)
+- "Run" keyboard shortcut: Ctrl+Enter
+- **Files:** `web-playground/index.html`, `web-playground/ipp-syntax.json`
+
+### v1.7.9.1.4 — REPL: Enhanced Colours & Syntax Highlighting
+**Goal:** Make the REPL experience more polished with real syntax highlighting on input.
+- Live syntax highlighting as user types (keywords, strings, numbers, comments in different colours)
+- Multiple colour themes: `default`, `dracula`, `monokai`, `solarized`, `nord`, `gruvbox`
+- `.theme <name>` command to switch themes at runtime
+- `.themes` command to list available themes with preview
+- Colour-coded output: strings in green, numbers in cyan, errors in red, nil in dim
+- Bracket/paren matching highlight
+- Fix: escape-code stripping for `.help` Quick Reference table on all platforms
+- **Files:** `main.py`, `ipp/main.py`
+
+### v1.7.9.1.5 — GitHub Page & README Enhancement  
+**Goal:** Professional landing page and documentation that matches the quality of the language.
+- GitHub Pages (`docs/index.html`): full landing page with feature highlights, code examples, installation steps
+- Animated code demo on the landing page (typewriter effect showing Ipp code running)
+- Updated `README.md`: clearer Getting Started, working examples for all major features
+- `TUTORIAL.md`: complete beginner-to-intermediate tutorial with exercises
+- `CONTRIBUTING.md`: guide for contributors, test format, how to add builtins
+- Badges: test count, Python version support, license
+- **Files:** `README.md`, `TUTORIAL.md`, `docs/index.html` (new), `CONTRIBUTING.md`
+
+### v1.7.9.1.6 — Deterministic Built-ins & Test Reliability
+**Goal:** Make all built-in functions produce identical output across runs, modes, and platforms so the regression suite is 100% reliable.
+- `hash(x)` — replaced Python's `hash()` (PYTHONHASHSEED-dependent) with `hashlib.md5`-based implementation; always returns the same value for the same input regardless of interpreter run or platform
+- `gzip_compress(data)` — pass `mtime=0` to `gzip.compress()` so the Base64-encoded output is byte-for-byte identical across calls (previously the embedded GZIP timestamp differed between interpreter and VM mode)
+- `zip_create(files)` — use a fixed `date_time=(2024,1,1,0,0,0)` for every ZIP entry so the archive bytes are deterministic (previously current system time was embedded in each entry header)
+- **Root cause:** `v1.3.4-dataformats` regression test was the only remaining FAILED test; these three non-deterministic builtins caused interpreter-mode and VM-mode outputs to differ on every run
+- **Files:** `ipp/runtime/builtins.py`
+
+### v1.7.9.1.7 — VM Built-in Parity & CI Hardening
+**Goal:** Ensure the VM's own hardcoded built-in overrides match `builtins.py` exactly, and harden CI so non-deterministic tests never block a release.
+- `ipp/vm/vm.py` `hash` lambda — replaced `abs(hash(s))` (PYTHONHASHSEED-dependent) with `hashlib.md5`-based value matching `builtins.py`; interpreter and VM now return identical hash values
+- `ipp/vm/vm.py` `gzip_compress` lambda — added `mtime=0` to the VM's own gzip lambda (the VM bypasses `builtins.py` for this function); output now byte-identical to interpreter mode
+- `.github/workflows/publish.yml` — regression step now captures output and only fails CI on unexpected test failures; `v1.3.4-dataformats` reported as `::warning::` instead of blocking the build
+- **Root cause:** VM `_init_builtins()` defines its own `hash` and `gzip_compress` lambdas that shadow the fixed versions in `builtins.py` — fixing `builtins.py` alone was not enough
+- **Files:** `ipp/vm/vm.py`, `.github/workflows/publish.yml`
+
+### v1.7.9.1.8 — Drop Python 3.9 Support (3.10+ minimum)
+**Goal:** Remove Python 3.9 from CI matrix and package metadata — `str | None` union type hint syntax used in `ipp/runtime/keyboard.py` requires Python 3.10+.
+- `.github/workflows/publish.yml` — removed `"3.9"` from test matrix; now tests on `3.10`, `3.11`, `3.12` only
+- `pyproject.toml` — removed `Programming Language :: Python :: 3.9` classifier; bumped `requires-python` from `>=3.8` to `>=3.10`
+- **Root cause:** `keyboard.py` uses `str | None` return type annotation (PEP 604) which is only valid in Python 3.10+; CI was failing on every 3.9 runner
+- **Files:** `.github/workflows/publish.yml`, `pyproject.toml`
+
+---
+
 ## Phase F: Package Registry & Ecosystem (v2.2.0 – v2.2.5)
 
 > **Prerequisite:** All of Phase D and D2 must be stable. A registry with zero useful packages helps no one. By the time Phase F begins, `ipp-io`, `ipp-log`, `ipp-test`, `ipp-math2d`, `ipp-signal`, `ipp-ai`, and `ipp-debug` exist and are bundled. Phase F lets third-party developers publish their own packages on top of this foundation.
@@ -7449,11 +8844,211 @@ assert "Doubles a number" in docs
 
 ---
 
+---
+
+### v2.2.6 — Feature: Studio Plugin API — Editor Bridge (HTTP + WebSocket)
+
+**What:** A local HTTP + WebSocket bridge that lets an external editor (Electron app, VSCode
+extension, web page) communicate with a running Ipp game. The game exposes an API:
+inspect variables, call functions, send input events, get canvas screenshots, trigger hot reload.
+This is the foundation for a visual game editor — but it works right now with just a browser,
+curl, or a VSCode webview.
+
+**What the bridge exposes:**
+```
+GET  /api/globals           → all current global variable names + values
+GET  /api/globals/:name     → one variable's value
+POST /api/globals/:name     → set a variable's value (JSON body)
+GET  /api/screenshot        → current canvas frame as base64 PNG
+POST /api/call/:fn          → call a global Ipp function with args
+POST /api/reload            → trigger hot reload
+WS   /ws/events             → subscribe to: reload, variable_changed, achievement_unlocked, signal_emitted
+```
+
+**Why this is novel:** No scripting language exposes this protocol. Godot's editor is tightly
+coupled to its engine in C++. Unity's editor is a separate C# application. Ipp's editor bridge
+is a 100-line HTTP server that runs *inside* the game — any tool can talk to it.
+
+**Files to change:** `ipp/runtime/studio.py` (new), `ipp/vm/vm.py` (register builtins +
+auto-start bridge when `--studio` flag set), `ipp/cli.py` (add `--studio` flag).
+
+`ipp/runtime/studio.py`:
+```python
+from ipp.network.http import http_serve_routes, http_serve_stop
+import json, base64, threading
+
+_vm_ref = None
+_ws_clients = []   # connected WebSocket clients for event streaming
+
+def start_studio_bridge(vm, port=9876):
+    global _vm_ref
+    _vm_ref = vm
+    
+    routes = {}
+    
+    def get_globals(req):
+        safe = {}
+        for k, v in vm.globals.items():
+            if not callable(v):
+                try: json.dumps(v); safe[k] = v
+                except: safe[k] = str(v)
+        return {"status": 200, "body": json.dumps(safe),
+                "headers": {"Content-Type": "application/json",
+                             "Access-Control-Allow-Origin": "*"}}
+    
+    def set_global(req):
+        name = req["path"].split("/")[-1]
+        val = json.loads(req["body"])
+        vm.globals[name] = val
+        broadcast_event({"type": "variable_changed", "name": name, "value": val})
+        return {"status": 200, "body": '{"ok":true}',
+                "headers": {"Content-Type": "application/json",
+                             "Access-Control-Allow-Origin": "*"}}
+    
+    def screenshot(req):
+        from ipp.runtime.canvas import canvas_screenshot
+        img = canvas_screenshot()
+        if img is None:
+            return {"status": 503, "body": '{"error":"no canvas"}',
+                    "headers": {"Content-Type": "application/json"}}
+        import io
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        data = base64.b64encode(buf.getvalue()).decode()
+        return {"status": 200, "body": json.dumps({"png": data}),
+                "headers": {"Content-Type": "application/json",
+                             "Access-Control-Allow-Origin": "*"}}
+    
+    def trigger_reload(req):
+        from ipp.runtime.hotreload import trigger_reload as _reload
+        _reload(vm)
+        broadcast_event({"type": "reload"})
+        return {"status": 200, "body": '{"ok":true}',
+                "headers": {"Content-Type": "application/json",
+                             "Access-Control-Allow-Origin": "*"}}
+    
+    routes["GET /api/globals"]     = get_globals
+    routes["POST /api/globals/*"]  = set_global
+    routes["GET /api/screenshot"]  = screenshot
+    routes["POST /api/reload"]     = trigger_reload
+    
+    http_serve_routes("127.0.0.1", port, routes)
+    print(f"[Ipp Studio] Bridge running at http://127.0.0.1:{port}")
+
+def broadcast_event(event):
+    msg = json.dumps(event)
+    for client in list(_ws_clients):
+        try: client.send(msg)
+        except: _ws_clients.remove(client)
+```
+
+**CLI:**
+```bash
+ipp run --studio game.ipp
+# Game runs normally + bridge starts at http://127.0.0.1:9876
+
+# From another terminal:
+curl http://127.0.0.1:9876/api/globals
+# → {"player_hp": 80, "score": 500, "level": 3, ...}
+
+curl -X POST http://127.0.0.1:9876/api/globals/player_hp      -d "100" -H "Content-Type: application/json"
+# → player's HP is now 100 in the running game
+
+curl http://127.0.0.1:9876/api/screenshot | python3 -c   "import sys,json,base64; open('frame.png','wb').write(base64.b64decode(json.load(sys.stdin)['png']))"
+# → frame.png is the current game frame
+```
+
+**Test file: `tests/v2_2_6/test_studio_bridge.ipp`**
+```ipp
+# Studio bridge starts when run with --studio flag
+# Test via the HTTP client
+import { http } from "ipp-net"
+
+var score = 42
+var player_name = "Alice"
+
+# (Start bridge in test setup via Python)
+# GET globals
+var res = http.get("http://127.0.0.1:9877/api/globals")
+assert res.ok == true
+var globals = res.json()
+assert globals.get("score") == 42
+assert globals.get("player_name") == "Alice"
+
+# SET a global
+http.post("http://127.0.0.1:9877/api/globals/score",
+          body="100", headers={"Content-Type": "application/json"})
+assert score == 100   # the in-process VM is updated
+
+# Reload
+var reload_res = http.post("http://127.0.0.1:9877/api/reload")
+assert reload_res.ok == true
+```
+
+**C/Rust rewrite:** The bridge stays Python. The C/Rust VM exposes its globals dict via a
+Python-compatible dict interface (PyO3 `PyDict`). The bridge code is identical — just reading
+from a different dict object.
+
+**Bootstrapped Ipp:** Bridge stays Python (it uses the Python HTTP server). The game-side
+`start_studio_bridge(vm)` call happens in Python at startup. Once Ipp can call Python FFI
+functions, the bridge becomes `import { start_bridge } from "ipp-studio"`.
+
+**Regression risk:** Zero. Only active with `--studio` flag.
+
 ## Phase G: Novel Differentiators (v2.3.0 – v2.3.4)
 
 > These features don't exist in any mainstream game scripting language. They are Ipp's potential differentiators — reasons a developer would choose Ipp over Lua or GDScript for a specific project. Each one is feasible given Ipp's Python host. None of them require the C or Rust VM.
 
 ---
+
+---
+
+### v2.2.7 — Feature: Ipp Studio — Minimal Electron Editor
+
+**What:** A minimal game editor built in Electron (HTML/CSS/JS) that talks to the Studio Bridge
+(v2.2.6). Not a full IDE — just the four things game developers actually need during development:
+
+1. **Variable inspector** — live table of all globals, editable
+2. **Canvas view** — the game canvas streamed at 10fps via screenshot API
+3. **Hot reload button** — triggers reload via bridge, shows diff of what changed
+4. **Console** — shows Ipp `print()` output and errors in real time via WebSocket
+
+**Why Electron and not a web page:** A web page can't launch `ipp run --studio game.ipp` as a
+child process. Electron can. A browser-based version is trivially available for users who start
+the bridge manually.
+
+**Tech stack:** Electron + vanilla JS. No React, no bundler. One `package.json`, one `index.html`,
+one `main.js`, one `renderer.js`. The entire editor is under 500 lines.
+
+**Deliverable:** `ipp studio game.ipp` — launches the game with `--studio` flag, opens the
+Electron editor window, connects to the bridge automatically.
+
+```
+Ipp Studio v2.2.7
+┌─────────────────────┬────────────────────────────────┐
+│ Variables           │                                 │
+│ ─────────────────── │        Game Canvas              │
+│ score      500  ✏️  │         (10fps preview)         │
+│ player_hp   80  ✏️  │                                 │
+│ level        3  ✏️  │                                 │
+│ enemies     []  ✏️  │                                 │
+├─────────────────────│                                 │
+│ [🔄 Hot Reload]     │                                 │
+├─────────────────────┴────────────────────────────────┤
+│ Console                                               │
+│ [INFO] game started                                   │
+│ [RELOAD] hot_reload complete (2 functions patched)    │
+│ [PRINT] player spawned at 0, 0                        │
+└───────────────────────────────────────────────────────┘
+```
+
+**Files:** `ipp/studio/` (new directory), `ipp/studio/main.js`, `ipp/studio/index.html`,
+`ipp/studio/renderer.js`, `ipp/studio/package.json`.
+
+**Requirement:** `npm` must be installed. `ipp studio` checks and gives clear instructions if not.
+
+**Regression risk:** Zero. New command. Electron app is a standalone directory.
+
 
 ### v2.3.0 — Feature: Live REPL Attached to Running Game
 
@@ -7971,225 +9566,6 @@ server.listen()   # blocks until Ctrl+C
 ```
 
 **Implementation:** Wraps `websockets.serve()` with an asyncio event loop in a background thread, same pattern as the existing WebSocket client. Ipp callbacks are called via `call_soon_threadsafe()`.
-
----
-
-## Phase E: Architecture and Performance (v2.1.0+)
-
----
-
-### v2.1.0 — Merge Interpreter Into VM (Archive Tree-Walker)
-
-Move `ipp/interpreter/interpreter.py` to `ipp/interpreter/legacy.py`. All execution goes through the VM. This is required before any native rewrite because it makes the VM the single source of truth.
-
-**Checklist before doing this:**
-- All Phase A–D tests pass in VM mode
-
-- No feature exists only in the interpreter
-
----
-
-### v2.1.1 — Per-Opcode Unit Test Suite
-
-One test file per opcode group. This is the foundation for the C extension.
-
-```
-tests/opcodes/test_arithmetic.ipp
-tests/opcodes/test_comparison.ipp
-tests/opcodes/test_jumps.ipp
-tests/opcodes/test_closures.ipp
-tests/opcodes/test_classes.ipp
-tests/opcodes/test_exceptions.ipp
-tests/opcodes/test_iteration.ipp
-```
-
----
-
-### v2.1.2 — Bytecode Serialization Format
-
-`ipp compile game.ipp` → `game.ippbc` (versioned binary format).
-`ipp run game.ippbc` → loads pre-compiled bytecode, skips parsing and compilation.
-Enables the C extension to receive a stable, documented format.
-
----
-
-### v2.1.3 — Static Linter (`ipp check`)
-
-```
-ipp check game.ipp
-→ game.ipp:12: warning: 'extends' is equivalent to ':'
-→ game.ipp:25: error: undefined variable 'playr' (did you mean 'player'?)
-→ game.ipp:40: warning: function 'f' called with 3 args but defined with 2
-```
-
----
-
-### v2.1.4 — C Extension VM Core
-
-**Prerequisites (all must be true first):**
-- [ ] Phases A–D complete
-- [ ] v2.1.1 opcode tests pass
-- [ ] v2.1.2 bytecode format exists and is versioned
-- [ ] Interpreter archived (v2.1.0 done)
-
-**What to implement in `src/ippc/vm.c`:**
-1. Fix build errors (currently fails to compile)
-2. Implement `vm_run()` to decode the v2.1.2 bytecode format
-3. Implement opcode dispatch loop
-4. Port arithmetic, comparison, jump opcodes first
-5. Port closure, class, method dispatch
-6. Port exception handling
-7. Run v2.1.1 opcode tests against C VM
-
-**Performance target:** `fib(20)` ≤ 50ms (vs 569ms currently — 10× improvement).
-
----
-
-### v2.1.5 — Rust VM (Optional Parallel Path)
-
-If the C extension reaches its performance target and the team wants to go further:
-
-- Use `PyO3` for Python FFI
-- Use `cranelift` for optional JIT
-- Run same v2.1.1 test suite against Rust VM
-- Performance target: `fib(20)` ≤ 5ms (matching Lua 5.4)
-
-**This is a 3–6 month project. Do not start before v2.1.4 is stable.**
-
----
-
-## Documentation Fix Checklist
-
-These are zero-code changes that unblock new users immediately. Do them alongside Phase A:
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `README.md` | Shows `class Cat extends Animal` | ✅ Fixed in v1.7.7 — confirm README example is updated |
-| `README.md` | Shows `func method(self, x)` | ✅ Fixed in v1.7.8 — confirm README example is updated |
-| `README.md` | Shows `lst.push(x)` | Change to `lst.append(x)` |
-| `README.md` | Shows `lst.len()` | Change to `len(lst)` |
-| `TUTORIAL.md` | Shows `case x:` in match | Change to `case x =>` |
-| `TUTORIAL.md` | Shows `func method(self, ...)` | Update to no-self style until v1.7.8 |
-| `REPL_TUTORIAL.md` | All OOP examples use `extends` | Add `# use : syntax for now` comment |
-| All docs | Examples use `;` as separator | Remove semicolons (or note they work from v1.7.6+) |
-
----
-
-## Version History Summary
-
-| Version | Status | Description |
-|---------|--------|-------------|
-| v1.7.9.1.11 | **CURRENT** | All Phase A fixes done. Next: Phase A2 (v1.7.9.1.12+). |
-| v1.7.6 | Planned | Fix semicolons (BUG-001) |
-| v1.7.7 | Planned | `extends` keyword (BUG-002) |
-| v1.7.8 | Planned | Explicit `self` param (BUG-003) |
-| v1.7.9 | Planned | try/catch runtime errors (BUG-004) |
-| v1.8.0 | Planned | `str.replace()` + `str.contains()` (BUG-005, BUG-011) |
-| v1.8.1 | Planned | Variadic `...args` as list (BUG-007) |
-| v1.8.2 | Planned | `var a, b = 1, 2` literals (BUG-006) |
-| v1.8.3 | Planned | `list.map/filter/reduce` (BUG-008) |
-| v1.8.4 | Planned | `len(set)` (BUG-013) |
-| v1.8.5 | Planned | `vec4 + vec4` arithmetic (BUG-014) |
-| v1.8.6 | Planned | Spread `[0,...a,4]` (BUG-015) |
-| v1.8.7 | Planned | `prop get { }` body (BUG-009) |
-| v1.8.8 | Planned | `is` operator everywhere (BUG-010) |
-| v1.8.9 | Planned | Typed exception field access (BUG-017) |
-| v1.9.0 | Planned | `list[a..b]` syntax (BUG-018) |
-| v1.9.1 | Planned | `global` keyword |
-| v1.9.2 | Planned | `map/filter/reduce` global builtins |
-| v1.9.3 | Planned | Multi-line strings `"""` |
-| v1.9.4 | Planned | Async return value |
-| v1.9.5 | Planned | Set operations |
-| v2.0.0 | Planned | Native game loop |
-| v2.0.1–v2.0.8 | Planned | Game dev features |
-| v2.1.0–v2.1.3 | Planned | Architecture cleanup |
-| v2.1.4 | Planned | C extension VM |
-| v2.1.5 | Planned | Rust VM (optional) |
-
----
-
----
-
-## v1.7.9.1.x — UX & Game Dev (Planned after current bug-fix sprint)
-
-These features are confirmed for implementation after all regression tests pass.
-
-### v1.7.9.1.1 — Keyboard Input Support
-**Goal:** Allow interactive programs (games, simulations, interactive tools) to respond to keyboard events in real-time.
-- `key_pressed("up")` / `key_pressed("down")` / `key_pressed("space")` etc. — poll key state
-- `on_keydown(key, handler)` / `on_keyup(key, handler)` — event-driven key binding
-- `get_key()` — blocking single-char read (cross-platform: Windows msvcrt + Unix termios)
-- `get_key_async()` — non-blocking key read, returns `nil` if no key pressed
-- Arrow keys, function keys, special keys (ESC, ENTER, BACKSPACE) as named constants
-- Integration with the existing `signal`/`emit` system so game loop can `on_keydown("up", move_paddle_up)`
-- Example use case: pong paddles via up/down arrows, quit on ESC
-- **Files:** `ipp/runtime/keyboard.py` (new), registered as builtins in `vm.py`
-
-### v1.7.9.1.2 — REPL: Fix ANSI Escape Codes on Windows
-**Goal:** `.help` and coloured output must not show raw escape sequences on Windows terminals that don't support ANSI.
-- Detect Windows console capability via `os.get_terminal_size()` + `ctypes` `GetConsoleMode` check
-- Auto-enable ANSI via `ENABLE_VIRTUAL_TERMINAL_PROCESSING` on Windows 10+
-- Fall back to plain text if ANSI unavailable (same logic as `.colors off`)
-- Strip escape codes from Quick Reference table in `.help` — render them clean regardless of colour mode
-- Add `_strip_ansi(text)` helper to `main.py` and `ipp/main.py`
-- Show user-friendly `.colors off` suggestion only when escape codes are actually detected, not always
-- **Files:** `main.py`, `ipp/main.py`
-
-### v1.7.9.1.3 — Web Playground Enhancement
-**Goal:** Make `web-playground/index.html` a fully usable online IDE for Ipp.
-- Syntax highlighting for Ipp keywords, strings, comments, numbers using CodeMirror or custom tokenizer
-- Live output panel with proper error formatting (line numbers, underlines)
-- Share button: encode program to URL fragment (`#code=base64...`) for easy sharing
-- Example programs dropdown (fibonacci, pong simulation, list comp, class demo, async)
-- Dark/light theme toggle matching the REPL colour themes
-- Mobile-friendly layout with resizable panels
-- Persistent storage via `localStorage` (last program auto-saved)
-- "Run" keyboard shortcut: Ctrl+Enter
-- **Files:** `web-playground/index.html`, `web-playground/ipp-syntax.json`
-
-### v1.7.9.1.4 — REPL: Enhanced Colours & Syntax Highlighting
-**Goal:** Make the REPL experience more polished with real syntax highlighting on input.
-- Live syntax highlighting as user types (keywords, strings, numbers, comments in different colours)
-- Multiple colour themes: `default`, `dracula`, `monokai`, `solarized`, `nord`, `gruvbox`
-- `.theme <name>` command to switch themes at runtime
-- `.themes` command to list available themes with preview
-- Colour-coded output: strings in green, numbers in cyan, errors in red, nil in dim
-- Bracket/paren matching highlight
-- Fix: escape-code stripping for `.help` Quick Reference table on all platforms
-- **Files:** `main.py`, `ipp/main.py`
-
-### v1.7.9.1.5 — GitHub Page & README Enhancement  
-**Goal:** Professional landing page and documentation that matches the quality of the language.
-- GitHub Pages (`docs/index.html`): full landing page with feature highlights, code examples, installation steps
-- Animated code demo on the landing page (typewriter effect showing Ipp code running)
-- Updated `README.md`: clearer Getting Started, working examples for all major features
-- `TUTORIAL.md`: complete beginner-to-intermediate tutorial with exercises
-- `CONTRIBUTING.md`: guide for contributors, test format, how to add builtins
-- Badges: test count, Python version support, license
-- **Files:** `README.md`, `TUTORIAL.md`, `docs/index.html` (new), `CONTRIBUTING.md`
-
-### v1.7.9.1.6 — Deterministic Built-ins & Test Reliability
-**Goal:** Make all built-in functions produce identical output across runs, modes, and platforms so the regression suite is 100% reliable.
-- `hash(x)` — replaced Python's `hash()` (PYTHONHASHSEED-dependent) with `hashlib.md5`-based implementation; always returns the same value for the same input regardless of interpreter run or platform
-- `gzip_compress(data)` — pass `mtime=0` to `gzip.compress()` so the Base64-encoded output is byte-for-byte identical across calls (previously the embedded GZIP timestamp differed between interpreter and VM mode)
-- `zip_create(files)` — use a fixed `date_time=(2024,1,1,0,0,0)` for every ZIP entry so the archive bytes are deterministic (previously current system time was embedded in each entry header)
-- **Root cause:** `v1.3.4-dataformats` regression test was the only remaining FAILED test; these three non-deterministic builtins caused interpreter-mode and VM-mode outputs to differ on every run
-- **Files:** `ipp/runtime/builtins.py`
-
-### v1.7.9.1.7 — VM Built-in Parity & CI Hardening
-**Goal:** Ensure the VM's own hardcoded built-in overrides match `builtins.py` exactly, and harden CI so non-deterministic tests never block a release.
-- `ipp/vm/vm.py` `hash` lambda — replaced `abs(hash(s))` (PYTHONHASHSEED-dependent) with `hashlib.md5`-based value matching `builtins.py`; interpreter and VM now return identical hash values
-- `ipp/vm/vm.py` `gzip_compress` lambda — added `mtime=0` to the VM's own gzip lambda (the VM bypasses `builtins.py` for this function); output now byte-identical to interpreter mode
-- `.github/workflows/publish.yml` — regression step now captures output and only fails CI on unexpected test failures; `v1.3.4-dataformats` reported as `::warning::` instead of blocking the build
-- **Root cause:** VM `_init_builtins()` defines its own `hash` and `gzip_compress` lambdas that shadow the fixed versions in `builtins.py` — fixing `builtins.py` alone was not enough
-- **Files:** `ipp/vm/vm.py`, `.github/workflows/publish.yml`
-
-### v1.7.9.1.8 — Drop Python 3.9 Support (3.10+ minimum)
-**Goal:** Remove Python 3.9 from CI matrix and package metadata — `str | None` union type hint syntax used in `ipp/runtime/keyboard.py` requires Python 3.10+.
-- `.github/workflows/publish.yml` — removed `"3.9"` from test matrix; now tests on `3.10`, `3.11`, `3.12` only
-- `pyproject.toml` — removed `Programming Language :: Python :: 3.9` classifier; bumped `requires-python` from `>=3.8` to `>=3.10`
-- **Root cause:** `keyboard.py` uses `str | None` return type annotation (PEP 604) which is only valid in Python 3.10+; CI was failing on every 3.9 runner
-- **Files:** `.github/workflows/publish.yml`, `pyproject.toml`
 
 ---
 
