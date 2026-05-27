@@ -1,4 +1,4 @@
-# Ipp REPL Tutorial v1.5.4
+# Ipp REPL Tutorial v1.8.3
 
 A comprehensive guide to the Ipp programming language REPL (Read-Eval-Print Loop).
 
@@ -423,15 +423,15 @@ list_env()                   # List all env vars
 os_platform()                # Get OS platform
 os_cwd()                     # Current directory
 os_chdir("path")             # Change directory
-path()                       # Current path
+path("some/path")            # Create Path object
 ```
 
 ### Process & System (4)
 ```ipp
 exit(0)                      # Exit with code
-argparse(["--file", "x"])   # Parse args
-args_parse()                 # Parse sys.argv
-args_add(args, "--verbose") # Add argument
+argparse()                   # Create argument parser
+args_add(parser, "--file")  # Add argument to parser
+args_parse(parser)           # Parse arguments (uses sys.argv by default)
 ```
 
 ### Logger (1)
@@ -770,4 +770,4 @@ canvas_show()
 
 ---
 
-This tutorial covers all 41 keywords, 233 builtins, and 50+ REPL commands in Ipp v1.5.4.
+This tutorial covers all 41 keywords, 233 builtins, and 50+ REPL commands in Ipp v1.8.3.

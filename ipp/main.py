@@ -13,6 +13,12 @@ import time
 import signal
 import threading
 
+# Set UTF-8 encoding for Windows compatibility
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ipp.lexer.lexer import tokenize
@@ -203,6 +209,7 @@ def colour(fn, text):
     return fn(text)   # lambdas already no-op when IS_TTY=False
 
 
+def strip_ansi(s):
     return re.sub(r'\033\[[0-9;]*m', '', s)
 
 def visible_len(s):
@@ -211,6 +218,99 @@ def visible_len(s):
 
 def pad_to(s, width):
     return s + ' ' * max(0, width - visible_len(s))
+
+# ─── Interactive Tutorial ───────────────────────────────────────────────────────
+_tutorial_steps = [
+    {
+        "title": "Variables",
+        "desc": "Store values with var (mutable) and let (immutable)",
+        "example": "var x = 10\nlet name = \"Alice\"\nx = 20  # Change var\nprint(x)",
+        "hint": "Try creating a variable with var or let"
+    },
+    {
+        "title": "Data Types",
+        "desc": "Numbers, strings, booleans, and nil",
+        "example": "var num = 42\nvar text = \"Hello\"\nvar flag = true\nvar empty = nil\nprint(type(num))",
+        "hint": "Try different data types"
+    },
+    {
+        "title": "Lists",
+        "desc": "Ordered collections of values",
+        "example": "var nums = [1, 2, 3, 4, 5]\nprint(nums[0])  # First element\nprint(len(nums))  # Length\nnums.append(6)  # Add element",
+        "hint": "Create a list and access elements"
+    },
+    {
+        "title": "Dictionaries",
+        "desc": "Key-value pairs",
+        "example": "var person = {\"name\": \"Alice\", \"age\": 30}\nprint(person[\"name\"])\nperson[\"city\"] = \"NYC\"\nprint(keys(person))",
+        "hint": "Create a dictionary and access values"
+    },
+    {
+        "title": "Functions",
+        "desc": "Reusable code blocks",
+        "example": "func greet(name) {\n    return \"Hello, \" + name + \"!\"\n}\nprint(greet(\"World\"))",
+        "hint": "Define a function with func"
+    },
+    {
+        "title": "Control Flow",
+        "desc": "If/else, loops, and match",
+        "example": "var x = 5\nif x > 10 {\n    print(\"big\")\n} else {\n    print(\"small\")\n}\n\nfor i in 0..3 {\n    print(i)\n}",
+        "hint": "Try an if statement or for loop"
+    },
+    {
+        "title": "Classes",
+        "desc": "Object-oriented programming",
+        "example": "class Dog {\n    func init(name) {\n        this.name = name\n    }\n    func bark() {\n        return this.name + \" says woof!\"\n    }\n}\nvar dog = Dog(\"Rex\")\nprint(dog.bark())",
+        "hint": "Create a class with methods"
+    },
+    {
+        "title": "Error Handling",
+        "desc": "Try/catch for handling errors",
+        "example": "try {\n    var result = 10 / 0\n} catch e {\n    print(\"Error: \" + e)\n}\nprint(\"Program continues\")",
+        "hint": "Wrap code in try/catch"
+    }
+]
+
+_tutorial_step = 0
+_tutorial_mode = False
+
+def _advance_tutorial():
+    global _tutorial_step, _tutorial_mode
+    _tutorial_step += 1
+    _run_tutorial_step()
+
+def _run_tutorial_step():
+    global _tutorial_step, _tutorial_mode
+    if _tutorial_step >= len(_tutorial_steps):
+        print()
+        print(f"  {colour(C_OK, '✓ Tutorial Complete!')}")
+        print(f"  {colour(DIM, 'You learned the basics of Ipp. Keep practicing!')}")
+        print()
+        print(f"  {colour(C_CMD, 'Next steps:')}")
+        print(f"    - Try .examples for more code samples")
+        print(f"    - Try .help for all commands")
+        print(f"    - Explore built-in functions with .builtins")
+        global _tutorial_mode
+        _tutorial_mode = False
+        _tutorial_step = 0
+        return
+
+    step = _tutorial_steps[_tutorial_step]
+    print()
+    print(f"  {colour(C_CMD, '═' * 50)}")
+    _title = step['title']
+    print(f"  {colour(C_CMD, f'Lesson {_tutorial_step + 1}/8: {_title}')}")
+    print(f"  {colour(C_CMD, '═' * 50)}")
+    print()
+    print(f"  {colour(DIM, step['desc'])}")
+    print()
+    print(f"  {colour(C_CMD, 'Example:')}")
+    for line in step['example'].split('\n'):
+        print(f"    {colour(C_KW, line)}")
+    print()
+    print(f"  {colour(C_WARN, '➤ ' + step['hint'])}")
+    print()
+    print(f"  {colour(DIM, 'Commands: .tutorial next | .tutorial prev | .tutorial end')}")
 
 # ─── Syntax highlighter ───────────────────────────────────────────────────────
 _KEYWORDS = frozenset([
@@ -408,6 +508,13 @@ class IppCompleter:
             '.load', '.save', '.doc', '.time', '.which', '.last',
             '.undo', '.redo', '.edit', '.profile', '.alias',
             '.highlight', '.mem', '.theme', '.themes',
+            '.cd', '.ls', '.pwd', '.bench', '.pretty', '.json', '.format',
+            '.html', '.plot', '.bg', '.jobs', '.async', '.serve', '.compare',
+            '.checkpoint', '.restore', '.macro', '.export', '.prompt',
+            '.pipe', '.bind', '.search', '.plugin', '.session', '.reload',
+            '.debug', '.break', '.watch', '.locals', '.stack', '.table',
+            '.cache', '.hist', '.tutorial', '.examples', '.sighelp',
+            '.typehints',
             'exit', 'quit',
         ])
 
@@ -719,6 +826,9 @@ def print_help():
         (".search <kw>",    "Search builtin documentation"),
         (".examples",       "Show interactive code examples"),
         (".tutorial",       "Start interactive tutorial"),
+        (".tutorial next",  "Next lesson"),
+        (".tutorial prev",  "Previous lesson"),
+        (".tutorial end",   "Exit tutorial"),
         (".plugin load f",  "Load plugin file"),
         (".debug start",    "Start step-through debugger"),
         (".debug stop",     "Stop debugger"),
@@ -1223,6 +1333,44 @@ def _format_error_with_suggestions(e, interp_manager):
 # ─── REPL spinner (simple, no threads) ───────────────────────────────────────
 _SPINNER = ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷']
 
+# ─── REPL serve accept loop ────────────────────────────────────────────────────
+def _serve_accept_loop(server_socket):
+    """Accept loop for REPL server - defined at module level to avoid closure issues"""
+    from ipp.parser.parser import parse
+    from ipp.lexer.lexer import tokenize
+    from ipp.interpreter.interpreter import Interpreter
+
+    def handle_client(client_socket, addr):
+        try:
+            client_socket.send(b"Ipp REPL v1.8.3\r\nType 'exit' to quit\r\n\r\n")
+            while True:
+                client_socket.send(b">>> ")
+                data = client_socket.recv(1024).decode().strip()
+                if not data or data == 'exit':
+                    break
+                try:
+                    tokens = tokenize(data)
+                    ast = parse(tokens)
+                    interp = Interpreter()
+                    interp.run(ast)
+                    result = str(interp.last_value) if interp.last_value else "nil"
+                    client_socket.send((result + "\r\n").encode())
+                except Exception as e:
+                    client_socket.send((f"Error: {str(e)}\r\n").encode())
+        except:
+            pass
+        finally:
+            client_socket.close()
+
+    import threading
+    while True:
+        try:
+            client_socket, addr = server_socket.accept()
+            t = threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True)
+            t.start()
+        except:
+            break
+
 # ─── Main REPL ────────────────────────────────────────────────────────────────
 def run_repl():
     global _hl_session
@@ -1245,6 +1393,11 @@ def run_repl():
     _PROMPT_FORMAT = "ipp"  # Default prompt format
     _PROMPT_ARROW = "❯" if _UNI else ">>>"  # Default prompt arrow
     _current_dir = os.getcwd()  # Track current directory for .cd
+    _checkpoints = []  # For .checkpoint/.restore
+    _macros = {}  # For .macro
+    _bg_jobs = []  # For .bg/.jobs
+    _repl_server = None  # For .serve
+    _repl_accept_thread = None  # For .serve accept loop
 
     def show_history(n=20):
         if not _cmd_history:
@@ -1834,22 +1987,49 @@ def run_repl():
                           f"{DIM('.theme ' + tname)}")
                 continue
 
+            # .tutorial commands - declare global first
+            if stripped == '.tutorial' or stripped == '.tutorial next' or stripped == '.tutorial prev' or stripped == '.tutorial end':
+                global _tutorial_step, _tutorial_mode
+
             # .tutorial — Start interactive tutorial
             if stripped == '.tutorial':
-                print(f"  {colour(C_CMD, 'Ipp Interactive Tutorial')}")
-                print(f"  {colour(DIM, 'Learn Ipp step by step!')}")
-                print()
-                print(f"  1. Variables: {colour(C_KW, 'var x = 10')}")
-                print(f"  2. Functions: {colour(C_KW, 'func add(a, b) { return a + b }')}")
-                print(f"  3. Lists: {colour(C_KW, 'var nums = [1, 2, 3]')}")
-                _s4 = 'var person = {"name": "Alice"}'
-                print(f"  4. Dicts: {colour(C_KW, _s4)}")
-                print(f"  5. Loops: {colour(C_KW, 'for i in 0..5 { print(i) }')}")
-                _s6 = 'class Dog { func init() { this.name = "rex" } }'
-                print(f"  6. Classes: {colour(C_KW, _s6)}")
-                print()
-                print(f"  {colour(DIM, 'Try each example in the REPL!')}")
+                _tutorial_mode = True
+                _tutorial_step = 0
+                _run_tutorial_step()
                 continue
+
+            # .tutorial next — Next tutorial step
+            if stripped == '.tutorial next':
+                if _tutorial_mode:
+                    _tutorial_step += 1
+                    _run_tutorial_step()
+                else:
+                    print(f"  {colour(C_WARN, 'Start with .tutorial first')}")
+                continue
+
+            # .tutorial prev — Previous tutorial step
+            if stripped == '.tutorial prev':
+                if _tutorial_mode:
+                    _tutorial_step = max(0, _tutorial_step - 1)
+                    _run_tutorial_step()
+                else:
+                    print(f"  {colour(C_WARN, 'Start with .tutorial first')}")
+                continue
+
+            # .tutorial end — Exit tutorial
+            if stripped == '.tutorial end':
+                _tutorial_mode = False
+                _tutorial_step = 0
+                print(f"  {colour(C_OK, 'Tutorial ended. Happy coding!')}")
+                continue
+
+            # Handle tutorial mode input
+            if _tutorial_mode:
+                if stripped.startswith('.'):
+                    print(f"  {colour(C_WARN, 'In tutorial mode. Try the code or use .tutorial next/prev/end')}")
+                else:
+                    # Execute user code and continue
+                    pass
 
             # .plugin load <file> — Load plugin
             m = re.match(r'\.plugin\s+load\s+(.+)$', stripped)
@@ -2198,6 +2378,308 @@ def run_repl():
                     print(f"  {colour(C_WARN, 'No command history to profile')}")
                 continue
 
+            # .bench <expr> — Run benchmark N times, show avg/min/max
+            m = re.match(r'\.bench\s+(\d+)?\s+(.+)$', stripped)
+            if m:
+                try:
+                    runs = int(m.group(1)) if m.group(1) else 10
+                    expr = m.group(2)
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    times = []
+                    for _ in range(runs):
+                        t_start = time.perf_counter()
+                        interp.run(ast)
+                        elapsed = time.perf_counter() - t_start
+                        times.append(elapsed * 1000)
+                        interp.return_value = None
+                        interp.last_value = None
+                    avg = sum(times) / len(times)
+                    min_t = min(times)
+                    max_t = max(times)
+                    print(f"  {colour(DIM, f'Benchmark: {runs} runs')}")
+                    print(f"    {colour(C_OK, 'avg:')} {avg:.2f}ms  {colour(C_OK, 'min:')} {min_t:.2f}ms  {colour(C_OK, 'max:')} {max_t:.2f}ms")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .html <expr> — Preview HTML in browser
+            m = re.match(r'\.html\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    result = interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    if val is not None:
+                        html_content = str(val)
+                        import tempfile
+                        import webbrowser
+                        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
+                            f.write(f"<html><body><pre>{html_content}</pre></body></html>")
+                            temp_path = f.name
+                        webbrowser.open('file://' + temp_path)
+                        print(f"  {colour(C_OK, 'Opened HTML in browser')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'Expression returned nil')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .plot <data> — Plot data with matplotlib
+            m = re.match(r'\.plot\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    import matplotlib.pyplot as plt
+                    import matplotlib
+                    matplotlib.use('Agg')
+                    tokens = tokenize(expr)
+                    ast = parse(tokens)
+                    interp = interp_manager.get_interpreter()
+                    result = interp.run(ast)
+                    val = interp.return_value if interp.return_value is not None else interp.last_value
+                    if val is None:
+                        print(f"  {colour(C_WARN, 'Expression returned nil')}")
+                    elif isinstance(val, list):
+                        plt.plot(val)
+                        plt.title('Ipp Data')
+                        plt.xlabel('Index')
+                        plt.ylabel('Value')
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+                            plt.savefig(f.name)
+                            plt.close()
+                            import webbrowser
+                            webbrowser.open('file://' + f.name)
+                        print(f"  {colour(C_OK, 'Plot opened in browser')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'Data must be a list')}")
+                except ImportError:
+                    print(f"  {colour(C_WARN, 'matplotlib not installed')}")
+                    print(f"  {colour(DIM, 'Install with: pip install matplotlib')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .bg <expr> — Run in background
+            m = re.match(r'\.bg\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                import threading
+                import queue
+                result_queue = queue.Queue()
+                def run_bg():
+                    try:
+                        tokens = tokenize(expr)
+                        ast = parse(tokens)
+                        interp = interp_manager.get_interpreter()
+                        interp.run(ast)
+                        val = interp.return_value if interp.return_value is not None else interp.last_value
+                        result_queue.put(('ok', val))
+                    except Exception as e:
+                        result_queue.put(('error', str(e)))
+                t = threading.Thread(target=run_bg)
+                t.start()
+                job_id = len(_bg_jobs) + 1
+                _bg_jobs.append({'thread': t, 'expr': expr[:30], 'queue': result_queue})
+                print(f"  {colour(C_OK, f'Job #{job_id} started in background')}")
+                continue
+
+            # .jobs — Show background jobs
+            if stripped == '.jobs':
+                if not _bg_jobs:
+                    print(f"  {colour(DIM, '(no background jobs)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Background Jobs:')}")
+                    for i, job in enumerate(_bg_jobs, 1):
+                        if job['thread'].is_alive():
+                            status = colour(C_OK, 'running')
+                        else:
+                            try:
+                                status, val = job['queue'].get_nowait()
+                                status = colour(C_OK, 'done') if status == 'ok' else colour(C_ERROR, 'error')
+                            except:
+                                status = colour(C_WARN, 'unknown')
+                        _expr = job['expr']
+                        print(f"  {colour(DIM, f'{i}:')} {_expr}... {status}")
+                continue
+
+            # .async <expr> — Run async expression
+            m = re.match(r'\.async\s+(.+)$', stripped)
+            if m:
+                expr = m.group(1)
+                try:
+                    from ipp.runtime.builtins import BUILTINS
+                    if 'async_run' in BUILTINS:
+                        async_run_fn = BUILTINS['async_run']
+                        code = f'''
+func __async_task__() {{
+    return {expr}
+}}
+'''
+                        tokens = tokenize(code)
+                        ast = parse(tokens)
+                        interp = interp_manager.get_interpreter()
+                        interp.run(ast)
+                        if hasattr(interp, 'last_value') and interp.last_value:
+                            coro = interp.last_value
+                            result = async_run_fn(coro)
+                            print(f"  {colour(C_OK, 'Async result:')} {format_output(result)}")
+                        else:
+                            print(f"  {colour(C_WARN, 'Expression is not async')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'async_run not available')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .serve [port] — Start REPL server
+            m = re.match(r'\.serve(?:\s+(\d+))?$', stripped)
+            if m:
+                port = int(m.group(1)) if m.group(1) else 8080
+                server_running = False
+                if _repl_server is not None:
+                    try:
+                        if _repl_server.fileno() != -1:
+                            server_running = True
+                    except:
+                        _repl_server = None
+                if not server_running:
+                    import socket
+                    import threading
+                    _repl_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    _repl_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    _repl_server.bind(('0.0.0.0', port))
+                    _repl_server.listen(5)
+                    print(f"  {colour(C_OK, f'REPL server started on port {port}')}")
+                    print(f"  {colour(DIM, 'Connect with: telnet localhost ' + str(port))}")
+                if _repl_accept_thread is None or not _repl_accept_thread.is_alive():
+                    import threading
+                    _repl_accept_thread = threading.Thread(target=lambda: _serve_accept_loop(_repl_server), daemon=True)
+                    _repl_accept_thread.start()
+                print(f"  {colour(DIM, 'Server running in background')}")
+                continue
+
+            # .compare a b — Compare two expressions
+            m = re.match(r'\.compare\s+(.+)\s+(.+)$', stripped)
+            if m:
+                expr1 = m.group(1)
+                expr2 = m.group(2)
+                try:
+                    tokens1 = tokenize(expr1)
+                    ast1 = parse(tokens1)
+                    interp1 = Interpreter()
+                    interp1.run(ast1)
+                    result1 = interp1.last_value
+                    tokens2 = tokenize(expr2)
+                    ast2 = parse(tokens2)
+                    interp2 = Interpreter()
+                    interp2.run(ast2)
+                    result2 = interp2.last_value
+                    print(f"  {colour(C_CMD, 'Expression 1:')} {expr1}")
+                    print(f"    = {format_output(result1)}")
+                    print(f"  {colour(C_CMD, 'Expression 2:')} {expr2}")
+                    print(f"    = {format_output(result2)}")
+                    if result1 == result2:
+                        print(f"  {colour(C_OK, 'Results are equal')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'Results differ')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .hist — Quick show last results
+            if stripped == '.hist':
+                if not _last_results:
+                    print(f"  {colour(DIM, '(no results yet)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Last Results:')}")
+                    for idx, val in reversed(_last_results[-10:]):
+                        print(f"  {colour(DIM, f'$_{idx}:')} {format_output(val)}")
+                continue
+
+            # .reload [module] — Reload imported module
+            m = re.match(r'\.reload(?:\s+(.+))?$', stripped)
+            if m:
+                module_name = m.group(1)
+                try:
+                    interp = interp_manager.get_interpreter()
+                    if hasattr(interp, '_loaded_modules') and interp._loaded_modules:
+                        if module_name:
+                            for path in list(interp._loaded_modules.keys()):
+                                if module_name in path:
+                                    del interp._loaded_modules[path]
+                                    print(f"  {colour(C_OK, f'Cleared: {path}')}")
+                        else:
+                            interp._loaded_modules.clear()
+                            print(f"  {colour(C_OK, 'All cached modules cleared')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'No modules loaded yet')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .checkpoint [n] — Save state checkpoint
+            m = re.match(r'\.checkpoint(?:\s+(\d+))?$', stripped)
+            if m:
+                n = int(m.group(1)) if m.group(1) else 5
+                try:
+                    interp = interp_manager.get_interpreter()
+                    env = interp.global_env.values.copy()
+                    checkpoint = {'env': env, 'history': _cmd_history.copy()}
+                    _checkpoints.append(checkpoint)
+                    if len(_checkpoints) > n:
+                        _checkpoints.pop(0)
+                    print(f"  {colour(C_OK, f'Checkpoint saved (total: {len(_checkpoints)})')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .restore [n] — Restore checkpoint
+            m = re.match(r'\.restore(?:\s+(\d+))?$', stripped)
+            if m:
+                idx = int(m.group(1)) - 1 if m.group(1) else -1
+                try:
+                    if _checkpoints:
+                        if idx < 0:
+                            idx = len(_checkpoints) + idx
+                        if 0 <= idx < len(_checkpoints):
+                            checkpoint = _checkpoints[idx]
+                            interp = interp_manager.get_interpreter()
+                            interp.global_env.values = checkpoint['env'].copy()
+                            _cmd_history = checkpoint['history'].copy()
+                            print(f"  {colour(C_OK, f'Restored checkpoint {idx+1}')}")
+                        else:
+                            print(f"  {colour(C_WARN, f'Invalid checkpoint: {idx+1}')}")
+                    else:
+                        print(f"  {colour(C_WARN, 'No checkpoints saved')}")
+                except Exception as e:
+                    print(f"  {colour(C_ERROR, str(e))}")
+                continue
+
+            # .macro — List all macros
+            if stripped == '.macro':
+                if not _macros:
+                    print(f"  {colour(DIM, '(no macros defined)')}")
+                else:
+                    print(f"  {colour(C_CMD, 'Macros:')}")
+                    for name, expansion in _macros.items():
+                        print(f"  {colour(DIM, f'{name}')} \u2192 {expansion}")
+                continue
+
+            # .macro <name> <expansion> \u2014 Define macro
+            m = re.match(r'\.macro\s+(\w+)\s+(.+)$', stripped)
+            if m:
+                name = m.group(1)
+                expansion = m.group(2)
+                _macros[name] = expansion
+                print(f"  {colour(C_OK, 'Macro ' + name + ' defined: ' + expansion)}")
+                continue
+
         if not stripped and not buf:
             continue
 
@@ -2221,6 +2703,19 @@ def run_repl():
 
         elif _needs_more(source):
             continue
+
+        # Expand macros (only for non-command inputs)
+        if not stripped.startswith('.'):
+            for name, expansion in _macros.items():
+                if stripped == name or stripped.startswith(name + ' '):
+                    if stripped != name:
+                        args = stripped[len(name):].strip()
+                        for i, arg in enumerate(args.split(), 1):
+                            expansion = expansion.replace(f'${i}', arg)
+                    print(f"  {colour(DIM, f'Expanded: {expansion}')}")
+                    stripped = expansion
+                    buf = [expansion]
+                    break
 
         # ── Execute ───────────────────────────────────────────────────
         interp = interp_manager.get_interpreter()
@@ -2273,6 +2768,12 @@ def run_repl():
                 _last_results.append((len(_last_results) + 1, result_val))
                 if len(_last_results) > 100:
                     _last_results.pop(0)
+
+            # Auto-advance tutorial after any successful code execution
+            if _tutorial_mode:
+                print()
+                print(f"  {colour(C_OK, '✓ Good! Moving to next lesson...')}")
+                _advance_tutorial()
         except KeyboardInterrupt:
             # Ctrl+C during execution - exit immediately
             print(f"\n  {colour(C_OK, 'Goodbye!')}")
@@ -2315,7 +2816,7 @@ def check_file(path: str) -> int:
         print(f"{colour(C_ERROR, '✗')} {e}")
         return 1
 
-def lint_file(path: str) -> int:
+def lint_file(path: str, warn_as_error: bool = False) -> int:
     issues = []
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -2324,11 +2825,58 @@ def lint_file(path: str) -> int:
         print(f"{colour(C_ERROR, '[Error]')} File not found: {path}")
         return 1
 
-    for i, line in enumerate(src.split('\n'), 1):
+    lines = src.split('\n')
+
+    # Track variables for unused variable detection
+    defined_vars = set()
+    used_vars = set()
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+
+        # Skip comments and empty lines
+        if stripped.startswith('#') or stripped.startswith('//') or not stripped:
+            continue
+
+        # Line length check
         if len(line.rstrip()) > 120:
             issues.append(f"line {i}: line too long ({len(line.rstrip())} > 120)")
+
+        # Tab check
         if '\t' in line:
             issues.append(f"line {i}: use spaces not tabs")
+
+        # Trailing whitespace
+        if line.rstrip() != line:
+            issues.append(f"line {i}: trailing whitespace")
+
+        # Check for debug statements left in code
+        if 'print(' in stripped and 'debug' in stripped.lower():
+            issues.append(f"line {i}: possible debug print statement")
+
+        # Check for TODO/FIXME
+        if 'TODO' in stripped or 'FIXME' in stripped:
+            issues.append(f"line {i}: contains TODO/FIXME comment")
+
+        # Detect variable assignments for unused variable check
+        import re
+        var_match = re.match(r'var\s+(\w+)', stripped)
+        if var_match:
+            defined_vars.add(var_match.group(1))
+
+        # Check for usage of undefined variables
+        # This is a simple heuristic - look for variable-like tokens
+        for var in re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b', stripped):
+            if var not in ['var', 'func', 'class', 'if', 'else', 'for', 'while', 'return', 'try', 'catch', 'in', 'and', 'or', 'not', 'true', 'false', 'nil']:
+                used_vars.add(var)
+
+    # Check for unused variables
+    unused = defined_vars - used_vars
+    if unused:
+        for var in sorted(unused):
+            issues.append(f"unused variable: {var}")
+
+    # Syntax check
     try:
         tokenize(src); parse(tokenize(src))
     except Exception as e:
@@ -2338,26 +2886,281 @@ def lint_file(path: str) -> int:
         for iss in issues:
             print(f"  {colour(C_WARN, '⚠')} {iss}")
         print(f"\n{colour(C_ERROR, '✗')} {len(issues)} issue(s)")
-        return 1
+        if warn_as_error:
+            return 1
     print(f"{colour(C_OK, '✓')} No issues: {path}")
-    return 0
+    return 0 if not issues else (1 if not warn_as_error else 1)
+
+def format_file(path: str) -> int:
+    """Format Ipp source file"""
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            src = f.read()
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} File not found: {path}")
+        return 1
+
+    formatted = src
+
+    # Add spaces around operators (but be careful with strings)
+    import re
+
+    # Split into lines for careful processing
+    lines = formatted.split('\n')
+    new_lines = []
+
+    for line in lines:
+        # Skip comments
+        if line.strip().startswith('#') or line.strip().startswith('//'):
+            new_lines.append(line)
+            continue
+
+        # Skip strings (simple heuristic - if line has unbalanced quotes)
+        if '"' in line or "'" in line:
+            new_lines.append(line)
+            continue
+
+        # Add spaces around operators (careful with +=, -=, etc.)
+        line = re.sub(r'(\w)([=+\-*/<>!&|^%])', r'\1 \2', line)
+        line = re.sub(r'([=+\-*/<>!&|^%])(\w)', r'\1 \2', line)
+
+        # Add spaces around braces
+        line = re.sub(r'(\w)\{', r'\1 {', line)
+        line = re.sub(r'\}(\w)', r'} \1', line)
+
+        # Fix double spaces
+        line = re.sub(r'  +', ' ', line)
+
+        new_lines.append(line)
+
+    formatted = '\n'.join(new_lines)
+
+    # Show diff
+    if formatted != src:
+        print(f"{colour(C_OK, '✓')} Formatted: {path}")
+        # Write back
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(formatted)
+        return 0
+    else:
+        print(f"{colour(C_OK, '✓')} Already formatted: {path}")
+        return 0
 
 def print_usage():
     print(f"\n{BOLD('Ipp')} v{VERSION} — A scripting language for game development\n")
     print(f"{BOLD('Usage:')}  python main.py [command] [file]\n")
     cmds = [
-        ("<file>",    "Run a script"),
-        ("run <f>",   "Run a script"),
-        ("check <f>", "Syntax check"),
-        ("lint <f>",  "Lint code"),
-        ("repl",      "Start REPL (default)"),
-        ("lsp",       "Start LSP server"),
-        ("wasm <f>",  "Compile to WASM"),
+        ("<file>",      "Run a script"),
+        ("run <f>",     "Run a script"),
+        ("check <f>",   "Syntax check only"),
+        ("lint <f>",    "Lint code (static analysis)"),
+        ("fmt <f>",     "Format code"),
+        ("--warn-as-error", "Treat warnings as errors"),
+        ("--no-warn",   "Suppress all warnings"),
+        ("repl",        "Start REPL (default)"),
+        ("lsp",         "Start LSP server"),
+        ("wasm <f>",    "Compile to WASM"),
+        ("archive create", "Create archive (.ippa)"),
+        ("archive list", "List archive contents"),
+        ("archive run",  "Run module from archive"),
+        ("pkg install",  "Install package"),
+        ("pkg remove",   "Remove package"),
+        ("pkg list",     "List installed packages"),
+        ("pkg search",   "Search packages"),
     ]
     print(BOLD("Commands:"))
     for c, d in cmds:
-        print(f"  {colour(C_CMD, c.ljust(14))} {d}")
+        print(f"  {colour(C_CMD, c.ljust(20))} {d}")
     print()
+
+# ─── Archive Commands ──────────────────────────────────────────────────────────────
+def archive_create(output_file: str, source_files: list) -> int:
+    """Create an archive (.ippa) from multiple .ipp files"""
+    import json
+    archive = {
+        '_version': VERSION,
+        '_type': 'ipp_archive',
+        'files': {}
+    }
+
+    for src_file in source_files:
+        try:
+            with open(src_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # Use filename without extension as module name
+            name = os.path.splitext(os.path.basename(src_file))[0]
+            archive['files'][name] = content
+            print(f"  Added: {name}")
+        except FileNotFoundError:
+            print(f"{colour(C_ERROR, '[Error]')} File not found: {src_file}")
+            return 1
+        except Exception as e:
+            print(f"{colour(C_ERROR, '[Error]')} {e}")
+            return 1
+
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(archive, f, indent=2)
+        print(f"{colour(C_OK, '✓')} Archive created: {output_file} ({len(archive['files'])} files)")
+        return 0
+    except Exception as e:
+        print(f"{colour(C_ERROR, '[Error]')} {e}")
+        return 1
+
+def archive_list(archive_file: str) -> int:
+    """List files in an archive"""
+    import json
+    try:
+        with open(archive_file, 'r', encoding='utf-8') as f:
+            archive = json.load(f)
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} Archive not found: {archive_file}")
+        return 1
+    except json.JSONDecodeError as e:
+        print(f"{colour(C_ERROR, '[Error]')} Invalid archive format: {e}")
+        return 1
+
+    if archive.get('_type') != 'ipp_archive':
+        print(f"{colour(C_ERROR, '[Error]')} Not an Ipp archive")
+        return 1
+
+    print(f"{colour(C_CMD, 'Archive:')} {archive_file}")
+    print(f"{colour(C_CMD, 'Version:')} {archive.get('_version', 'unknown')}")
+    print(f"{colour(C_CMD, 'Files:')}")
+    for name in sorted(archive.get('files', {}).keys()):
+        size = len(archive['files'][name])
+        print(f"  - {name} ({size} bytes)")
+    return 0
+
+def archive_run(archive_file: str, module_name: str) -> int:
+    """Run a module from an archive"""
+    import json
+    try:
+        with open(archive_file, 'r', encoding='utf-8') as f:
+            archive = json.load(f)
+    except FileNotFoundError:
+        print(f"{colour(C_ERROR, '[Error]')} Archive not found: {archive_file}")
+        return 1
+
+    if archive.get('_type') != 'ipp_archive':
+        print(f"{colour(C_ERROR, '[Error]')} Not an Ipp archive")
+        return 1
+
+    files = archive.get('files', {})
+    if module_name not in files:
+        print(f"{colour(C_ERROR, '[Error]')} Module not found: {module_name}")
+        print(f"  Available: {', '.join(sorted(files.keys()))}")
+        return 1
+
+    source = files[module_name]
+    try:
+        tokens = tokenize(source)
+        ast = parse(tokens)
+        interp = Interpreter()
+        interp.current_file = f"{archive_file}:{module_name}"
+        interp.run(ast)
+        return 0
+    except Exception as e:
+        print(f"{colour(C_ERROR, '[Error]')} {e}")
+        return 1
+
+# ─── Package Manager ──────────────────────────────────────────────────────────────
+def get_packages_dir():
+    """Get the packages directory"""
+    pkg_dir = os.path.join(os.path.expanduser("~"), ".ipp", "packages")
+    os.makedirs(pkg_dir, exist_ok=True)
+    return pkg_dir
+
+def get_package_db():
+    """Get the package database file"""
+    db_file = os.path.join(os.path.expanduser("~"), ".ipp", "packages.json")
+    if os.path.exists(db_file):
+        import json
+        with open(db_file, 'r') as f:
+            return json.load(f)
+    return {"packages": {}}
+
+def save_package_db(db):
+    """Save the package database"""
+    db_file = os.path.join(os.path.expanduser("~"), ".ipp", "packages.json")
+    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    import json
+    with open(db_file, 'w') as f:
+        json.dump(db, f, indent=2)
+
+def pkg_install(package_name: str) -> int:
+    """Install a package"""
+    pkg_dir = get_packages_dir()
+    db = get_package_db()
+
+    if package_name in db["packages"]:
+        print(f"{colour(C_WARN, 'Package already installed:')} {package_name}")
+        return 1
+
+    # For v1.7.3, packages are simple .ipp files in the packages directory
+    # Future: can fetch from a registry
+    pkg_path = os.path.join(pkg_dir, f"{package_name}.ipp")
+
+    # Create a placeholder package file
+    with open(pkg_path, 'w') as f:
+        f.write(f"# Ipp package: {package_name}\n")
+        f.write(f"# Installed by Ipp v{VERSION}\n\n")
+        f.write(f"# Package '{package_name}'\n")
+        f.write(f"# Add your code here\n")
+
+    db["packages"][package_name] = {
+        "version": "1.0.0",
+        "installed_at": str(os.path.getmtime(pkg_path)),
+        "path": pkg_path
+    }
+    save_package_db(db)
+
+    print(f"{colour(C_OK, '✓')} Installed: {package_name}")
+    return 0
+
+def pkg_remove(package_name: str) -> int:
+    """Remove a package"""
+    pkg_dir = get_packages_dir()
+    db = get_package_db()
+
+    if package_name not in db["packages"]:
+        print(f"{colour(C_ERROR, '[Error]')} Package not installed: {package_name}")
+        return 1
+
+    pkg_path = db["packages"][package_name].get("path")
+    if pkg_path and os.path.exists(pkg_path):
+        os.remove(pkg_path)
+
+    del db["packages"][package_name]
+    save_package_db(db)
+
+    print(f"{colour(C_OK, '✓')} Removed: {package_name}")
+    return 0
+
+def pkg_list() -> int:
+    """List installed packages"""
+    db = get_package_db()
+    packages = db.get("packages", {})
+
+    if not packages:
+        print("No packages installed")
+        print(f"  Run: python main.py pkg install <package>")
+        return 0
+
+    print(f"{colour(C_CMD, 'Installed packages:')}")
+    for name, info in sorted(packages.items()):
+        version = info.get("version", "unknown")
+        print(f"  - {name} v{version}")
+    return 0
+
+def pkg_search(query: str) -> int:
+    """Search for packages (simulated)"""
+    # In a full implementation, this would search a registry
+    # For v1.7.3, we just show what's available locally
+    print(f"{colour(C_CMD, 'Searching for:')} {query}")
+    print(f"{colour(C_DIM, 'Note: Package registry not implemented yet')}")
+    print(f"{colour(C_DIM, 'Install local packages with: pkg install <name>')}")
+    return 0
 
 def main():
     args = sys.argv[1:]
@@ -2365,6 +3168,14 @@ def main():
         run_repl(); return 0
 
     cmd = args[0]
+
+    # Handle global flags
+    warn_as_error = '--warn-as-error' in args
+    no_warn = '--no-warn' in args
+
+    # Remove global flags from args for command processing
+    args = [a for a in args if not a.startswith('--')]
+
     if cmd in ('--help', '-h'):
         print_usage(); return 0
     if cmd in ('--version', '-v'):
@@ -2394,7 +3205,54 @@ def main():
     if cmd == 'check' and len(args) >= 2:
         return check_file(args[1])
     if cmd == 'lint' and len(args) >= 2:
-        return lint_file(args[1])
+        if no_warn:
+            print(f"{colour(C_OK, '✓')} No issues: {args[1]}")
+            return 0
+        return lint_file(args[1], warn_as_error)
+    if cmd == 'fmt' and len(args) >= 2:
+        return format_file(args[1])
+
+    # Archive commands
+    if cmd == 'archive':
+        if len(args) < 2:
+            print(f"{colour(C_WARN, 'Usage:')}")
+            print(f"  python main.py archive create <output.ippa> <file1.ipp> <file2.ipp> ...")
+            print(f"  python main.py archive list <archive.ippa>")
+            print(f"  python main.py archive run <archive.ippa> <module>")
+            return 1
+        action = args[1]
+        if action == 'create' and len(args) >= 4:
+            return archive_create(args[2], args[3:])
+        elif action == 'list' and len(args) >= 3:
+            return archive_list(args[2])
+        elif action == 'run' and len(args) >= 4:
+            return archive_run(args[2], args[3])
+        else:
+            print(f"{colour(C_WARN, 'Invalid archive command')}")
+            return 1
+
+    # Package commands
+    if cmd == 'pkg':
+        if len(args) < 2:
+            print(f"{colour(C_WARN, 'Usage:')}")
+            print(f"  python main.py pkg install <package>")
+            print(f"  python main.py pkg remove <package>")
+            print(f"  python main.py pkg list")
+            print(f"  python main.py pkg search <query>")
+            return 1
+        action = args[1]
+        if action == 'install' and len(args) >= 3:
+            return pkg_install(args[2])
+        elif action == 'remove' and len(args) >= 3:
+            return pkg_remove(args[2])
+        elif action == 'list':
+            return pkg_list()
+        elif action == 'search' and len(args) >= 3:
+            return pkg_search(args[2])
+        else:
+            print(f"{colour(C_WARN, 'Invalid pkg command')}")
+            return 1
+
     if not cmd.startswith('-'):
         return run_file(cmd)
 

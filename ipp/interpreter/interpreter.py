@@ -829,6 +829,8 @@ class Interpreter:
             raise RuntimeError("List index must be integer")
         if isinstance(obj, IppDict):
             return obj.get(index)
+        if isinstance(obj, dict):
+            return obj.get(index)
         if isinstance(obj, str):
             if isinstance(index, int):
                 return obj[index]
@@ -870,7 +872,7 @@ class Interpreter:
     
     def _get_list_method(self, lst, name):
         """Return callable for Ipp list aggregate methods."""
-        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop', 'find', 'find_index', 'contains', 'count', 'map', 'filter', 'reduce'):
+        if name not in ('any', 'all', 'min', 'max', 'sum', 'flat', 'flatten', 'zip', 'enumerate', 'unique', 'take', 'drop', 'find', 'find_index', 'contains', 'count', 'map', 'filter', 'reduce', 'flat_map', 'group_by', 'sort_by'):
             return None
         _self = self
         class _ListMethodWrapper:
@@ -978,6 +980,30 @@ class Interpreter:
                     for x in it:
                         acc = _self.call_function(fn, [acc, x])
                     return acc
+                elif name == 'flat_map':
+                    fn = args[0]
+                    result = IppList()
+                    for x in lst.elements:
+                        mapped = _self.call_function(fn, [x])
+                        if isinstance(mapped, IppList):
+                            result.elements.extend(mapped.elements)
+                        elif isinstance(mapped, list):
+                            result.elements.extend(mapped)
+                    return result
+                elif name == 'group_by':
+                    fn = args[0]
+                    grouped = {}
+                    for x in lst.elements:
+                        key = _self.call_function(fn, [x])
+                        if key not in grouped:
+                            grouped[key] = IppList()
+                        grouped[key].elements.append(x)
+                    return grouped
+                elif name == 'sort_by':
+                    fn = args[0]
+                    paired = [(_self.call_function(fn, [x]), x) for x in lst.elements]
+                    paired.sort(key=lambda p: p[0])
+                    return IppList([p[1] for p in paired])
         return _ListMethodWrapper()
 
     def _get_string_method(self, s, name):

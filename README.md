@@ -590,6 +590,21 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.7.8.3 | Enhancement (__len__ protocol and custom len) |
 | v1.7.9 | Fix (try/catch catches runtime errors) |
 | v1.7.9.1 | Enhancement (cleaner error messages with file + line) |
+| v1.8.0 | String methods, str.format |
+| v1.8.0.1 | str.format builtin |
+| v1.8.0.2 | str.search (count, rfind, rindex) |
+| v1.8.0.3 | str.repeat (multiplication) |
+| v1.8.0.4 | str.padding (pad_left, pad_right, center, zfill) |
+| v1.8.0.5 | str.predicates (is_digit, is_alpha, is_alnum, is_space) |
+| v1.8.1 | Variadic fix, list mutation (extend, insert, copy, clear) |
+| v1.8.1.1 | List aggregates (sum, avg, min, max) |
+| v1.8.1.2 | List transforms (map, filter, reduce) |
+| v1.8.1.3 | List search (find, find_index, contains, count) |
+| v1.8.1.4 | List search methods |
+| v1.8.2 | Multi-assign, parallel assign |
+| v1.8.2.1 | Swap pattern |
+| v1.8.3 | List map/filter/reduce fix, list advanced (flat_map, group_by, sort_by) |
+| v1.8.3.1 | REPL feature parity (two main.py consolidation, .bench, .html, .plot, .bg, .jobs, .async, .serve, .compare, .checkpoint, .restore, .macro, .hist, .reload) |
 | v2.0.0 | C Extension (VM foundation) |
 
 ---
@@ -604,7 +619,7 @@ python tests/regression.py
 python main.py run tests/v1_3_10/test_repl_intelligence.ipp
 ```
 
-All 37 test suites pass with zero failures.
+All 103 test suites pass with zero failures.
 
 ---
 

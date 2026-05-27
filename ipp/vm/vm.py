@@ -533,6 +533,34 @@ class _ListMapFilterReduceWrapper:
             return acc
 
 
+class _ListAdvancedWrapper:
+    """VM wrapper for list.flat_map(), group_by(), sort_by() with Ipp function call support."""
+    __slots__ = ('vm', 'method', 'lst')
+    def __init__(self, vm, method, lst):
+        self.vm = vm
+        self.method = method
+        self.lst = lst
+    def __call__(self, fn):
+        if self.method == 'flat_map':
+            result = []
+            for x in self.lst:
+                result.extend(self.vm._call_sync(fn, [x]))
+            return result
+        elif self.method == 'group_by':
+            grouped = {}
+            for x in self.lst:
+                key = self.vm._call_sync(fn, [x])
+                if key not in grouped:
+                    grouped[key] = []
+                grouped[key].append(x)
+            return grouped
+        elif self.method == 'sort_by':
+            keys = [self.vm._call_sync(fn, [x]) for x in self.lst]
+            paired = list(zip(keys, self.lst))
+            paired.sort(key=lambda p: p[0])
+            return [p[1] for p in paired]
+
+
 # Opcode lookup cache - v1.5.26 fix for VM performance
 _OPCODE_CACHE = {}
 
@@ -1509,6 +1537,8 @@ class VM:
                     self.stack[-1] = _ListSearchWrapper(self, name, obj)
                 elif name in ('map', 'filter', 'reduce'):
                     self.stack[-1] = _ListMapFilterReduceWrapper(self, name, obj)
+                elif name in ('flat_map', 'group_by', 'sort_by'):
+                    self.stack[-1] = _ListAdvancedWrapper(self, name, obj)
                 elif name in _LIST_METHODS:
                     _fn = _LIST_METHODS[name]
                     _bound_obj = obj
