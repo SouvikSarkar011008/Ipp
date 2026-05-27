@@ -33,6 +33,7 @@ def ipp_canvas_open():
     _canvas = Canvas(_canvas_window, bg="white", width=580, height=380)
     _canvas.pack(fill="both", expand=True, padx=10, pady=10)
     
+    _canvas_window.update()
     print("[canvas] Window opened - close window to return to REPL")
     return "[canvas window open]"
 

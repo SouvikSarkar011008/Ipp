@@ -2446,6 +2446,8 @@ def run_repl():
                         print(f"  {colour(C_WARN, 'Expression returned nil')}")
                     elif isinstance(val, list):
                         plt.plot(val)
+                    elif hasattr(val, 'elements') and isinstance(val.elements, list):
+                        plt.plot(val.elements)
                         plt.title('Ipp Data')
                         plt.xlabel('Index')
                         plt.ylabel('Value')
