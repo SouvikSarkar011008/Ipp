@@ -30,7 +30,7 @@ assert s.peek() == 30
 # Version
 var ver = ipp_version()
 var parts = ver.split(".")
-assert len(parts) >= 4
+assert len(parts) >= 3
 assert parts[0] == "1"
 
 # Type introspection

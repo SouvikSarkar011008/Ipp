@@ -12,7 +12,7 @@ assert decoded == code
 
 # Version string present
 var v = ipp_version()
-assert v.contains("1.7.9.1") == true
+assert v.contains("1.8") == true
 
 # ANSI stripping still works (dependency from v1.7.9.1.2)
 assert strip_ansi("\x1b[1mBold\x1b[0m") == "Bold"

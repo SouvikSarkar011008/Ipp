@@ -13,7 +13,7 @@ sys.path.insert(0, ipp_dir)
 os.chdir(ipp_dir)
 os.environ['IPP_COLORS'] = '1'
 
-from main import (
+from ipp.main import (
     tokenize, parse, InterpreterManager,
     show_builtins, show_modules, print_types, print_help
 )

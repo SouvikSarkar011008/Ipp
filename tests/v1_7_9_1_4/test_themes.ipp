@@ -12,7 +12,7 @@ assert "\e"   == "\x1b"
 
 # Version string
 var v = ipp_version()
-assert v.contains("1.7.9.1") == true
+assert v.contains("1.8") == true
 
 # Bold + colour sequences strip cleanly
 var bold = "\x1b[1mBold\x1b[0m"

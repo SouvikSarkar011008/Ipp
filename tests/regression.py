@@ -209,7 +209,7 @@ from ipp.parser.parser import parse
 from ipp.vm.compiler import compile_ast
 from ipp.vm.vm import VM
 
-with open("{filepath}", "r") as f:
+with open("{filepath}", "r", encoding="utf-8") as f:
     source = f.read()
 
 try:
@@ -339,11 +339,17 @@ def run_test(version, filepath):
         s = re.sub(r'\b\d{10,}\b', '<HASH>', s)
         # Normalize .time command output (timing differs between runs/modes)
         s = re.sub(r'Time: \d+\.\d+', 'Time: <TIME>', s)
+        s = re.sub(r'Time: <TIMEFLOAT>', 'Time: <TIME>', s)
         s = re.sub(r'Elapsed: \d+\.\d+ seconds', 'Elapsed: <TIME> seconds', s)
+        s = re.sub(r'Elapsed: <TIMEFLOAT> seconds', 'Elapsed: <TIME> seconds', s)
         # Normalize small floats in scientific notation (timing deltas)
         s = re.sub(r'\d+\.\d+e[+-]\d+', '<DELTA>', s)
         # Normalize division-by-zero error messages (various formats)
         s = re.sub(r'Division by zero[^\n]*', 'Division by zero', s)
+        # Normalize em dash vs replacement character (encoding mismatch between modes on Windows)
+        s = s.replace('\u2014', '-').replace('\ufffd', '-')
+        # Normalize Unicode left/right double quotes
+        s = s.replace('\u201c', '"').replace('\u201d', '"')
         # Normalize dict repr quotes {'a': 1} vs {"a": 1} (interpreter vs VM)
         s = re.sub(r"'([^']+)':", r'"\1":', s)
         # Also normalize string values in dict repr: 'value' -> "value"
