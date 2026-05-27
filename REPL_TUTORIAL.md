@@ -182,7 +182,7 @@ ease_in(0.5)                  # Ease in quadratic
 ease_out(0.5)                 # Ease out quadratic
 bounce(0.75)                   # Bounce easing
 spring(0.5, 0.5)              # Spring damping
-smoothstep(0.5)               # Smooth step
+smoothstep(0, 1, 0.5)         # Smooth step
 ```
 
 ### Random & Numbers (8)
@@ -231,7 +231,7 @@ lower("HELLO")                 # "hello"
 strip("  hello  ")             # "hello"
 replace("hello", "l", "r")     # "herro"
 replace_all("lol", "l", "w")   # "wow"
-starts_with("hello", "he")     # true
+starts_with("hello", "he")     # true ("he" in "hello" also works)
 ends_with("hello", "lo")       # true
 contains("hello", "ell")       # true
 find("hello", "ell")           # 1
@@ -268,9 +268,9 @@ csv_to_string([["a","b"]])   # To CSV string
 
 ### Regex (3)
 ```ipp
-regex_match("abc", r"\w+")    # Match entire string
-regex_search("abc123", r"\d+") # Search: "123"
-regex_replace("abc", r"b", "X") # "aXc"
+regex_match("abc", "\\w+")    # Match entire string
+regex_search("abc123", "\\d+") # Search: "123"
+regex_replace("abc", "b", "X") # "aXc"
 ```
 
 ### Hashing & Crypto (5)
