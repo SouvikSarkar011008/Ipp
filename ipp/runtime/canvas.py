@@ -33,6 +33,7 @@ def ipp_canvas_open():
     _canvas = Canvas(_canvas_window, bg="white", width=580, height=380)
     _canvas.pack(fill="both", expand=True, padx=10, pady=10)
     
+    _canvas_window.update_idletasks()
     _canvas_window.update()
     print("[canvas] Window opened - close window to return to REPL")
     return "[canvas window open]"
@@ -61,6 +62,7 @@ def ipp_canvas_rect(x, y, w, h, color="black"):
     global _canvas, _canvas_window, _update_job
     if _canvas and _canvas_window:
         _canvas.create_rectangle(x, y, x+w, y+h, fill=color, outline=color)
+        _canvas_window.update_idletasks()
         _canvas_window.update()
     return "[rect drawn]"
 
@@ -70,6 +72,7 @@ def ipp_canvas_circle(x, y, r, color="black"):
     global _canvas, _canvas_window
     if _canvas and _canvas_window:
         _canvas.create_oval(x-r, y-r, x+r, y+r, fill=color, outline=color)
+        _canvas_window.update_idletasks()
         _canvas_window.update()
     return "[circle drawn]"
 
@@ -79,6 +82,7 @@ def ipp_canvas_line(x1, y1, x2, y2, color="black"):
     global _canvas, _canvas_window
     if _canvas and _canvas_window:
         _canvas.create_line(x1, y1, x2, y2, fill=color, width=2)
+        _canvas_window.update_idletasks()
         _canvas_window.update()
     return "[line drawn]"
 
@@ -88,6 +92,7 @@ def ipp_canvas_text(x, y, text, color="black"):
     global _canvas, _canvas_window
     if _canvas and _canvas_window:
         _canvas.create_text(x, y, text=str(text), fill=color, font=("Arial", 12))
+        _canvas_window.update_idletasks()
         _canvas_window.update()
     return "[text drawn]"
 
@@ -98,6 +103,7 @@ def ipp_canvas_clear(color="white"):
     if _canvas and _canvas_window:
         _canvas.delete("all")
         _canvas.config(bg=color)
+        _canvas_window.update_idletasks()
         _canvas_window.update()
     return "[canvas cleared]"
 
@@ -107,6 +113,7 @@ def ipp_canvas_show():
     global _canvas_window
     if _canvas_window:
         try:
+            _canvas_window.update_idletasks()
             _canvas_window.update()
         except:
             pass
