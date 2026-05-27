@@ -125,6 +125,7 @@ TESTS = [
     ("v1.8.2.1-swap","tests/v1_8_2_1/test_swap.ipp"),
     ("v1.8.3-map-filter-reduce","tests/v1_8_3/test_fluent_real.ipp"),
     ("v1.8.3.1-list-advanced","tests/v1_8_3_1/test_list_advanced.ipp"),
+    ("v1.8.4-set-len","tests/v1_8_4/test_set_len.ipp"),
 ]
 
 passed=failed=0

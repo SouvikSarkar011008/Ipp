@@ -290,6 +290,9 @@ class IppSet:
     def len(self):
         return len(self._items)
     
+    def __len__(self):
+        return len(self._items)
+
     def clear(self):
         self._items.clear()
     
