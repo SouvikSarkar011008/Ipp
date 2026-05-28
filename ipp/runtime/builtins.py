@@ -1408,6 +1408,11 @@ class Vector2:
     def __truediv__(self, scalar):
         return Vector2(self.x / scalar, self.y / scalar)
     
+    def __eq__(self, other):
+        if isinstance(other, Vector2):
+            return self.x == other.x and self.y == other.y
+        return False
+
     def dot(self, other):
         return self.x * other.x + self.y * other.y
     
@@ -1429,6 +1434,9 @@ class Vector2:
     def distance_squared(self, other):
         return (self - other).length_squared()
     
+    def lerp(self, other, t):
+        return self + (other - self) * t
+
     def __repr__(self):
         return f"vec2({self.x}, {self.y})"
     
@@ -1457,6 +1465,11 @@ class Vector3:
     def __truediv__(self, scalar):
         return Vector3(self.x / scalar, self.y / scalar, self.z / scalar)
     
+    def __eq__(self, other):
+        if isinstance(other, Vector3):
+            return self.x == other.x and self.y == other.y and self.z == other.z
+        return False
+
     def dot(self, other):
         return self.x * other.x + self.y * other.y + self.z * other.z
     
@@ -1485,6 +1498,9 @@ class Vector3:
     def distance_squared(self, other):
         return (self - other).length_squared()
     
+    def lerp(self, other, t):
+        return self + (other - self) * t
+
     def __repr__(self):
         return f"vec3({self.x}, {self.y}, {self.z})"
     
@@ -1525,6 +1541,11 @@ class Vector4:
     def __truediv__(self, scalar):
         return Vector4(self.x / scalar, self.y / scalar, self.z / scalar, self.w / scalar)
     
+    def __eq__(self, other):
+        if isinstance(other, Vector4):
+            return self.x == other.x and self.y == other.y and self.z == other.z and self.w == other.w
+        return False
+
     def dot(self, other):
         return self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
     
@@ -1540,6 +1561,9 @@ class Vector4:
     def to_vec3(self):
         return Vector3(self.x, self.y, self.z)
     
+    def lerp(self, other, t):
+        return self + (other - self) * t
+
     def __repr__(self):
         return f"vec4({self.x}, {self.y}, {self.z}, {self.w})"
     

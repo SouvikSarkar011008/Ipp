@@ -1801,7 +1801,7 @@ assert len(by_type["goblin"]) == 1
 
 ---
 
-### v1.8.4 — Fix: `len(IppSet)` Works (BUG-013)
+### v1.8.4 — Fix: `len(IppSet)` Works (BUG-013) ✅ DONE
 
 **Root cause:** `IppSet` does not implement `__len__` in a way the VM's `len()` builtin recognises.
 
@@ -1845,7 +1845,7 @@ assert s2.contains(1) == false
 
 ---
 
-### v1.8.5 — Fix: `vec4 + vec4` Arithmetic Wired to Operators (BUG-014)
+### v1.8.5 — Fix: `vec4 + vec4` Arithmetic Wired to Operators (BUG-014) ✅ DONE
 
 **Root cause:** `vec4`, `vec3`, `vec2` are Python classes (`_Vec4`, `_Vec3`, `_Vec2`). The VM's `ADD` opcode checks for Ipp class instances with `__add__`. It does not check for Python built-in game types.
 

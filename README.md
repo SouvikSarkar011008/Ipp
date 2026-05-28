@@ -2,7 +2,7 @@
 
 # Ipp Language
 
-<img src="https://img.shields.io/badge/version-1.8.3-blue.svg" alt="Version">
+<img src="https://img.shields.io/badge/version-1.8.5-blue.svg" alt="Version">
 <img src="https://img.shields.io/badge/python-3.8+-green.svg" alt="Python">
 <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
 <img src="https://img.shields.io/badge/builtins-163+-brightgreen.svg" alt="Builtins">
@@ -20,7 +20,7 @@ Python-like syntax · Closures · Classes with Inheritance · Pattern Matching �
 
 Ipp is a dynamically-typed, interpreted scripting language designed to feel like Python and Lua combined, built specifically for game development scripting. It compiles to a custom bytecode VM and also runs on a tree-walking interpreter for rapid development.
 
-**v1.8.3** includes closures-in-loop fix, class-level field declarations, and many more features.
+**v1.8.5** includes len(IppSet) fix and full vector arithmetic (vec2/vec3/vec4 add, sub, mul, div, normalize, dot, cross, lerp).
 
 ---
 
@@ -605,6 +605,8 @@ print(g.shortest_path("A", "C"))  # [A, B, C]
 | v1.8.2.1 | Swap pattern |
 | v1.8.3 | List map/filter/reduce fix, list advanced (flat_map, group_by, sort_by) |
 | v1.8.3.1 | REPL feature parity (two main.py consolidation, .bench, .html, .plot, .bg, .jobs, .async, .serve, .compare, .checkpoint, .restore, .macro, .hist, .reload) |
+| v1.8.4 | len(IppSet) fix — add `__len__` to IppSet for proper `len()` support |
+| v1.8.5 | Vector arithmetic — full vec2/vec3/vec4 add, sub, mul, div, scalar mul, eq, normalize, dot, cross, lerp |
 | v2.0.0 | C Extension (VM foundation) |
 
 ---

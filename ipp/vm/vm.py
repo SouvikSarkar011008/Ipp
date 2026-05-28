@@ -53,11 +53,24 @@ class _Vec4:
         if isinstance(o, _Vec4):
             return _Vec4(self.x/o.x, self.y/o.y, self.z/o.z, self.w/o.w)
         return _Vec4(self.x/o, self.y/o, self.z/o, self.w/o)
+    def __rmul__(self, o):
+        return _Vec4(self.x*o, self.y*o, self.z*o, self.w*o)
+    def __eq__(self, o):
+        if isinstance(o, _Vec4):
+            return self.x==o.x and self.y==o.y and self.z==o.z and self.w==o.w
+        return False
     def dot(self, o):
         return self.x*o.x + self.y*o.y + self.z*o.z + self.w*o.w
     def length(self):
         import math
         return math.sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
+    def normalize(self):
+        l = self.length()
+        if l == 0:
+            return _Vec4(0, 0, 0, 0)
+        return _Vec4(self.x/l, self.y/l, self.z/l, self.w/l)
+    def lerp(self, other, t):
+        return self + (other - self) * t
 
 
 class _Mat4:
