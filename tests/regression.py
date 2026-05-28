@@ -176,6 +176,8 @@ TESTS = [
     ("v1.7.9.1.9-highlight-cmd","tests/v1_7_9_1_9/test_highlight_cmd.ipp"),
     ("v1.7.9.1.9-bundle",      "tests/v1_7_9_1_9/test_playground_bundle.py"),
     ("v2.0.0", "tests/v2_0_0/test_c_extension.ipp"),
+    ("v1.8.4-set-len","tests/v1_8_4/test_set_len.ipp"),
+    ("v1.8.5-vec-arithmetic","tests/v1_8_5/test_vec_arithmetic.ipp"),
 ]
 
 def extract_expected_from_file(filepath):
