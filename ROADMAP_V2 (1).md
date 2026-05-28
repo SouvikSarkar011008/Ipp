@@ -1985,7 +1985,7 @@ assert v2.dot(vec2(1, 0)) == 3.0
 
 ---
 
-### v1.8.6 — Fix: Spread `[0, ...a, 4]` — Items After Spread (BUG-015)
+### v1.8.6 — Fix: Spread `[0, ...a, 4]` — Items After Spread (BUG-015) ✅ DONE
 
 **Root cause:** The compiler emits the wrong variable name when items follow a spread expression. `[0, ...a, 4]` generates code referencing a variable `b` that doesn't exist.
 

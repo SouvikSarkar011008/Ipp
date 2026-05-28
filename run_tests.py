@@ -127,6 +127,7 @@ TESTS = [
     ("v1.8.3.1-list-advanced","tests/v1_8_3_1/test_list_advanced.ipp"),
     ("v1.8.4-set-len","tests/v1_8_4/test_set_len.ipp"),
     ("v1.8.5-vec-arithmetic","tests/v1_8_5/test_vec_arithmetic.ipp"),
+    ("v1.8.6-spread","tests/v1_8_6/test_spread.ipp"),
 ]
 
 passed=failed=0
